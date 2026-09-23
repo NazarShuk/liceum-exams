@@ -25,3 +25,4 @@ pnpm-debug.log*
 
 # Cloudflare Wrangler
 .wrangler/
+/src/generated/prisma

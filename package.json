@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",
+    "@prisma/adapter-d1": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.4",
     "tailwindcss": "^4.3.3"
@@ -22,6 +24,9 @@
     "esbuild": true
   },
   "devDependencies": {
+    "@types/node": "^26.6.2",
+    "dotenv": "^18.0.3",
+    "prisma": "^7.10.0",
     "wrangler": "^4.136.3"
   }
 }
