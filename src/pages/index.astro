@@ -1,7 +1,11 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import UserDisplay  from "../components/UserDisplay.astro";
 ---
 
 <Layout>
   <h1>hello world</h1>
+  <p>
+    <UserDisplay server:defer />
+  </p>
 </Layout>
