@@ -1,5 +1,5 @@
 {
-  "name": "",
+  "name": "liceum-exams",
   "type": "module",
   "version": "0.0.1",
   "engines": {
@@ -7,10 +7,13 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "prisma generate && astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "generate-types": "wrangler types"
+    "generate-types": "wrangler types",
+    "predev": "wrangler d1 migrations apply liceum --local",
+    "db:migrate": "wrangler d1 migrations apply liceum --local",
+    "db:migrate:remote": "wrangler d1 migrations apply liceum --remote"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",

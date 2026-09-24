@@ -15,7 +15,8 @@
     {
       "binding": "DB",
       "database_name": "liceum",
-      "database_id": "c1d59247-a66c-4fce-946c-5eb7afebd23b"
+      "database_id": "c1d59247-a66c-4fce-946c-5eb7afebd23b",
+	  "migrations_dir": "prisma/migrations"
     }
   ]
 }
