@@ -1,1 +1,33 @@
 @import "tailwindcss";
+
+@theme {
+    --font-ukraine: "e-Ukraine";
+}
+* {
+    @apply font-ukraine font-light;
+}
+
+@font-face {
+    font-family: "e-Ukraine";
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url("/fonts/e-Ukraine/e-Ukraine-Light.otf");
+}
+
+@font-face {
+    font-family: "e-Ukraine";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/e-Ukraine/e-Ukraine-Regular.otf");
+}
+
+@font-face {
+    font-family: "e-Ukraine";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/fonts/e-Ukraine/e-Ukraine-Bold.otf");
+}
+
