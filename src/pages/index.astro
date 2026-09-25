@@ -1,11 +1,24 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import UserDisplay  from "../components/UserDisplay.astro";
+import { actions } from "astro:actions";
+
+const result = Astro.getActionResult(actions.login);
+console.log(result)
+if (result && !result.error){
+  return Astro.redirect("/cabinet");
+}
 ---
 
-<Layout>
-  <h1 class="font-ukraine">hello world</h1>
-  <p>
-    <UserDisplay server:defer />
-  </p>
+<Layout className="flex flex-col justify-center">
+  <h1>Вступний кабінет</h1>
+  <form class="flex flex-col gap-2.5" method="POST" action={actions.login}>
+    <div class="w-full flex flex-row">
+      <input type="text" name="lastName" required placeholder="Ім'я">
+      <input type="text" name="firstName" required placeholder="Прізвище">
+    </div>
+
+    <input type="tel" name="phone" required placeholder="Номер телефону 380XXXXXXXXX">
+
+    <button class="btn-default mx-auto" type="submit">Увійти до кабінету</button>
+  </form>
 </Layout>

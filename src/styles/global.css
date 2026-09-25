@@ -1,10 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-    --font-ukraine: "e-Ukraine";
+    --font-ukraine: "e-Ukraine", sans serif;
 }
 * {
-    @apply font-ukraine font-light;
+    @apply font-ukraine font-light text-[16px];
+}
+h1 {
+    @apply text-[56px]
+}
+.btn-default {
+    @apply px-6.25 py-3.75 text-white rounded-[40px] bg-black w-fit transition-colors;
+    @apply hover:cursor-pointer brightness-110;
+}
+input {
+    @apply px-6.25 py-3.75 rounded-[40px];
 }
 
 @font-face {

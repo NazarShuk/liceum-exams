@@ -1,5 +1,7 @@
 ---
 import "../styles/global.css";
+
+const {className} = Astro.props;
 ---
 
 <!doctype html>
@@ -12,6 +14,8 @@ import "../styles/global.css";
     <title>Liceum</title>
   </head>
   <body>
-    <slot />
+    <main class={`lg:w-1/2 m-auto h-screen p-1 ${className}`}>
+      <slot />
+    </main>
   </body>
 </html>
