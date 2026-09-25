@@ -2,9 +2,9 @@
 import Layout from "../layouts/Layout.astro";
 import { actions } from "astro:actions";
 
+
 const result = Astro.getActionResult(actions.login);
-console.log(result)
-if (result && !result.error){
+if (result && !result.error || Astro.cookies.has("session")){
   return Astro.redirect("/cabinet");
 }
 ---
@@ -13,12 +13,12 @@ if (result && !result.error){
   <h1>Вступний кабінет</h1>
   <form class="flex flex-col gap-2.5" method="POST" action={actions.login}>
     <div class="w-full flex flex-row">
-      <input type="text" name="lastName" required placeholder="Ім'я">
-      <input type="text" name="firstName" required placeholder="Прізвище">
+      <input type="text" name="firstName" required placeholder="Ім'я">
+      <input type="text" name="lastName" required placeholder="Прізвище">
     </div>
 
-    <input type="tel" name="phone" required placeholder="Номер телефону 380XXXXXXXXX">
+    <input type="number" name="telephone" required placeholder="Номер телефону 380XXXXXXXXX">
 
-    <button class="btn-default mx-auto" type="submit">Увійти до кабінету</button>
-  </form>
+    <button class="btn-default mx-auto">Увійти до кабінету</button>
+</form>
 </Layout>

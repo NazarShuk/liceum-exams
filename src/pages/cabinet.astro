@@ -1,0 +1,17 @@
+---
+import { actions } from "astro:actions";
+import Layout from "../layouts/Layout.astro";
+
+const result = Astro.getActionResult(actions.logout);
+if (result && !result.error){
+  return Astro.redirect("/");
+}
+---
+
+<Layout>
+    <h1>Привіт, {Astro.locals.user.firstName}</h1>
+    <p>user: {JSON.stringify(Astro.locals.user)}</p>
+    <form action={actions.logout} method="POST">
+        <button class="btn-default">Вийти</button>
+    </form>
+</Layout>
