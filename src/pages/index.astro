@@ -11,6 +11,8 @@ if (result && !result.error || Astro.cookies.has("session")){
 
 <Layout className="flex flex-col justify-center">
   <h1>Вступний кабінет</h1>
+
+  <p class="text-diia-red">{result?.error ? result.error : ""}</p>
   <form class="flex flex-col gap-2.5" method="POST" action={actions.login}>
     <div class="w-full flex flex-row">
       <input type="text" name="firstName" required placeholder="Ім'я">

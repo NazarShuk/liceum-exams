@@ -2,6 +2,17 @@
 
 @theme {
     --font-ukraine: "e-Ukraine", sans serif;
+    
+    --color-diia-yellow: #FFDA4F;
+    --color-diia-lime: #D3DB4B;
+    --color-diia-light-green: #8FBF34;
+    --color-diia-green: #45AD5B;
+    --color-diia-blue: #3B76BB;
+    --color-diia-blurple: #525EA8;
+    --color-diia-magenta: #A92D8D;
+    --color-diia-red: #CB2F4F;
+    --color-diia-dark-orange: #E8401F;
+    --color-diia-orange: #EF822A;
 }
 * {
     @apply font-ukraine font-light text-[16px];
