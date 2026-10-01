@@ -1,10 +1,7 @@
 import { defineAction } from "astro:actions";
 import {z} from "astro/zod";
 import { SignJWT } from "jose";
-
-import { PrismaClient } from "../generated/prisma/client";
-import { PrismaD1 } from "@prisma/adapter-d1";
-import { env } from "cloudflare:workers";
+import { getPrisma } from "../utils/prisma";
 
 const secret = new TextEncoder().encode(import.meta.env.JWT_SECRET);
 
@@ -17,8 +14,8 @@ export const server = {
             telephone: z.string()
         }),
         handler: async (input, context)=> {
-            const adapter = new PrismaD1(env.DB);
-            const prisma = new PrismaClient({ adapter });
+            const prisma = getPrisma()
+
             const users = await prisma.user.findMany({
                 where: {
                     firstName: input.firstName,
@@ -61,7 +58,8 @@ export const server = {
     logout: defineAction({
         accept: "form",
         handler: async (data, context) => {
-            context.cookies.delete("session")
+            console.log("logout")
+            context.cookies.delete("session", {path: "/"})
             return {success: true}
         }
     })

@@ -1,0 +1,8 @@
+
+<h1 class="py-8" transition:name="cabinet_head_label">Привіт, {Astro.locals.user.firstName}</h1>
+
+<div class="w-full flex flex-row gap-12 py-3" transition:name="cabinet_head_links">
+    <a class={`cursor-pointer ${Astro.url.pathname.endsWith("/cabinet") ? "border-b-2" : ""}`} href="/cabinet">Кабінет</a>
+    <a class={`cursor-pointer ${Astro.url.pathname.endsWith("/cabinet/news") ? "border-b-2" : ""}`} href="/cabinet/news">Новини</a>
+    <a class={`cursor-pointer ${Astro.url.pathname.endsWith("/cabinet/account") ? "border-b-2" : ""}`} href="/cabinet/account">Аккаунт</a>
+</div>

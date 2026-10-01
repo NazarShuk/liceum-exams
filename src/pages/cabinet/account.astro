@@ -1,0 +1,34 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import CabinetHead from "../../layouts/CabinetHead.astro";
+import {getPrisma} from "../../utils/prisma"
+import { actions } from "astro:actions";
+
+const result = Astro.getActionResult(actions.logout);
+if (result && !result.error){
+  return Astro.redirect("/");
+}
+
+const prisma = getPrisma()
+const user = await prisma.user.findUnique({
+    where: {
+        id: Astro.locals.user.sub
+    }
+})
+if (!user){
+    return Astro.redirect("/")
+}
+---
+
+<Layout>
+    <CabinetHead />
+
+    <ul>
+        <li>Ім'я {user?.firstName} {user?.lastName}</li>
+        <li>Телефон {user.phone}</li>
+    </ul>
+
+    <form action={actions.logout} method="POST">
+        <button class="btn-default">Вийти</button>
+    </form>
+</Layout>
