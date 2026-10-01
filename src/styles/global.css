@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
-@theme {
-    --font-ukraine: "e-Ukraine", sans serif;
-    
+@theme inline {
+    --font-e-ukraine: var(--font-e-ukraine);
     --color-diia-yellow: #FFDA4F;
     --color-diia-lime: #D3DB4B;
     --color-diia-light-green: #8FBF34;
@@ -15,8 +14,9 @@
     --color-diia-orange: #EF822A;
 }
 * {
-    @apply font-ukraine font-light lg:text-[16px];
+    @apply font-light lg:text-[16px] font-e-ukraine;
 }
+
 h1 {
     @apply lg:text-[56px]/[60px] text-[36px]/[60px]
 }
@@ -27,28 +27,3 @@ h1 {
 input {
     @apply px-[5px] py-[4px] border-b-2 outline-none;
 }
-
-@font-face {
-    font-family: "e-Ukraine";
-    font-style: normal;
-    font-weight: 300;
-    font-display: swap;
-    src: url("/fonts/e-Ukraine/e-Ukraine-Light.otf");
-}
-
-@font-face {
-    font-family: "e-Ukraine";
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url("/fonts/e-Ukraine/e-Ukraine-Regular.otf");
-}
-
-@font-face {
-    font-family: "e-Ukraine";
-    font-style: normal;
-    font-weight: 700;
-    font-display: swap;
-    src: url("/fonts/e-Ukraine/e-Ukraine-Bold.otf");
-}
-
