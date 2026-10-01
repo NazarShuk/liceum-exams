@@ -10,7 +10,11 @@ if (result && !result.error){
 
 <Layout>
     <h1>Привіт, {Astro.locals.user.firstName}</h1>
-    <p>user: {JSON.stringify(Astro.locals.user)}</p>
+    <div class="w-full flex flex-row justify-between">
+        <a data-astro class="cursor-pointer" href="/cabinet/register">Реєстрація</a>
+        <a class="cursor-pointer" href="/cabinet/news">Новини</a>
+        <a class="cursor-pointer" href="/cabinet/account">Аккаунт</a>
+    </div>
     <form action={actions.logout} method="POST">
         <button class="btn-default">Вийти</button>
     </form>

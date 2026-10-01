@@ -14,13 +14,13 @@ if (result && !result.error || Astro.cookies.has("session")){
 
   <p class="text-diia-red">{result?.error ? result.error : ""}</p>
   <form class="flex flex-col gap-2.5" method="POST" action={actions.login}>
-    <div class="w-full flex flex-row">
-      <input type="text" name="firstName" required placeholder="Ім'я">
-      <input type="text" name="lastName" required placeholder="Прізвище">
+    <div class="lg:w-3/4 w-full flex flex-row gap-5">
+      <input class="w-full" type="text" name="firstName" required placeholder="Ім'я">
+      <input class="w-full" type="text" name="lastName" required placeholder="Прізвище">
     </div>
 
-    <input type="number" name="telephone" required placeholder="Номер телефону 380XXXXXXXXX">
+    <input class="lg:w-3/4 w-full" type="number" name="telephone" required placeholder="Номер телефону 380XXXXXXXXX">
 
-    <button class="btn-default mx-auto">Увійти до кабінету</button>
+    <button class="btn-default">Увійти до кабінету</button>
 </form>
 </Layout>

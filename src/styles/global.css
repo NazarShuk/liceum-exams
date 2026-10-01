@@ -15,17 +15,17 @@
     --color-diia-orange: #EF822A;
 }
 * {
-    @apply font-ukraine font-light text-[16px];
+    @apply font-ukraine font-light lg:text-[16px];
 }
 h1 {
-    @apply text-[56px]
+    @apply lg:text-[56px]/[60px] text-[36px]/[60px]
 }
 .btn-default {
     @apply px-6.25 py-3.75 text-white rounded-[40px] bg-black w-fit transition-colors;
     @apply hover:cursor-pointer brightness-110;
 }
 input {
-    @apply px-6.25 py-3.75 rounded-[40px];
+    @apply px-[5px] py-[4px] border-b-2 outline-none;
 }
 
 @font-face {

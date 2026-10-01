@@ -11,5 +11,8 @@ export default defineConfig({
     plugins: [tailwindcss()]
   },
   output: "server",
-  adapter: cloudflare()
+  adapter: cloudflare(),
+  prefetch: {
+    defaultStrategy: "hover"
+  }
 });
