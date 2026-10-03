@@ -1,7 +1,9 @@
 import { defineAction } from "astro:actions";
 import {z} from "astro/zod";
 import { SignJWT } from "jose";
-import { getPrisma } from "../utils/prisma";
+import { getDrizzle } from "../db/drizzle";
+import { users } from "../db/schema";
+import { and, eq } from "drizzle-orm";
 
 const secret = new TextEncoder().encode(import.meta.env.JWT_SECRET);
 
@@ -14,30 +16,31 @@ export const server = {
             telephone: z.string()
         }),
         handler: async (input, context)=> {
-            const prisma = getPrisma()
+            const db = getDrizzle()
 
-            const users = await prisma.user.findMany({
-                where: {
+            const foundUsers = await db.select({
+                id: users.id,
+                firstName: users.firstName,
+                lastName: users.lastName
+            }).from(users).where(and(
+                eq(users.firstName, input.firstName),
+                eq(users.lastName, input.lastName),
+                eq(users.phone, input.telephone))
+            )
+
+            let user = foundUsers[0]
+
+            if (!user){
+                const result = await db.insert(users).values({
                     firstName: input.firstName,
                     lastName: input.lastName,
                     phone: input.telephone
-                },
-                take: 1
-            })
-            let user = users[0]
-
-            if (!user){
-                user = await prisma.user.create({
-                    data: {
-                        firstName: input.firstName,
-                        lastName: input.lastName,
-                        phone: input.telephone
-                    }
-                })
+                }).returning({id: users.id, firstName: users.firstName, lastName: users.lastName})
+                user = result[0]
             }
             console.log(user)
 
-            const token = await new SignJWT({sub: user.id, firstName: user.firstName, lastName: user.lastName})
+            const token = await new SignJWT({sub: user.id.toString(), firstName: user.firstName, lastName: user.lastName})
                 .setProtectedHeader({ alg: 'HS256' })
                 .setExpirationTime('7d')
                 .sign(secret);

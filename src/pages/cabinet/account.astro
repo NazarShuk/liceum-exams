@@ -1,20 +1,18 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import CabinetHead from "../../layouts/CabinetHead.astro";
-import {getPrisma} from "../../utils/prisma"
+import { getDrizzle } from "../../db/drizzle";
 import { actions } from "astro:actions";
+import { users } from "../../db/schema";
+import { eq } from "drizzle-orm";
 
 const result = Astro.getActionResult(actions.logout);
 if (result && !result.error){
   return Astro.redirect("/");
 }
 
-const prisma = getPrisma()
-const user = await prisma.user.findUnique({
-    where: {
-        id: Astro.locals.user.sub
-    }
-})
+const db = getDrizzle()
+const user = (await db.select().from(users).where(eq(users.id, Astro.locals.user.sub)))[0]
 if (!user){
     return Astro.redirect("/")
 }

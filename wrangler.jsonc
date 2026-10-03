@@ -1,7 +1,9 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
 	"compatibility_date": "2026-09-21",
-	"compatibility_flags": ["global_fetch_strictly_public"],
+	"compatibility_flags": [
+		"global_fetch_strictly_public"
+	],
 	"name": "liceum-exams",
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"assets": {
@@ -11,12 +13,13 @@
 	"observability": {
 		"enabled": true
 	},
-    "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "liceum",
-      "database_id": "c1d59247-a66c-4fce-946c-5eb7afebd23b",
-	  "migrations_dir": "prisma/migrations"
-    }
-  ]
+	"d1_databases": [
+		{
+			"binding": "liceum_exams",
+			"database_name": "liceum-exams",
+			"database_id": "df1a28a6-9f1c-4a23-8468-a0424f4c5f3d",
+			"migrations_dir": "migrations",
+			"migrations_pattern": "migrations/*/migration.sql"
+		}
+	]
 }

@@ -2,6 +2,6 @@
 
 declare namespace App {
   interface Locals {
-    user: {sub: string, firstName: string, lastName: string}
+    user: {sub: number, firstName: string, lastName: string}
   }
 }

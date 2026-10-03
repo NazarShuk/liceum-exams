@@ -10,7 +10,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (token) {
     try {
       const { payload } = await jwtVerify(token, secret);
-      context.locals.user = payload as {sub: string, firstName:string, lastName:string};
+      context.locals.user = {
+        sub: parseInt(payload.sub || ""),
+        firstName: payload.firstName as string,
+        lastName: payload.lastName as string
+      }
     } catch {
       context.cookies.delete('session');
     }
