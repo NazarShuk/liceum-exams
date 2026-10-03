@@ -1,0 +1,20 @@
+---
+import { getDrizzle } from "../db/drizzle";
+
+const {id} = Astro.props;
+
+const db = getDrizzle()
+const result = await db.query.applications.findFirst({
+    with: {user: true, student: true},
+    where: {id: id}
+})
+if (!result) return
+
+
+---
+
+<li class="border-b-2 p-1">
+    <a href=`/cabinet/application?preview=${result.id}`>
+        <p>{result.student?.firstName} {result.student?.lastName}</p>
+    </a>
+</li>

@@ -3,8 +3,6 @@ import Layout from "../../layouts/Layout.astro";
 import CabinetHead from "../../layouts/CabinetHead.astro";
 import { getDrizzle } from "../../db/drizzle";
 import { actions } from "astro:actions";
-import { users } from "../../db/schema";
-import { eq } from "drizzle-orm";
 
 const result = Astro.getActionResult(actions.logout);
 if (result && !result.error){
@@ -12,7 +10,7 @@ if (result && !result.error){
 }
 
 const db = getDrizzle()
-const user = (await db.select().from(users).where(eq(users.id, Astro.locals.user.sub)))[0]
+const user = await db.query.users.findFirst({where: {id: Astro.locals.user.sub}})
 if (!user){
     return Astro.redirect("/")
 }

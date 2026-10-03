@@ -10,6 +10,8 @@ export const users = sqliteTable("users", {
     birthDate: integer({mode: "timestamp"}),
     phone: text("phone"),
 
+    data: text("data", {"mode": "json"}),
+
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 })
 
@@ -22,25 +24,15 @@ export const students = sqliteTable("students", {
     birthDate: integer({mode: "timestamp"}),
     phone: text("phone"),
 
+    data: text("data", {"mode": "json"}),
+
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 })
 
 export const applications = sqliteTable("applications", {
     id: integer("id").primaryKey({autoIncrement: true}),
 
-    userId: integer(),
-    studentId: integer()
+    userId: integer().notNull().references(()=> users.id, {onDelete: "cascade"}),
+    studentId: integer().notNull().references(()=> students.id, {onDelete: "cascade"}),
+    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 })
-
-const relations = defineRelations({applications, students, users}, (r)=> ({
-    applications: {
-        user: r.one.users({
-            from: r.applications.userId,
-            to: r.users.id
-        }),
-        student: r.one.students({
-            from: r.applications.studentId,
-            to: r.students.id
-        })
-    }
-}))

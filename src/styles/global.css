@@ -20,6 +20,13 @@
 h1 {
     @apply lg:text-[56px]/[60px] text-[36px]/[60px]
 }
+h2 {
+    @apply lg:text-[48px]/[60px] text-[32px]/[60px]
+}
+h3 {
+    @apply lg:text-[40px]/[60px] text-[28px]/[60px]
+}
+
 .btn-default {
     @apply px-6.25 py-3.75 text-white rounded-[40px] bg-black w-fit transition-colors;
     @apply hover:cursor-pointer brightness-110;

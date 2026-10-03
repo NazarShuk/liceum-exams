@@ -1,0 +1,1 @@
+ALTER TABLE `applications` ADD `created_at` text DEFAULT (CURRENT_TIMESTAMP);

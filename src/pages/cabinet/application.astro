@@ -1,0 +1,74 @@
+---
+
+import { actions } from "astro:actions";
+import Layout from "../../layouts/Layout.astro";
+import { getDrizzle } from "../../db/drizzle";
+
+const db = getDrizzle()
+
+let previewApplication
+
+if (Astro.url.searchParams.has("preview")){
+    console.log("preview param")
+    
+    const application = await db.query.applications.findFirst(
+    {
+        where: {id: parseInt(Astro.url.searchParams.get("preview") || "-1")},
+        with: {user: true, student: true} 
+    })
+
+    if (application && application.userId == Astro.locals.user.sub){
+        previewApplication = application
+        console.log(previewApplication)
+    }
+}
+
+const user = await db.query.users.findFirst({
+    where: {
+        id: Astro.locals.user.sub
+    }
+})
+if (!user) return
+
+const result = Astro.getActionResult(actions.submitForm);
+if (result && !result.error) {
+  return Astro.redirect("/cabinet");
+}
+
+
+---
+<Layout>
+    <a href="/cabinet">{"<-"} Повернутся в кабінет</a>
+    <h1 class="py-8">Заява</h1>
+    {previewApplication && <p>Заява від {previewApplication?.createdAt}</p>}
+    {result?.error && (
+        <p class="text-diia-red">{result.error.message}</p>
+    )}
+    <form class="flex flex-col gap-5" action={actions.submitForm} method="POST">
+        <h3>Інформація учня</h3>
+        <div class="flex flex-row w-full gap-5">
+            <input class="w-full" name="studentfirstName" placeholder="Ім'я" required readonly={previewApplication != null} value={previewApplication ? previewApplication.student?.firstName : ""}>
+            <input class="w-full" name="studentlastName" placeholder="Прізвище" required readonly={previewApplication != null} value={previewApplication ? previewApplication.student?.lastName : ""}>
+            <input class="w-full" name="studentmiddleName" placeholder="По батькові" required readonly={previewApplication != null} value={previewApplication ? previewApplication.student?.middleName : ""}>
+        </div>
+
+
+        <input class="lg:w-3/4 w-full" name="studentBirthDate" placeholder="Дата народження" type="date" required readonly={previewApplication != null} value={previewApplication ? previewApplication.student?.birthDate?.toString() : ""}>
+
+        <input class="lg:w-3/4 w-full" name="studentTelephone" placeholder="Телефон" type="tel" required readonly={previewApplication != null} value={previewApplication ? previewApplication.student?.phone : ""}>
+
+        <h3>Інформація батьків</h3>
+        <div class="flex flex-row w-full gap-5">
+            <input class="w-full" name="parentfirstName" placeholder="Ім'я" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.firstName : user.firstName}>
+            <input class="w-full" name="parentlastName" placeholder="Прізвище" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.lastName : user.lastName}>
+            <input class="w-full" name="parentmiddleName" placeholder="По батькові" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.middleName : user.middleName}>
+        </div>
+
+
+        <input class="lg:w-3/4 w-full" name="parentBirthDate" placeholder="Дата народження" type="date" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.birthDate?.toString() : user.birthDate?.toString() || ""}>
+
+        <input class="lg:w-3/4 w-full" name="parentTelephone" placeholder="Телефон" type="tel" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.phone : user.phone}>
+
+        {!previewApplication && <button class="btn-default">Надіслати</button>}
+    </form>
+</Layout>

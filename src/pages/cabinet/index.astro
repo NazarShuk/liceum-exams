@@ -1,10 +1,24 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import CabinetHead from "../../layouts/CabinetHead.astro";
+import { getDrizzle } from "../../db/drizzle";
+import ApplicationPreview from "../../layouts/ApplicationPreview.astro";
 
+const db = getDrizzle()
+const results = await db.query.applications.findMany({
+    where: {
+        userId: Astro.locals.user.sub
+    }
+})
 ---
 
 <Layout>
     <CabinetHead />
-    
+    <a href="/cabinet/application">+ Створити заяву</a>
+    <ul class="mt-5">
+        {results.length === 0 && <p>У вас ще немає заяв</p>}
+        {results.map(result => (
+            <ApplicationPreview id={result.id} />
+        ))}
+    </ul>
 </Layout>
