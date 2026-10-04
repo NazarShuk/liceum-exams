@@ -11,7 +11,7 @@ export const GET = (async (context) => {
 
     try{
         const result = await fetch(`
-        https://oauth2.googleapis.com/token?client_id=${env.GOOGLE_CLIENT_ID}&client_secret=${env.GOOGLE_CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=http://localhost:4321/api/google`,
+        https://oauth2.googleapis.com/token?client_id=${env.GOOGLE_CLIENT_ID}&client_secret=${env.GOOGLE_CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${context.url.origin}/api/google`,
         {method: "POST"})
 
         const data = await result.json() as {access_token: string, expires_in: number, scope: string, token_type: string, id_token: string}
