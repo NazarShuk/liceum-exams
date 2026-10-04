@@ -1,0 +1,19 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+
+interface Props {
+  error: unknown;
+}
+
+const { error } = Astro.props;
+
+---
+
+
+<Layout className="flex h-screen justify-center items-center flex-col">
+    <h1 class="mb-5">Помилка :(</h1>
+    <p class="text-diia-red mb-5">{error}</p>
+    <a class="btn-default mt-5" href="/">Повернутися на головну</a>
+
+</Layout>

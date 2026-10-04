@@ -5,26 +5,11 @@ import {env} from "cloudflare:workers"
 
 const googleURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${env.GOOGLE_CLIENT_ID}&redirect_uri=${Astro.url.origin}/api/google&response_type=code&scope=openid%20email%20profile`
 
-const result = Astro.getActionResult(actions.login);
-if (result && !result.error || Astro.cookies.has("session")){
-  return Astro.redirect("/cabinet");
-}
-
 ---
 
 <Layout className="flex flex-col justify-center">
   <h1 class="py-8">Вступний кабінет</h1>
 
-  <p class="text-diia-red">{result?.error ? result.error : ""}</p>
-  <form class="flex flex-col gap-2.5" method="POST" action={actions.login}>
-    <div class="lg:w-3/4 w-full flex flex-row gap-5">
-      <input class="w-full" type="text" name="firstName" required placeholder="Ім'я">
-      <input class="w-full" type="text" name="lastName" required placeholder="Прізвище">
-    </div>
-
-    <input class="lg:w-3/4 w-full" type="number" name="telephone" required placeholder="Номер телефону 380XXXXXXXXX">
-
-    <button class="btn-default">Увійти до кабінету</button>
-  </form>
+  
   <a href={googleURL}>Увійти з Google</a>
 </Layout>
