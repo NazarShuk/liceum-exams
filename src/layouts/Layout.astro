@@ -7,7 +7,7 @@ const {className} = Astro.props;
 ---
 
 <!doctype html>
-<html lang="ua">
+<html lang="ua" transition:animate="none">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -23,3 +23,12 @@ const {className} = Astro.props;
     </main>
   </body>
 </html>
+
+<script>
+  document.addEventListener('astro:before-preparation', () => {
+    document.documentElement.classList.add('is-navigating');
+  });
+  document.addEventListener('astro:after-swap', () => {
+    document.documentElement.classList.remove('is-navigating');
+  });
+</script>

@@ -13,7 +13,7 @@ export default defineConfig({
   output: "server",
   adapter: cloudflare(),
   prefetch: {
-    defaultStrategy: "hover"
+    defaultStrategy: "viewport"
   },
   fonts: [
     {

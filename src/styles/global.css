@@ -34,3 +34,7 @@ h3 {
 input {
     @apply px-[5px] py-[4px] border-b-2 outline-none;
 }
+
+.is-navigating {
+    opacity: 0.75;
+}
