@@ -4,7 +4,16 @@ import { SignJWT } from "jose";
 import { getDrizzle } from "../db/drizzle";
 import { users } from "../db/schema";
 import { and, eq } from "drizzle-orm";
-const secret = new TextEncoder().encode(import.meta.env.JWT_SECRET);
+import { env } from "cloudflare:workers";
+
+const secret = new TextEncoder().encode(env.JWT_SECRET);
+
+export async function generateToken(id: number, firstName: string, lastName: string){
+    return await new SignJWT({sub: id.toString(), firstName: firstName, lastName: lastName})
+            .setProtectedHeader({ alg: 'HS256' })
+            .setExpirationTime('7d')
+            .sign(secret);
+}
 
 export const login = defineAction({
     accept: "form",
@@ -34,10 +43,7 @@ export const login = defineAction({
             user = result[0]
         }
         console.log(user)
-        const token = await new SignJWT({sub: user.id.toString(), firstName: user.firstName, lastName: user.lastName})
-            .setProtectedHeader({ alg: 'HS256' })
-            .setExpirationTime('7d')
-            .sign(secret);
+        const token = await generateToken(user.id, user.firstName, user.lastName)
         
         context.cookies.set('session', token, {
             httpOnly: true,

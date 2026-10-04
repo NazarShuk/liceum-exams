@@ -1,11 +1,12 @@
 import { sqliteTable, integer, text} from "drizzle-orm/sqlite-core";
-import { defineRelations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 export const users = sqliteTable("users", {
     id: integer("id").primaryKey({autoIncrement: true}),
+    externalId: integer("external_id"),
 
-    firstName: text(),
-    lastName: text(),
+    firstName: text().notNull(),
+    lastName: text().notNull(),
     middleName: text(),
     birthDate: integer({mode: "timestamp"}),
     phone: text("phone"),
@@ -18,11 +19,11 @@ export const users = sqliteTable("users", {
 export const students = sqliteTable("students", {
     id: integer("id").primaryKey({autoIncrement: true}),
 
-    firstName: text(),
-    lastName: text(),
-    middleName: text(),
-    birthDate: integer({mode: "timestamp"}),
-    phone: text("phone"),
+    firstName: text().notNull(),
+    lastName: text().notNull(),
+    middleName: text().notNull(),
+    birthDate: integer({mode: "timestamp"}).notNull(),
+    phone: text("phone").notNull(),
 
     data: text("data", {"mode": "json"}),
 

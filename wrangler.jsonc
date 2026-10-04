@@ -21,5 +21,8 @@
 			"migrations_dir": "migrations",
 			"migrations_pattern": "migrations/*/migration.sql"
 		}
-	]
+	],
+	"vars": {
+		"GOOGLE_CLIENT_ID": "140530214278-da3mfhac8mmhgu86miaub1he4s8lobkq.apps.googleusercontent.com"
+	}
 }
