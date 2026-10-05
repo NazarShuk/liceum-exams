@@ -26,7 +26,7 @@ const links = [
 <h1 class="py-8">Привіт, {Astro.locals.user.firstName}</h1>
 
 <div class="w-full flex flex-row gap-12 py-3">
-    {links.map(link => (
+    {links.filter(link=> link.visible).map(link => (
         <a class={`cursor-pointer ${Astro.url.pathname.endsWith(link.href) ? "border-b-2" : ""}`} href={link.href}>{link.name}</a>
     ))}
 </div>
