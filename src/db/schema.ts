@@ -21,7 +21,38 @@ export const users = sqliteTable("users", {
 export const applications = sqliteTable("applications", {
     id: integer("id").primaryKey({autoIncrement: true}),
 
-    userId: integer().notNull().references(()=> users.id, {onDelete: "cascade"}),
-    studentId: integer().notNull().references(()=> users.id, {onDelete: "cascade"}),
+    userId: integer("user_id").notNull().references(()=> users.id, {onDelete: "cascade"}),
+    studentId: integer("student_id").notNull().references(()=> users.id, {onDelete: "cascade"}),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at")
+     .notNull()
+     .default(sql`(CURRENT_TIMESTAMP)`)
+     .$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+    
+    formId: integer("form_id").notNull().references(()=>forms.id, {onDelete: "cascade"}),
+    answers: text({mode:"json"}).notNull().default("{}"),
+    state: text({enum: ["draft", "submitted"]}).notNull().default("draft")
+})
+
+export const forms = sqliteTable("forms", {
+    id: integer("id").primaryKey({autoIncrement: true}),
+    title: text("title").notNull(),
+    description: text("description"),
+
+    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at")
+     .notNull()
+     .default(sql`(CURRENT_TIMESTAMP)`)
+     .$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+
+    schema: text("schema", {mode:"json"}).$type<
+        {
+            slug:string,
+            title:string,
+            type: "text"|"number"|"date"|"file",
+            regex:string,
+            max:number,
+            min:number
+        }[]
+    >().notNull().default([])
 })

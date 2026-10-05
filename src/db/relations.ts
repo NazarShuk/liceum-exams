@@ -11,6 +11,10 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.applications.studentId,
       to: r.users.id,
     }),
+    form: r.one.forms({
+      from: r.applications.formId,
+      to: r.forms.id
+    })
   },
   users: {
     children: r.many.users({

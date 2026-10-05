@@ -18,8 +18,16 @@ const {className} = Astro.props;
     <title>Вступний кабінет Наукового Ліцею</title>
   </head>
   <body>
-    <main class={`lg:w-1/2 m-auto h-screen p-1 ${className}`}>
-      <slot />
+    <main class="w-full flex flex-row justify-center">
+      <div class="h-screen p-1 w-1/4 lg:block hidden">
+        <slot name="left-side" />
+      </div>
+      <main class={`lg:w-2/4 w-full h-screen p-1 ${className}`}>
+        <slot />
+      </main>
+      <div class="h-screen p-1 w-1/4 lg:block hidden">
+        <slot name="right-side" />
+      </div>
     </main>
   </body>
 </html>

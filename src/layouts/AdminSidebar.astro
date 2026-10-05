@@ -1,0 +1,27 @@
+---
+const links = [
+    {
+        name: "Головна",
+        href: "/admin"
+    },
+    {
+        name: "Форми",
+        href: "/admin/forms"
+    },
+    {
+        name: "Назад до кабінету",
+        href: "/cabinet"
+    }
+]
+
+---
+<ul class="w-1/2 ml-auto border-r h-full">
+    <li class="mb-5 ">
+        <h1>Адмін</h1>
+    </li>
+    {links.map(link => (
+        <li>
+            <a class={`${Astro.url.pathname.endsWith(link.href) ? "border-b-2" : ""}`} href={link.href}>{link.name}</a>
+        </li>
+    ))}
+</ul>

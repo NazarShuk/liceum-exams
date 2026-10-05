@@ -1,0 +1,22 @@
+---
+import Layout from "@layouts/Layout.astro";
+import AdminSidebar from "@layouts/AdminSidebar.astro"
+import { getDrizzle } from "@db/drizzle";
+import FormEditor from "@components/FormEditor.svelte";
+import type { forms } from "@db/schema";
+type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
+
+const db = getDrizzle()
+let fields : Schema = []
+if (Astro.url.searchParams.has("form")){
+    const form = await db.query.forms.findFirst({where: {id: parseInt(Astro.url.searchParams.get("form") || "-1")}})
+    if (form){
+        fields = form.schema
+    }
+}
+---
+
+<Layout>
+    <AdminSidebar slot={"left-side"} />
+    <FormEditor loadedFields={fields} client:load />
+</Layout>

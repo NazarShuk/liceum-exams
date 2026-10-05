@@ -10,18 +10,21 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-
-    "db:migrate": "wrangler d1 migrations apply liceum-exams",
-    "db:migrate:remote": "wrangler d1 migrations apply liceum-exams --remote",
+    "db:generate": "drizzle-kit generate",
+    "db:apply": "wrangler d1 migrations apply liceum-exams",
+    "db:apply:remote": "wrangler d1 migrations apply liceum-exams --remote",
     "db:studio": "drizzle-kit studio --config=drizzle.config.local.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",
+    "@astrojs/svelte": "^9.0.1",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.4",
     "drizzle-orm": "^1.0.0-rc.4",
     "jose": "^6.2.12",
-    "tailwindcss": "^4.3.3"
+    "svelte": "^5.57.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
   },
   "allowScripts": {
     "esbuild": true

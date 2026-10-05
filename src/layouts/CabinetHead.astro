@@ -1,16 +1,24 @@
 ---
 const links = [
     {
+        name: "Адмін Панель",
+        href: "/admin",
+        visible: Astro.locals.user.role === "admin"
+    },
+    {
         name: "Кабінет",
         href: "/cabinet",
+        visible: true
     },
     {
         name: "Новини",
-        href: "/cabinet/news"
+        href: "/cabinet/news",
+        visible: true
     },
     {
         name: "Аккаунт",
-        href: "/cabinet/account"
+        href: "/cabinet/account",
+        visible: true
     }
 ]
 ---

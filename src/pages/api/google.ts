@@ -1,8 +1,8 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
-import { getDrizzle } from "../../db/drizzle";
-import { generateToken } from "../../actions/auth";
-import { users } from "../../db/schema";
+import { getDrizzle } from "@db/drizzle";
+import { generateToken } from "@actions/auth";
+import { users } from "@db/schema";
 
 export const GET = (async (context) => {
     const code = context.url.searchParams.get("code") || ""

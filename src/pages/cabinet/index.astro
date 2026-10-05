@@ -1,8 +1,8 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import CabinetHead from "../../layouts/CabinetHead.astro";
-import { getDrizzle } from "../../db/drizzle";
-import ApplicationPreview from "../../layouts/ApplicationPreview.astro";
+import Layout from "@layouts/Layout.astro";
+import CabinetHead from "@layouts/CabinetHead.astro";
+import { getDrizzle } from "@db/drizzle";
+import ApplicationPreview from "@layouts/ApplicationPreview.astro";
 
 const db = getDrizzle()
 const results = await db.query.applications.findMany({
