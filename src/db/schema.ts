@@ -10,22 +10,10 @@ export const users = sqliteTable("users", {
     middleName: text(),
     birthDate: integer({mode: "timestamp"}),
     phone: text("phone"),
+    data: text("data", {mode: "json"}),
+    role: text("role", {enum: ["applicant", "parent", "teacher", "admin"]}).notNull().default("parent"),
 
-    data: text("data", {"mode": "json"}),
-
-    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
-})
-
-export const students = sqliteTable("students", {
-    id: integer("id").primaryKey({autoIncrement: true}),
-
-    firstName: text().notNull(),
-    lastName: text().notNull(),
-    middleName: text().notNull(),
-    birthDate: integer({mode: "timestamp"}).notNull(),
-    phone: text("phone").notNull(),
-
-    data: text("data", {"mode": "json"}),
+    parentId: integer("parent_id"),
 
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 })
@@ -34,6 +22,6 @@ export const applications = sqliteTable("applications", {
     id: integer("id").primaryKey({autoIncrement: true}),
 
     userId: integer().notNull().references(()=> users.id, {onDelete: "cascade"}),
-    studentId: integer().notNull().references(()=> students.id, {onDelete: "cascade"}),
+    studentId: integer().notNull().references(()=> users.id, {onDelete: "cascade"}),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 })

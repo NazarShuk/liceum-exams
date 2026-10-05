@@ -1,6 +1,7 @@
 // src/middleware.ts
 import { defineMiddleware } from 'astro:middleware';
 import { jwtVerify } from 'jose';
+import { getDrizzle } from './db/drizzle';
 
 const secret = new TextEncoder().encode(import.meta.env.JWT_SECRET);
 
@@ -10,11 +11,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (token) {
     try {
       const { payload } = await jwtVerify(token, secret);
-      context.locals.user = {
-        sub: parseInt(payload.sub || ""),
-        firstName: payload.firstName as string,
-        lastName: payload.lastName as string
+      const db = getDrizzle()
+      const user = await db.query.users.findFirst({where:{id:parseInt(payload.sub || "-1")}})
+      if (!user){
+        context.cookies.delete('session');
+        return context.redirect('/');
       }
+      context.locals.user = user
     } catch {
       context.cookies.delete('session');
     }

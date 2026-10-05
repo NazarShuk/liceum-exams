@@ -17,18 +17,11 @@ if (Astro.url.searchParams.has("preview")){
         with: {user: true, student: true} 
     })
 
-    if (application && application.userId == Astro.locals.user.sub){
+    if (application && application.userId == Astro.locals.user.id){
         previewApplication = application
         console.log(previewApplication)
     }
 }
-
-const user = await db.query.users.findFirst({
-    where: {
-        id: Astro.locals.user.sub
-    }
-})
-if (!user) return
 
 const result = Astro.getActionResult(actions.submitForm);
 if (result && !result.error) {
@@ -59,15 +52,15 @@ if (result && !result.error) {
 
         <h3>Інформація батьків</h3>
         <div class="flex flex-row w-full gap-5">
-            <input class="w-full" name="parentfirstName" placeholder="Ім'я" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.firstName : user.firstName}>
-            <input class="w-full" name="parentlastName" placeholder="Прізвище" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.lastName : user.lastName}>
-            <input class="w-full" name="parentmiddleName" placeholder="По батькові" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.middleName : user.middleName}>
+            <input class="w-full" name="parentfirstName" placeholder="Ім'я" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.firstName : Astro.locals.user.firstName}>
+            <input class="w-full" name="parentlastName" placeholder="Прізвище" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.lastName : Astro.locals.user.lastName}>
+            <input class="w-full" name="parentmiddleName" placeholder="По батькові" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.middleName : Astro.locals.user.middleName}>
         </div>
 
 
-        <input class="lg:w-3/4 w-full" name="parentBirthDate" placeholder="Дата народження" type="date" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.birthDate?.toString() : user.birthDate?.toString() || ""}>
+        <input class="lg:w-3/4 w-full" name="parentBirthDate" placeholder="Дата народження" type="date" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.birthDate?.toString() : Astro.locals.user.birthDate?.toString() || ""}>
 
-        <input class="lg:w-3/4 w-full" name="parentTelephone" placeholder="Телефон" type="tel" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.phone : user.phone}>
+        <input class="lg:w-3/4 w-full" name="parentTelephone" placeholder="Телефон" type="tel" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.phone : Astro.locals.user.phone}>
 
         {!previewApplication && <button class="btn-default">Надіслати</button>}
     </form>

@@ -1,8 +1,24 @@
+---
+const links = [
+    {
+        name: "Кабінет",
+        href: "/cabinet",
+    },
+    {
+        name: "Новини",
+        href: "/cabinet/news"
+    },
+    {
+        name: "Аккаунт",
+        href: "/cabinet/account"
+    }
+]
+---
 
 <h1 class="py-8">Привіт, {Astro.locals.user.firstName}</h1>
 
 <div class="w-full flex flex-row gap-12 py-3">
-    <a class={`cursor-pointer ${Astro.url.pathname.endsWith("/cabinet") ? "border-b-2" : ""}`} href="/cabinet">Кабінет</a>
-    <a class={`cursor-pointer ${Astro.url.pathname.endsWith("/cabinet/news") ? "border-b-2" : ""}`} href="/cabinet/news">Новини</a>
-    <a class={`cursor-pointer ${Astro.url.pathname.endsWith("/cabinet/account") ? "border-b-2" : ""}`} href="/cabinet/account">Аккаунт</a>
+    {links.map(link => (
+        <a class={`cursor-pointer ${Astro.url.pathname.endsWith(link.href) ? "border-b-2" : ""}`} href={link.href}>{link.name}</a>
+    ))}
 </div>

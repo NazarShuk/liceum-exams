@@ -1,18 +1,11 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import CabinetHead from "../../layouts/CabinetHead.astro";
-import { getDrizzle } from "../../db/drizzle";
 import { actions } from "astro:actions";
 
 const result = Astro.getActionResult(actions.logout);
 if (result && !result.error){
   return Astro.redirect("/");
-}
-
-const db = getDrizzle()
-const user = await db.query.users.findFirst({where: {id: Astro.locals.user.sub}})
-if (!user){
-    return Astro.redirect("/")
 }
 ---
 
@@ -20,8 +13,8 @@ if (!user){
     <CabinetHead />
 
     <ul>
-        <li>Ім'я {user?.firstName} {user?.lastName}</li>
-        <li>Телефон {user.phone}</li>
+        <li>Ім'я {Astro.locals.user?.firstName} {Astro.locals.user?.lastName}</li>
+        <li>Телефон {Astro.locals.user.phone}</li>
     </ul>
 
     <form action={actions.logout} method="POST">

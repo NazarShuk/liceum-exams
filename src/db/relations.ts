@@ -7,9 +7,19 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.applications.userId,
       to: r.users.id,
     }),
-    student: r.one.students({
+    student: r.one.users({
       from: r.applications.studentId,
-      to: r.students.id,
+      to: r.users.id,
     }),
   },
+  users: {
+    children: r.many.users({
+      from: r.users.id,
+      to: r.users.parentId,
+    }),
+    parent: r.one.users({
+      from: r.users.parentId,
+      to: r.users.id,
+    }),
+  }
 }));

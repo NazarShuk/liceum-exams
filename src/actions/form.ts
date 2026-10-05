@@ -2,7 +2,7 @@ import { ActionError, defineAction } from "astro:actions";
 import {z} from "astro/zod";
 import { eq } from "drizzle-orm";
 import { getDrizzle } from "../db/drizzle";
-import { applications, students, users } from "../db/schema";
+import { applications, users } from "../db/schema";
 
 const birthDate = z.string().min(1, "Вкажіть дату народження").pipe(z.coerce.date());
 
@@ -30,34 +30,33 @@ export const submitForm = defineAction({
             const db = getDrizzle()
             if (!context.locals.user) throw new ActionError({code: "UNAUTHORIZED"})
 
-            const user = await db.query.users.findFirst({where: {id: context.locals.user.sub}})
-            if (!user) throw new ActionError({code: "UNAUTHORIZED"})
-
             await db.update(users).set({
                 firstName: input.parentfirstName,
                 lastName: input.parentlastName,
                 middleName: input.parentmiddleName,
                 birthDate: input.parentBirthDate,
                 phone: input.parentTelephone,
-            }).where(eq(users.id, user.id))
+            }).where(eq(users.id, context.locals.user.id))
 
             let studentId = input.studentId
 
             if (studentId == null){
-                const created = await db.insert(students).values({
+                const created = await db.insert(users).values({
                     firstName: input.studentfirstName,
                     lastName: input.studentlastName,
                     middleName: input.studentmiddleName,
                     phone: input.studentTelephone,
-                    birthDate: input.studentBirthDate
-                }).returning({id: students.id})
+                    birthDate: input.studentBirthDate,
+                    role: "applicant",
+                    parentId: context.locals.user.id
+                }).returning({id: users.id})
 
                 studentId = created[0].id
             }
 
             const result = await db.insert(applications).values({
                 studentId: studentId,
-                userId: user.id
+                userId: context.locals.user.id
             }).returning({id: applications.id})
 
             return {success: true, id: result[0].id}

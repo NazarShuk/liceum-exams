@@ -1,7 +1,12 @@
 /// <reference path="../.astro/types.d.ts" />
+import type { users } from "./db/schema";
 
-declare namespace App {
-  interface Locals {
-    user: {sub: number, firstName: string, lastName: string}
+declare global {
+  namespace App {
+    interface Locals {
+      user: typeof users.$inferSelect;
+    }
   }
 }
+
+export {};
