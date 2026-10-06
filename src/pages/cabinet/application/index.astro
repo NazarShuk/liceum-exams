@@ -1,0 +1,16 @@
+---
+import { getDrizzle } from "@db/drizzle";
+import Layout from "@layouts/Layout.astro";
+
+const db = getDrizzle()
+const availableForms = await db.query.forms.findMany({where: {visibility: "public"}})
+---
+
+<Layout>
+    <a href="/cabinet">{"<-"} Назад</a>
+    <h1 class="py-8">Створити заяву</h1>
+    
+    {availableForms.map(form => (
+        <a href={`/cabinet/application/${form.id}`}>{form.title}</a>
+    ))}
+</Layout>

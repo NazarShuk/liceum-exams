@@ -54,5 +54,7 @@ export const forms = sqliteTable("forms", {
             max:number,
             min:number
         }[]
-    >().notNull().default([])
+    >().notNull().default([]),
+
+    visibility: text({enum: ["private", "public"]}).notNull().default("private")
 })

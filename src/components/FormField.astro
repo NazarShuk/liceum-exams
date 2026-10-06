@@ -1,0 +1,15 @@
+---
+import {forms} from "@db/schema"
+type Schema = typeof forms.$inferSelect["schema"][0];
+
+interface Props {
+    field: Schema,
+    preview: boolean,
+    previewValue: any|undefined
+}
+
+const {field, preview, previewValue} = Astro.props
+
+---
+
+<input readonly={preview} value={preview ? previewValue : null} class="lg:w-3/4 w-full" required name={"form-" + field.slug} placeholder={field.title} type={field.type}>

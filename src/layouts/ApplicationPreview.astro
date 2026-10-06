@@ -14,7 +14,7 @@ if (!result) return
 ---
 
 <li class="border-b-2 p-1">
-    <a href=`/cabinet/application?preview=${result.id}`>
+    <a href=`/cabinet/application/${result.formId}?preview=${result.id}`>
         <p>{result.student?.firstName} {result.student?.lastName}</p>
     </a>
 </li>

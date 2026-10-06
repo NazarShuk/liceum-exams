@@ -9,7 +9,8 @@ const birthDate = z.string().min(1, "Вкажіть дату народженн�
 
 export const submitForm = defineAction({
     accept: "form",
-    input: z.object({
+    input: z.looseObject({
+        formId: z.number(),
 
         studentId: z.coerce.number().optional(),
         studentfirstName: z.string().nonempty(),
@@ -29,7 +30,31 @@ export const submitForm = defineAction({
     handler: async (input, context) => {
         try{
             const db = getDrizzle()
-            if (!context.locals.user) throw new ActionError({code: "UNAUTHORIZED"})
+            if (!context.locals.user) 
+                throw new ActionError({code: "UNAUTHORIZED"})
+            
+            const form = await db.query.forms.findFirst({where: {id:input.formId, visibility: "public"}})
+            if (!form)
+                throw new ActionError({code: "BAD_REQUEST"})
+            
+            // TODO: add validation for these
+            const formFields = Object.entries(input)
+                .filter(([key]) => key.startsWith("form-"))
+                .reduce((acc, [key, value]) => {
+                    acc[key.replace(/^form-/, "")] = value;
+                    return acc;
+                }, {} as Record<string, unknown>);
+            console.log(formFields)
+
+            let hasAllFields = true
+            form.schema.forEach(field=>{
+                if (!formFields[field.slug]){
+                    hasAllFields = false
+                }
+            })
+            if (!hasAllFields)
+                throw new ActionError({code: "BAD_REQUEST"})
+
 
             await db.update(users).set({
                 firstName: input.parentfirstName,
@@ -57,7 +82,10 @@ export const submitForm = defineAction({
 
             const result = await db.insert(applications).values({
                 studentId: studentId,
-                userId: context.locals.user.id
+                userId: context.locals.user.id,
+                state: "submitted",
+                answers: formFields,
+                formId: input.formId
             }).returning({id: applications.id})
 
             return {success: true, id: result[0].id}
@@ -82,19 +110,46 @@ export const submitFormEdit = defineAction({
             regex: z.string(),
             max: z.number(),
             min: z.number(),
-        })).nonempty()
+        })).nonempty(),
+        formId: z.number().optional(),
+        visibility: z.enum(["private", "public"]).nonoptional()
     }),
     handler: async(input, context)=> {
         try{
             const db = getDrizzle()
-            if (!context.locals.user) {throw new ActionError({code: "UNAUTHORIZED"})}
-            if (context.locals.user.role !== "admin") {throw new ActionError({code: "UNAUTHORIZED"})}
+            if (!context.locals.user) 
+                throw new ActionError({code: "UNAUTHORIZED"})
+            if (context.locals.user.role !== "admin") 
+                throw new ActionError({code: "UNAUTHORIZED"})
             
-            await db.insert(forms).values({
-                title: input.title,
-                description: input.description,
-                schema: input.schema
-            })
+            if (!input.formId){
+                await db.insert(forms).values({
+                    title: input.title,
+                    description: input.description,
+                    schema: input.schema,
+                    visibility: input.visibility
+                })
+            }
+            else{
+                const form = await db.query.forms.findFirst({where: {id: input.formId}})
+                if (!form){
+                    await db.insert(forms).values({
+                        title: input.title,
+                        description: input.description,
+                        schema: input.schema,
+                        visibility: input.visibility
+                    })
+                }
+                else{
+                    await db.update(forms).set({
+                        title: input.title,
+                        description: input.description,
+                        schema: input.schema,
+                        visibility: input.visibility
+                    }).where(eq(forms.id, input.formId))
+                }
+            }
+            
         }
         catch(e){
             if (e instanceof ActionError) throw e

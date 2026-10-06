@@ -3,10 +3,28 @@
 import { actions } from "astro:actions";
 import Layout from "@layouts/Layout.astro";
 import { getDrizzle } from "@db/drizzle";
+import FormField from "@components/FormField.astro";
+import { type applications, type users } from "@db/schema"
 
 const db = getDrizzle()
+const {formId} = Astro.params
 
-let previewApplication
+type ApplicationWithRelations = Omit<typeof applications.$inferSelect, "answers"> & {
+    answers: Record<string, unknown>;
+    user: (typeof users.$inferSelect) | null;
+    student: (typeof users.$inferSelect) | null;
+};
+if (!formId){
+    return new Response(null, { status: 404 })
+}
+
+const form = await db.query.forms.findFirst({where: {id: parseInt(formId), visibility: "public"}})
+if (!form){
+    return new Response(null, { status: 404 })
+}
+
+
+let previewApplication: ApplicationWithRelations | undefined
 
 if (Astro.url.searchParams.has("preview")){
     console.log("preview param")
@@ -18,7 +36,14 @@ if (Astro.url.searchParams.has("preview")){
     })
 
     if (application && application.userId == Astro.locals.user.id){
-        previewApplication = application
+        previewApplication = {
+            ...application,
+            answers: typeof application.answers === "object" && application.answers !== null
+                ? (application.answers as Record<string, unknown>)
+                : {},
+            user: application.user ?? null,
+            student: application.student ?? null,
+        }
         console.log(previewApplication)
     }
 }
@@ -31,7 +56,7 @@ if (result && !result.error) {
 
 ---
 <Layout>
-    <a href="/cabinet">{"<-"} Повернутся в кабінет</a>
+    <a href="/cabinet/application">{"<-"} Назад</a>
     <h1 class="py-8">Заява</h1>
     {previewApplication && <p>Заява від {previewApplication?.createdAt}</p>}
     {result?.error && (
@@ -62,6 +87,11 @@ if (result && !result.error) {
 
         <input class="lg:w-3/4 w-full" name="parentTelephone" placeholder="Телефон" type="tel" required readonly={previewApplication != null} value={previewApplication ? previewApplication.user?.phone : Astro.locals.user.phone}>
 
+        {form.schema.map(field=> (
+            <FormField preview={previewApplication != null} previewValue={previewApplication?.answers[field.slug]} {field} />
+        ))}
+
+        <input hidden name="formId" value={form.id}>
         {!previewApplication && <button class="btn-default">Надіслати</button>}
     </form>
 </Layout>

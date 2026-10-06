@@ -1,0 +1,1 @@
+ALTER TABLE `forms` ADD `visibility` text DEFAULT 'private' NOT NULL;
