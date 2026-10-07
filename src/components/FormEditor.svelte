@@ -69,8 +69,6 @@
     }
 </script>
 
-<h1 class="mb-5">Редактор форми</h1>
-
 <input class="w-full mb-2.5" placeholder="Назва форми" bind:value={form.title}>
 <textarea class="w-full" placeholder="Опис" bind:value={form.description}></textarea>
 {#if result && !result.error}

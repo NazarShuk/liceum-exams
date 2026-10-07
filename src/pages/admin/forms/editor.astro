@@ -18,5 +18,6 @@ if (Astro.url.searchParams.has("form")){
 
 <Layout>
     <AdminSidebar slot={"left-side"} />
+    <h1 class="mb-5">Редактор форми</h1>
     <FormEditor loadedForm={loadedForm} client:load />
 </Layout>
