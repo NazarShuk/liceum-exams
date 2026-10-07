@@ -102,7 +102,7 @@ export const submitFormEdit = defineAction({
     accept: "json",
     input: z.object({
         title: z.string().nonempty(),
-        description: z.string().nonempty(),
+        description: z.string(),
         schema: z.array(z.object({
             slug: z.string(),
             title: z.string(),

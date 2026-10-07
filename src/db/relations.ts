@@ -25,5 +25,21 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.users.parentId,
       to: r.users.id,
     }),
-  }
+  },
+  campaigns: {
+    profiles: r.many.profiles({
+      from: r.campaigns.id.through(r.campaignsToProfiles.campaignId),
+      to: r.profiles.id.through(r.campaignsToProfiles.profileId),
+    }),
+  },
+  profiles: {
+    campaigns: r.many.campaigns({
+      from: r.profiles.id.through(r.campaignsToProfiles.profileId),
+      to: r.campaigns.id.through(r.campaignsToProfiles.campaignId),
+    }),
+    form: r.one.forms({
+      from: r.profiles.formId,
+      to: r.forms.id,
+    }),
+  },
 }));

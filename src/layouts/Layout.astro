@@ -22,9 +22,9 @@ const {className} = Astro.props;
       <div class="h-screen p-1 w-1/4 lg:block hidden">
         <slot name="left-side" />
       </div>
-      <main class={`lg:w-2/4 w-full h-screen p-1 ${className}`}>
+      <div class={`lg:w-2/4 w-full h-screen p-1 ${className}`}>
         <slot />
-      </main>
+      </div>
       <div class="h-screen p-1 w-1/4 lg:block hidden">
         <slot name="right-side" />
       </div>

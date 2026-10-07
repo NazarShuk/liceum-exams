@@ -1,4 +1,4 @@
-import { sqliteTable, integer, text} from "drizzle-orm/sqlite-core";
+import { sqliteTable, integer, text, primaryKey} from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const users = sqliteTable("users", {
@@ -58,3 +58,23 @@ export const forms = sqliteTable("forms", {
 
     visibility: text({enum: ["private", "public"]}).notNull().default("private")
 })
+
+export const campaigns = sqliteTable("campaigns", {
+    id: integer("id").primaryKey({autoIncrement: true}),
+    title: text("title").notNull(),
+    beginsAt: integer("begins_at", {mode: "timestamp"}),
+    endsAt: integer("ends_at", {mode: "timestamp"})
+})
+
+export const profiles = sqliteTable("profiles", {
+    id: integer("id").primaryKey({autoIncrement: true}),
+    title: text("title").notNull(),
+    description: text("description"),
+
+    formId: integer().references(()=>forms.id),
+})
+
+export const campaignsToProfiles = sqliteTable("campaigns_to_profiles", {
+    campaignId: integer("campaign_id").notNull().references(()=> campaigns.id, {onDelete: "cascade"}),
+    profileId: integer("profile_id").notNull().references(()=> profiles.id, {onDelete: "cascade"})
+}, (t) => [primaryKey({ columns: [t.campaignId, t.profileId] })])

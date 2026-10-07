@@ -49,6 +49,8 @@
             element.slug = element.title.toLowerCase().replace(" ", "-")
         }
 
+        console.log(form)
+
         result = await actions.submitFormEdit({
             title: form.title,
             description: form.description || "",
