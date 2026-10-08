@@ -111,7 +111,7 @@
             <option value={null}>Без форми</option>
             {#each availableForms as form (form.id)}
                 <option value={form.id}>
-                    {form.title} — {form.visibility === "public" ? "Опубліковано" : "Чернетка"}
+                    {form.title} - {form.visibility === "public" ? "Опубліковано" : "Чернетка"}
                 </option>
             {/each}
         </select>

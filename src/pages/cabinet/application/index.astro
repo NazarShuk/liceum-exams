@@ -1,16 +1,147 @@
 ---
+import { actions } from "astro:actions";
 import { getDrizzle } from "@db/drizzle";
 import Layout from "@layouts/Layout.astro";
+import FormField from "@components/FormField.astro";
+import ProfileDisplay from "@components/ProfileDisplay.svelte";
 
-const db = getDrizzle()
-const availableForms = await db.query.forms.findMany({where: {visibility: "public"}})
+const db = getDrizzle();
+const availableCampaigns = await db.query.campaigns.findMany({
+  where: {
+    beginsAt: { lt: new Date() },
+  },
+  with: {
+    profiles: {
+      with: {
+        form: true,
+      },
+    },
+  },
+});
+const campaignsWithForms = availableCampaigns
+  .map((campaign) => ({
+    ...campaign,
+    profiles: campaign.profiles.flatMap((profile) =>
+      profile.form?.visibility === "public"
+        ? [{ profile, form: profile.form }]
+        : [],
+    ),
+  }))
+  .filter((campaign) => campaign.profiles.length > 0);
+const requestedCampaignId = Number(Astro.url.searchParams.get("campaignId"));
+const requestedProfileId = Number(Astro.url.searchParams.get("profileId"));
+const selectedCampaign =
+  campaignsWithForms.find((campaign) => campaign.id === requestedCampaignId) ??
+  (campaignsWithForms.length === 1 ? campaignsWithForms[0] : undefined);
+const selectedProfile = selectedCampaign?.profiles.find(
+  ({ profile }) => profile.id === requestedProfileId,
+);
+const result = Astro.getActionResult(actions.submitForm);
+
+if (result && !result.error) {
+  return Astro.redirect("/cabinet");
+}
 ---
 
 <Layout>
-    <a href="/cabinet">{"<-"} Назад</a>
-    <h1 class="py-8">Створити заяву</h1>
-    
-    {availableForms.map(form => (
-        <a href={`/cabinet/application/${form.id}`}>{form.title}</a>
-    ))}
+  <a href="/cabinet">{"<-"} До кабінету</a>
+
+  {result?.error && (
+    <p class="text-diia-red" role="alert">{result.error.message}</p>
+  )}
+
+  {selectedProfile ? (
+    <section class="flex flex-col gap-5">
+      <a
+        href={`/cabinet/application?campaignId=${selectedCampaign?.id}`}
+        class="self-start"
+      >
+      </a>
+      <h2 class="py-4">{selectedProfile.form.title}</h2>
+      {selectedProfile.form.description && (
+        <p class="pb-4">{selectedProfile.form.description}</p>
+      )}
+      <form
+        class="flex flex-col gap-5"
+        action={actions.submitForm}
+        method="POST"
+      >
+        <h3>Інформація учня</h3>
+        <div class="flex flex-row w-full gap-5">
+          <input class="w-full" name="studentfirstName" placeholder="Ім'я" required>
+          <input class="w-full" name="studentlastName" placeholder="Прізвище" required>
+          <input class="w-full" name="studentmiddleName" placeholder="По батькові" required>
+        </div>
+
+        <input class="lg:w-3/4 w-full" name="studentBirthDate" placeholder="Дата народження" type="date" required>
+        <input class="lg:w-3/4 w-full" name="studentTelephone" placeholder="Телефон" type="tel" required>
+
+        <h3>Інформація батьків</h3>
+        <div class="flex flex-row w-full gap-5">
+          <input class="w-full" name="parentfirstName" placeholder="Ім'я" required value={Astro.locals.user.firstName}>
+          <input class="w-full" name="parentlastName" placeholder="Прізвище" required value={Astro.locals.user.lastName}>
+          <input class="w-full" name="parentmiddleName" placeholder="По батькові" required value={Astro.locals.user.middleName}>
+        </div>
+
+        <input
+          class="lg:w-3/4 w-full"
+          name="parentBirthDate"
+          placeholder="Дата народження"
+          type="date"
+          required
+          value={Astro.locals.user.birthDate?.toISOString().slice(0, 10) || ""}
+        >
+        <input class="lg:w-3/4 w-full" name="parentTelephone" placeholder="Телефон" type="tel" required value={Astro.locals.user.phone}>
+
+        {selectedProfile.form.schema.map((field) => (
+          <FormField preview={false} previewValue={undefined} {field} />
+        ))}
+
+        <input type="hidden" name="formId" value={selectedProfile.form.id}>
+        <button class="btn-default">Надіслати</button>
+      </form>
+    </section>
+  ) : campaignsWithForms.length > 0 ? (
+    <div class="flex flex-col gap-5">
+      {campaignsWithForms.length > 1 && (
+        <label class="flex flex-col gap-2 lg:w-3/4">
+          Оберіть кампанію
+          <select class="w-full" name="campaignId" data-campaign-select>
+            <option value="" selected={!selectedCampaign}>Оберіть кампанію</option>
+            {campaignsWithForms.map((campaign) => (
+              <option
+                value={campaign.id}
+                selected={campaign.id === selectedCampaign?.id}
+              >
+                {campaign.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {campaignsWithForms.map((campaign, index) => (
+        <section
+          class="flex flex-col gap-5"
+          data-campaign-profiles
+          data-campaign-id={campaign.id}
+          hidden={campaign.id !== selectedCampaign?.id}
+        >
+          <h2>Оберіть профіль</h2>
+          <div class="flex flex-col gap-3">
+            {campaign.profiles.map(({ profile, form }) => (
+              <ProfileDisplay
+                profile={profile}
+                selectable
+                href={`/cabinet/application?campaignId=${campaign.id}&profileId=${profile.id}`}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  ) : (
+    <p>Наразі немає доступних заяв.</p>
+  )}
+
 </Layout>

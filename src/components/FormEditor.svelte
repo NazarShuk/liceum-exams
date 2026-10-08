@@ -65,7 +65,8 @@
         // generate slugs
         for (let i = 0; i < form.schema.length; i++) {
             const element = form.schema[i];
-            element.slug = element.title.toLowerCase().replace(" ", "-")
+            element.title = element.title.trim()
+            element.slug = element.title.toLowerCase().replaceAll(" ", "-")
         }
 
         console.log(form)
