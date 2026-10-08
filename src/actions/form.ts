@@ -112,7 +112,6 @@ export const submitFormEdit = defineAction({
             min: z.number(),
         })).nonempty(),
         formId: z.number().optional(),
-        visibility: z.enum(["private", "public"]).nonoptional()
     }),
     handler: async(input, context)=> {
         try{
@@ -128,7 +127,6 @@ export const submitFormEdit = defineAction({
                     title: input.title,
                     description: input.description,
                     schema: input.schema,
-                    visibility: input.visibility
                 }).returning({ id: forms.id })
                 formId = createdForm.id
             }
@@ -139,7 +137,6 @@ export const submitFormEdit = defineAction({
                         title: input.title,
                         description: input.description,
                         schema: input.schema,
-                        visibility: input.visibility
                     }).returning({ id: forms.id })
                     formId = createdForm.id
                 }
@@ -148,7 +145,6 @@ export const submitFormEdit = defineAction({
                         title: input.title,
                         description: input.description,
                         schema: input.schema,
-                        visibility: input.visibility
                     }).where(eq(forms.id, input.formId))
                     formId = form.id
                 }

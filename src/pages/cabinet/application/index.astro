@@ -15,32 +15,26 @@ const availableCampaigns = await db.query.campaigns.findMany({
       with: {
         form: true,
       },
+      where: {
+        formId: {
+            isNotNull: true
+        }
+      }
     },
   },
 });
-const campaignsWithForms = availableCampaigns
-  .map((campaign) => ({
-    ...campaign,
-    profiles: campaign.profiles.flatMap((profile) =>
-      profile.form?.visibility === "public"
-        ? [{ profile, form: profile.form }]
-        : [],
-    ),
-  }))
-  .filter((campaign) => campaign.profiles.length > 0);
 const requestedCampaignId = Number(Astro.url.searchParams.get("campaignId"));
 const requestedProfileId = Number(Astro.url.searchParams.get("profileId"));
 const selectedCampaign =
-  campaignsWithForms.find((campaign) => campaign.id === requestedCampaignId) ??
-  (campaignsWithForms.length === 1 ? campaignsWithForms[0] : undefined);
-const selectedProfile = selectedCampaign?.profiles.find(
-  ({ profile }) => profile.id === requestedProfileId,
-);
+  availableCampaigns.find((campaign) => campaign.id === requestedCampaignId) ??
+  (availableCampaigns.length === 1 ? availableCampaigns[0] : undefined);
+const selectedProfile = selectedCampaign?.profiles.find((profile)=> profile.id === requestedProfileId)
 const result = Astro.getActionResult(actions.submitForm);
 
 if (result && !result.error) {
   return Astro.redirect("/cabinet");
 }
+
 ---
 
 <Layout>
@@ -101,14 +95,14 @@ if (result && !result.error) {
         <button class="btn-default">Надіслати</button>
       </form>
     </section>
-  ) : campaignsWithForms.length > 0 ? (
+  ) : availableCampaigns.length > 0 ? (
     <div class="flex flex-col gap-5">
-      {campaignsWithForms.length > 1 && (
+      {availableCampaigns.length > 1 && (
         <label class="flex flex-col gap-2 lg:w-3/4">
           Оберіть кампанію
           <select class="w-full" name="campaignId" data-campaign-select>
             <option value="" selected={!selectedCampaign}>Оберіть кампанію</option>
-            {campaignsWithForms.map((campaign) => (
+            {availableCampaigns.map((campaign) => (
               <option
                 value={campaign.id}
                 selected={campaign.id === selectedCampaign?.id}
@@ -120,7 +114,7 @@ if (result && !result.error) {
         </label>
       )}
 
-      {campaignsWithForms.map((campaign, index) => (
+      {availableCampaigns.map((campaign, index) => (
         <section
           class="flex flex-col gap-5"
           data-campaign-profiles
@@ -129,7 +123,7 @@ if (result && !result.error) {
         >
           <h2>Оберіть профіль</h2>
           <div class="flex flex-col gap-3">
-            {campaign.profiles.map(({ profile, form }) => (
+            {campaign.profiles.map((profile) => (
               <ProfileDisplay
                 profile={profile}
                 selectable

@@ -19,7 +19,6 @@ const forms = await db.query.forms.findMany()
                         <h4>
                             {form.title}
                         </h4>
-                        <span class={`${form.visibility === "public" ? "text-diia-green" : "text-diia-red"}`}>{form.visibility === "public" ? "Опубліковано" : "Чернетка"}</span>
                     </div>
                 </a>
             </li>

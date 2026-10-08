@@ -20,7 +20,6 @@
         title: form.title,
         description: form.description,
         schema: form.schema,
-        visibility: form.visibility,
     });
     let deleteError = $state("");
 
@@ -77,7 +76,6 @@
                 description: form.description || "",
                 schema: form.schema,
                 formId: form.id > 0 ? form.id : undefined,
-                visibility: form.visibility
             })
             if (!result.error) {
                 form.id = result.data.formId
@@ -112,13 +110,6 @@
         } finally {
             loading = false
         }
-    }
-    async function changeVisibility(){
-        if (loading)
-            return
-
-        form.visibility = form.visibility === "public" ? "private" : "public"
-        await saveForm()
     }
 </script>
 
@@ -163,7 +154,6 @@
 
 
 <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={addNewField}>+ Додати поле</button>
-<button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={changeVisibility}><span class="text-diia-red">{form.visibility === "private" ? "Опублікувати" : "Приховати"}</span></button>
 <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={saveForm}>{loading ? "Збереження..." : "Зберегти"}</button>
 {#if form.id > 0}
     <button type="button" disabled={loading} class="btn-default text-diia-red {loading ? 'opacity-50' : ''}" onclick={deleteForm}>
