@@ -7,24 +7,18 @@
         onRemove,
         selectable = false,
         href,
+        className
     }: {
         profile: Profile;
         onRemove?: () => void;
         selectable?: boolean;
         href?: string;
+        className?: string;
     } = $props()
 </script>
 
-{#if selectable}
-    <a
-        href={href}
-        class="flex w-full cursor-pointer flex-col items-center justify-center border p-4 text-center"
-    >
-        <p>{profile.title}</p>
-        <p>{profile.description}</p>
-    </a>
-{:else}
-    <div class="flex flex-col h-24 border items-center justify-center relative">
+<a href={href}>
+    <div class="card relative flex min-h-24 h-fit flex-col {className}">
         {#if onRemove}
             <button
                 type="button"
@@ -33,7 +27,7 @@
                 aria-label={`Видалити профіль ${profile.title}`}
             >X</button>
         {/if}
-        <p>{profile.title}</p>
+        <h4>{profile.title}</h4>
         <p>{profile.description}</p>
     </div>
-{/if}
+</a>

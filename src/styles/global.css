@@ -12,19 +12,26 @@
     --color-diia-red: #CB2F4F;
     --color-diia-dark-orange: #E8401F;
     --color-diia-orange: #EF822A;
+    --color-diia-scarlet: #FF3800;
+    --color-diia-grey: #959595;
+    --color-diia-bright-grey: #E7EEF3;
+    --color-diia-gorse: #FFF7DB;
 }
 * {
-    @apply font-light lg:text-[16px] font-e-ukraine;
+    @apply font-light lg:text-[16px]/[24px] font-e-ukraine;
 }
 
 h1 {
-    @apply lg:text-[56px]/[60px] text-[36px]/[60px]
+    @apply text-[56px]/[64px] /*text-[26px]/[38px]*/
 }
 h2 {
-    @apply lg:text-[48px]/[60px] text-[32px]/[60px]
+    @apply text-[38px]/[40px] /*text-[20px]/[24px]*/
 }
 h3 {
-    @apply lg:text-[40px]/[60px] text-[28px]/[60px]
+    @apply text-[28px]/[32px] /*text-[18px]/[24px]*/
+}
+h4 {
+    @apply text-[24px]/[32px] /*text-[16px]/[20px]*/
 }
 
 .btn-default {
@@ -33,6 +40,46 @@ h3 {
 }
 input {
     @apply px-[5px] py-[4px] border-b-2 outline-none;
+}
+
+select {
+    @apply appearance-auto box-border w-full min-h-[50px] pt-0 pr-6 pb-[7px] pl-0 border-0 border-b-2 border-black rounded-none bg-transparent text-black font-[inherit] text-[16px] font-light leading-6 tracking-[-0.32px] outline-none cursor-pointer;
+}
+
+select:focus-visible {
+    @apply border-b-[#C3AAB2];
+}
+
+select:disabled {
+    @apply border-b-diia-grey text-diia-grey cursor-not-allowed;
+}
+
+select[aria-invalid="true"] {
+    @apply border-b-diia-scarlet text-diia-scarlet;
+}
+
+select option {
+    @apply py-1 px-3 bg-white text-black font-[inherit];
+}
+
+select option:checked {
+    @apply bg-diia-bright-grey;
+}
+
+.card {
+    @apply border-2 py-[28px] px-[24px] border-transparent;
+    border-image: radial-gradient(
+      ellipse 96% 195% at 3.33% -13.12%,
+      #a6c7bb 0%,
+      #c1beb3 8.33%,
+      #e4b4a9 23.96%,
+      #e7b2a9 40.90%,
+      #e9b2bc 58.38%,
+      #9086b7 71.65%,
+      #7271bd 82.77%,
+      #4a54c6 90.28%,
+      #2833d0 100%
+    ) 1;
 }
 
 .is-navigating {

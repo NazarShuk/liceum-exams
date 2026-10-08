@@ -14,7 +14,14 @@ const forms = await db.query.forms.findMany()
     <ul>
         {forms.map(form => (
             <li>
-                <a href={`/admin/forms/editor?form=${form.id}`}>{form.title} - <span class={`${form.visibility === "public" ? "text-diia-green" : "text-diia-red"}`}>{form.visibility === "public" ? "Опубліковано" : "Чернетка"}</span></a>
+                <a href={`/admin/forms/editor?form=${form.id}`}>
+                    <div class="card mb-5">
+                        <h4>
+                            {form.title}
+                        </h4>
+                        <span class={`${form.visibility === "public" ? "text-diia-green" : "text-diia-red"}`}>{form.visibility === "public" ? "Опубліковано" : "Чернетка"}</span>
+                    </div>
+                </a>
             </li>
         ))}
     </ul>

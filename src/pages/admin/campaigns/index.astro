@@ -6,7 +6,13 @@ import {formatRelative, isBefore} from "date-fns"
 import {uk} from "date-fns/locale"
 
 const db = getDrizzle()
-const campaigns = await db.query.campaigns.findMany()
+const campaigns = await db.query.campaigns.findMany({
+    with: {
+        profiles: {
+            columns: {id: true, title: true}
+        }
+    }
+})
 ---
 
 <Layout>
@@ -16,13 +22,21 @@ const campaigns = await db.query.campaigns.findMany()
     <ul>
         {campaigns.map(campaign => (
             <a href={`campaigns/editor?campaign=${campaign.id}`}>
-                <li class="h-24 border p-1 mb-5">
-                    <div class="w-full flex flex-row justify-between">
-                        <p>{campaign.title}</p>
+                <li class="card">
+                    <div class="w-full flex flex-row justify-between items-center">
+                        <h4>{campaign.title}</h4>
                         {isBefore(new Date(), campaign.beginsAt || 0) && <p>Почнеться {formatRelative(campaign.beginsAt || 0, new Date(), {locale: uk})}</p>}
                         {!isBefore(new Date(), campaign.beginsAt || 0) && <p>Закінчиться {formatRelative(campaign.endsAt || 0, new Date(), {locale: uk})}</p>}
-                        
                     </div>
+                    <p>{campaign.profiles.length} Профілі</p>
+                    <ul>
+                        {campaign.profiles.map((profile => (
+                            <li>
+                                <a href={`/admin/profiles/editor?profile=${profile.id}`}>{profile.title}</a>
+                            </li>
+                        )))}
+                        
+                    </ul>
                 </li>
             </a>
         ))}
