@@ -84,3 +84,32 @@ export const submitCampaignEdit = defineAction({
         }
     },
 });
+
+export const deleteCampaign = defineAction({
+    accept: "json",
+    input: z.object({
+        campaignId: z.number().int().positive(),
+    }),
+    handler: async (input, context) => {
+        try {
+            if (!context.locals.user || context.locals.user.role !== "admin") {
+                throw new ActionError({ code: "UNAUTHORIZED" });
+            }
+
+            const db = getDrizzle();
+            const existingCampaign = await db.query.campaigns.findFirst({
+                where: { id: input.campaignId },
+            });
+            if (!existingCampaign) {
+                throw new ActionError({ code: "BAD_REQUEST", message: "Кампанію не знайдено" });
+            }
+
+            await db.delete(campaigns).where(eq(campaigns.id, input.campaignId));
+            return { success: true };
+        } catch (error) {
+            if (error instanceof ActionError) throw error;
+            console.error(error);
+            throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
+        }
+    },
+});

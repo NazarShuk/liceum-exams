@@ -1,0 +1,28 @@
+---
+import Layout from "@layouts/Layout.astro";
+import AdminSidebar from "@layouts/AdminSidebar.astro";
+import { getDrizzle } from "@db/drizzle";
+import ProfileEditor from "@components/ProfileEditor.svelte";
+import type { forms, profiles } from "@db/schema";
+
+type Profile = typeof profiles.$inferSelect;
+type Form = typeof forms.$inferSelect;
+
+const db = getDrizzle();
+let loadedProfile: Profile | undefined;
+
+if (Astro.url.searchParams.has("profile")) {
+    const profileId = Number.parseInt(Astro.url.searchParams.get("profile") || "-1");
+    if (Number.isInteger(profileId) && profileId > 0) {
+        loadedProfile = await db.query.profiles.findFirst({ where: { id: profileId } });
+    }
+}
+
+const availableForms: Form[] = await db.query.forms.findMany();
+---
+
+<Layout>
+    <AdminSidebar slot="left-side" />
+    <h1 class="mb-5">Редактор профілю</h1>
+    <ProfileEditor loadedProfile={loadedProfile} availableForms={availableForms} client:load />
+</Layout>

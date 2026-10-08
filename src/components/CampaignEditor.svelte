@@ -1,5 +1,6 @@
 <script lang="ts">
     import { actions } from "astro:actions";
+    import { onMount } from "svelte";
     import type { campaigns, profiles } from "@db/schema";
     import ProfileDisplay from "./ProfileDisplay.svelte";
 
@@ -30,13 +31,41 @@
     let loading = $state(false);
     let errorMessage = $state("");
     let saved = $state(false);
-
+    let savedSnapshot = $state("");
+    const currentSnapshot = () => JSON.stringify({
+        title: campaign.title,
+        beginsAt: campaign.beginsAt,
+        endsAt: campaign.endsAt,
+        profiles: campaign.profiles.map(({ id }) => id),
+    });
     let profilesToAdd = $derived(
         availableProfiles.filter((profile) => !campaign.profiles.some(({ id }) => id === profile.id)),
     );
 
-    function addProfile(idx: number) {
-        campaign.profiles = [...campaign.profiles, availableProfiles[idx]];
+    savedSnapshot = currentSnapshot();
+
+    onMount(() => {
+        const preventLeavingWithUnsavedChanges = (event: BeforeUnloadEvent) => {
+            if (currentSnapshot() !== savedSnapshot) {
+                event.preventDefault();
+                event.returnValue = "";
+            }
+        };
+
+        window.addEventListener("beforeunload", preventLeavingWithUnsavedChanges);
+        return () => window.removeEventListener("beforeunload", preventLeavingWithUnsavedChanges);
+    });
+
+    function addProfile(event: Event) {
+        if (!(event.currentTarget instanceof HTMLSelectElement)) return;
+
+        const select = event.currentTarget;
+        const selectedId = select.value;
+        const profile = profilesToAdd.find(({ id }) => String(id) === selectedId);
+        if (!profile) return;
+
+        campaign.profiles = [...campaign.profiles, profile];
+        select.value = "";
         saved = false;
         errorMessage = "";
     }
@@ -68,6 +97,7 @@
             } else {
                 campaign.id = result.data.campaignId;
                 saved = true;
+                savedSnapshot = currentSnapshot();
                 if (typeof window !== "undefined") {
                     const url = new URL(window.location.href);
                     url.searchParams.set("campaign", String(campaign.id));
@@ -76,6 +106,26 @@
             }
         } catch (error) {
             errorMessage = error instanceof Error ? error.message : "Не вдалося зберегти кампанію";
+        } finally {
+            loading = false;
+        }
+    }
+
+    async function deleteCampaign() {
+        if (loading || campaign.id <= 0) return;
+        if (!window.confirm("Видалити кампанію?")) return;
+
+        loading = true;
+        errorMessage = "";
+        try {
+            const result = await actions.deleteCampaign({ campaignId: campaign.id });
+            if (result.error) {
+                errorMessage = result.error.message;
+            } else {
+                window.location.assign("/admin/campaigns");
+            }
+        } catch (error) {
+            errorMessage = error instanceof Error ? error.message : "Не вдалося видалити кампанію";
         } finally {
             loading = false;
         }
@@ -104,26 +154,19 @@
         {/each}
     </ul>
 
-    <button
-        type="button"
-        class="btn-default"
-        popovertarget="profile-select"
-    >
+    <label class="flex flex-col gap-2">
         Додати профіль
-    </button>
-    <div class="w-1/2 min-h-32 border fixed m-auto p-1" id="profile-select" popover>
-        <p>Оберіть профіль</p>
-
-        <ul>
-            {#each profilesToAdd as profile, idx (profile.id)}
-                <li>
-                    <button class="w-full cursor-pointer" onclick={()=> addProfile(idx)}>
-                        <ProfileDisplay profile={profile} />
-                    </button>
-                </li>
+        <select
+            class="w-full"
+            onchange={addProfile}
+            disabled={profilesToAdd.length === 0}
+        >
+            <option value="">Оберіть профіль</option>
+            {#each profilesToAdd as profile (profile.id)}
+                <option value={profile.id}>{profile.title}</option>
             {/each}
-        </ul>
-    </div>
+        </select>
+    </label>
     
     {#if errorMessage}
         <p class="text-diia-red" role="alert">{errorMessage}</p>
@@ -132,12 +175,27 @@
         <p class="text-diia-green" role="status">Зміни збережено!</p>
     {/if}
     
-    <button
-        type="button"
-        class="btn-default {loading ? 'opacity-50' : ''}"
-        disabled={loading || !campaign.title.trim()}
-        onclick={saveCampaign}
-    >
-        {loading ? "Збереження..." : "Зберегти"}
-    </button>
+    <div class="flex flex-row gap-5">
+        <button
+            type="button"
+            class="btn-default {loading ? 'opacity-50' : ''}"
+            disabled={loading || !campaign.title.trim()}
+            onclick={saveCampaign}
+        >
+            {loading ? "Збереження..." : "Зберегти"}
+        </button>
+        {#if campaign.id > 0}
+            <button
+                type="button"
+                class="btn-default{loading ? 'opacity-50' : ''}"
+                disabled={loading}
+                onclick={deleteCampaign}
+            >
+                <span class="text-diia-red ">
+                    Видалити кампанію
+                </span>
+            </button>
+        {/if}
+    </div>
+
 </div>
