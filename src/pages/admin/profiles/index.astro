@@ -1,0 +1,24 @@
+---
+import Layout from "@layouts/Layout.astro";
+import AdminSidebar from "@layouts/AdminSidebar.astro"
+import { getDrizzle } from "@db/drizzle";
+import {formatRelative, isBefore} from "date-fns"
+import {uk} from "date-fns/locale"
+import ProfileDisplay from "@components/ProfileDisplay.svelte";
+
+const db = getDrizzle()
+const profiles = await db.query.profiles.findMany()
+---
+
+<Layout>
+    <AdminSidebar slot={"left-side"} />
+    <h1>Профілі</h1>
+    <a href="/admin/profiles/editor">+ Створити профіль</a>
+    <ul>
+        {profiles.map(profile => (
+            <a href={`/admin/profiles/editor?profile=${profile.id}`}>
+                <ProfileDisplay profile={profile} client:load />
+            </a>
+        ))}
+    </ul>
+</Layout>

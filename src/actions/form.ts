@@ -2,7 +2,7 @@ import { ActionError, defineAction } from "astro:actions";
 import {z} from "astro/zod";
 import { eq } from "drizzle-orm";
 import { getDrizzle } from "../db/drizzle";
-import { applications, forms, users } from "@db/schema";
+import { applications, forms, profiles, users } from "@db/schema";
 type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
 type Field = Schema[number]
 const birthDate = z.string().min(1, "Вкажіть дату народження").pipe(z.coerce.date());
@@ -122,23 +122,26 @@ export const submitFormEdit = defineAction({
             if (context.locals.user.role !== "admin") 
                 throw new ActionError({code: "UNAUTHORIZED"})
             
+            let formId: number
             if (!input.formId){
-                await db.insert(forms).values({
+                const [createdForm] = await db.insert(forms).values({
                     title: input.title,
                     description: input.description,
                     schema: input.schema,
                     visibility: input.visibility
-                })
+                }).returning({ id: forms.id })
+                formId = createdForm.id
             }
             else{
                 const form = await db.query.forms.findFirst({where: {id: input.formId}})
                 if (!form){
-                    await db.insert(forms).values({
+                    const [createdForm] = await db.insert(forms).values({
                         title: input.title,
                         description: input.description,
                         schema: input.schema,
                         visibility: input.visibility
-                    })
+                    }).returning({ id: forms.id })
+                    formId = createdForm.id
                 }
                 else{
                     await db.update(forms).set({
@@ -147,16 +150,46 @@ export const submitFormEdit = defineAction({
                         schema: input.schema,
                         visibility: input.visibility
                     }).where(eq(forms.id, input.formId))
+                    formId = form.id
                 }
             }
             
+            return {success: true, formId}
         }
         catch(e){
             if (e instanceof ActionError) throw e
             console.error(e)
             throw new ActionError({code: "INTERNAL_SERVER_ERROR"})
         }
-
-        return {success: true}
     }
 })
+
+export const deleteForm = defineAction({
+    accept: "json",
+    input: z.object({
+        formId: z.number().int().positive(),
+    }),
+    handler: async (input, context) => {
+        try {
+            if (!context.locals.user || context.locals.user.role !== "admin") {
+                throw new ActionError({ code: "UNAUTHORIZED" });
+            }
+
+            const db = getDrizzle();
+            const existingForm = await db.query.forms.findFirst({
+                where: { id: input.formId },
+            });
+            if (!existingForm) {
+                throw new ActionError({ code: "BAD_REQUEST", message: "Форму не знайдено" });
+            }
+
+            await db.update(profiles).set({ formId: null }).where(eq(profiles.formId, input.formId));
+            await db.delete(forms).where(eq(forms.id, input.formId));
+            return { success: true };
+        } catch (error) {
+            if (error instanceof ActionError) throw error;
+            console.error(error);
+            throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
+        }
+    },
+});
