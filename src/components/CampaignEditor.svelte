@@ -1,23 +1,85 @@
 <script lang="ts">
-    import type {campaigns, profiles} from "@db/schema"
+    import { actions } from "astro:actions";
+    import type { campaigns, profiles } from "@db/schema";
     import ProfileDisplay from "./ProfileDisplay.svelte";
-  import { onMount } from "svelte";
-    type Campaign = typeof campaigns.$inferSelect & {profiles: typeof profiles.$inferSelect[]}
 
-    const {loadedCampaign} : {loadedCampaign : Campaign|undefined} = $props()
-    let campaign : Campaign = $state({
-        id: -1,
-        title: "",
-        beginsAt: null,
-        endsAt: null,
-        profiles: []
-    })
-    onMount(()=>{
-        if(loadedCampaign){
-            campaign = loadedCampaign
-            console.log(loadedCampaign)
+    type Profile = typeof profiles.$inferSelect;
+    type Campaign = typeof campaigns.$inferSelect & { profiles: Profile[] };
+
+    const { loadedCampaign, availableProfiles }: {
+        loadedCampaign: Campaign | undefined;
+        availableProfiles: Profile[];
+    } = $props();
+
+    function dateInputValue(date: Date | null): string {
+        return date ? new Date(date).toISOString().slice(0, 10) : "";
+    }
+
+    let campaign = $state({
+        // svelte-ignore state_referenced_locally
+        id: loadedCampaign?.id ?? -1,
+        // svelte-ignore state_referenced_locally
+        title: loadedCampaign?.title ?? "",
+        // svelte-ignore state_referenced_locally
+        beginsAt: dateInputValue(loadedCampaign?.beginsAt ?? null),
+        // svelte-ignore state_referenced_locally
+        endsAt: dateInputValue(loadedCampaign?.endsAt ?? null),
+        // svelte-ignore state_referenced_locally
+        profiles: loadedCampaign?.profiles ?? [],
+    });
+    let loading = $state(false);
+    let errorMessage = $state("");
+    let saved = $state(false);
+
+    let profilesToAdd = $derived(
+        availableProfiles.filter((profile) => !campaign.profiles.some(({ id }) => id === profile.id)),
+    );
+
+    function addProfile(idx: number) {
+        campaign.profiles = [...campaign.profiles, availableProfiles[idx]];
+        saved = false;
+        errorMessage = "";
+    }
+
+    function removeProfile(idx: number) {
+        campaign.profiles = campaign.profiles.filter((profile, i) => i !== idx);
+        saved = false;
+        errorMessage = "";
+    }
+
+    async function saveCampaign() {
+        if (loading) return;
+
+        loading = true;
+        errorMessage = "";
+        saved = false;
+
+        try {
+            const result = await actions.submitCampaignEdit({
+                campaignId: campaign.id > 0 ? campaign.id : undefined,
+                title: campaign.title,
+                beginsAt: campaign.beginsAt,
+                endsAt: campaign.endsAt,
+                profileIds: campaign.profiles.map(({ id }) => id),
+            });
+
+            if (result.error) {
+                errorMessage = result.error.message;
+            } else {
+                campaign.id = result.data.campaignId;
+                saved = true;
+                if (typeof window !== "undefined") {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("campaign", String(campaign.id));
+                    window.history.replaceState(null, "", url);
+                }
+            }
+        } catch (error) {
+            errorMessage = error instanceof Error ? error.message : "Не вдалося зберегти кампанію";
+        } finally {
+            loading = false;
         }
-    })
+    }
 </script>
 
 <div class="flex flex-col gap-5">
@@ -25,26 +87,57 @@
     <div class="flex flex-row w-full gap-5">
         <label class="w-full">
             Починається
-            <input type="date" bind:value={campaign.beginsAt}>
+            <input class="w-full" type="date" bind:value={campaign.beginsAt}>
         </label>
         <label class="w-full">
             Закінчується
-            <input type="date" bind:value={campaign.endsAt}>
+            <input class="w-full" type="date" bind:value={campaign.endsAt}>
         </label>
     </div>
+
     <h3>Профілі</h3>
-    <ul>
-        {#each campaign?.profiles as profile (profile.id)}
+    <ul class="flex flex-col gap-3">
+        {#each campaign.profiles as profile, idx (profile.id)}
             <li>
-                <ProfileDisplay profile={profile} />
+                <ProfileDisplay onRemove={()=> removeProfile(idx)} {profile} />
             </li>
         {/each}
-
-        <li class="mt-5 flex flex-row justify-center gap-5">
-            <button class="btn-default">Додати профіль</button>
-            <button class="btn-default">Створити профіль</button>
-        </li>
     </ul>
-    <p>{JSON.stringify(campaign)}</p>
-    <button class="btn-default">Зберегти</button>
+
+    <button
+        type="button"
+        class="btn-default"
+        popovertarget="profile-select"
+    >
+        Додати профіль
+    </button>
+    <div class="w-1/2 min-h-32 border fixed m-auto p-1" id="profile-select" popover>
+        <p>Оберіть профіль</p>
+
+        <ul>
+            {#each profilesToAdd as profile, idx (profile.id)}
+                <li>
+                    <button class="w-full cursor-pointer" onclick={()=> addProfile(idx)}>
+                        <ProfileDisplay profile={profile} />
+                    </button>
+                </li>
+            {/each}
+        </ul>
+    </div>
+    
+    {#if errorMessage}
+        <p class="text-diia-red" role="alert">{errorMessage}</p>
+    {/if}
+    {#if saved}
+        <p class="text-diia-green" role="status">Зміни збережено!</p>
+    {/if}
+    
+    <button
+        type="button"
+        class="btn-default {loading ? 'opacity-50' : ''}"
+        disabled={loading || !campaign.title.trim()}
+        onclick={saveCampaign}
+    >
+        {loading ? "Збереження..." : "Зберегти"}
+    </button>
 </div>

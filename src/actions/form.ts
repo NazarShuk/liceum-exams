@@ -122,23 +122,26 @@ export const submitFormEdit = defineAction({
             if (context.locals.user.role !== "admin") 
                 throw new ActionError({code: "UNAUTHORIZED"})
             
+            let formId: number
             if (!input.formId){
-                await db.insert(forms).values({
+                const [createdForm] = await db.insert(forms).values({
                     title: input.title,
                     description: input.description,
                     schema: input.schema,
                     visibility: input.visibility
-                })
+                }).returning({ id: forms.id })
+                formId = createdForm.id
             }
             else{
                 const form = await db.query.forms.findFirst({where: {id: input.formId}})
                 if (!form){
-                    await db.insert(forms).values({
+                    const [createdForm] = await db.insert(forms).values({
                         title: input.title,
                         description: input.description,
                         schema: input.schema,
                         visibility: input.visibility
-                    })
+                    }).returning({ id: forms.id })
+                    formId = createdForm.id
                 }
                 else{
                     await db.update(forms).set({
@@ -147,16 +150,16 @@ export const submitFormEdit = defineAction({
                         schema: input.schema,
                         visibility: input.visibility
                     }).where(eq(forms.id, input.formId))
+                    formId = form.id
                 }
             }
             
+            return {success: true, formId}
         }
         catch(e){
             if (e instanceof ActionError) throw e
             console.error(e)
             throw new ActionError({code: "INTERNAL_SERVER_ERROR"})
         }
-
-        return {success: true}
     }
 })

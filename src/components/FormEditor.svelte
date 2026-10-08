@@ -55,9 +55,15 @@
             title: form.title,
             description: form.description || "",
             schema: form.schema,
-            formId: loadedForm?.id,
+            formId: form.id > 0 ? form.id : undefined,
             visibility: form.visibility
         })
+        if (!result.error) {
+            form.id = result.data.formId
+            const url = new URL(window.location.href)
+            url.searchParams.set("form", String(form.id))
+            window.history.replaceState(null, "", url)
+        }
         loading = false
     }
     async function changeVisibility(){
@@ -104,5 +110,5 @@
 
 
 <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={addNewField}>+ Додати поле</button>
-<button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={saveForm}>Зберегти</button>
 <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={changeVisibility}><span class="text-diia-red">{form.visibility === "private" ? "Опублікувати" : "Приховати"}</span></button>
+<button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={saveForm}>{loading ? "Збереження..." : "Зберегти"}</button>
