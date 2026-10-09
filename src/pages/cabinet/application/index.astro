@@ -2,6 +2,7 @@
 import { actions } from "astro:actions";
 import { getDrizzle } from "@db/drizzle";
 import Layout from "@layouts/Layout.astro";
+import CabinetHead from "@layouts/CabinetHead.astro";
 import FormField from "@components/FormField.astro";
 import ProfileDisplay from "@components/ProfileDisplay.svelte";
 
@@ -29,6 +30,7 @@ const selectedCampaign =
   availableCampaigns.find((campaign) => campaign.id === requestedCampaignId) ??
   (availableCampaigns.length === 1 ? availableCampaigns[0] : undefined);
 const selectedProfile = selectedCampaign?.profiles.find((profile)=> profile.id === requestedProfileId)
+const selectedForm = selectedProfile?.form ?? null
 const result = Astro.getActionResult(actions.submitForm);
 
 if (result && !result.error) {
@@ -38,102 +40,132 @@ if (result && !result.error) {
 ---
 
 <Layout>
-  <a href="/cabinet">{"<-"} До кабінету</a>
+  <CabinetHead />
 
   {result?.error && (
     <p class="text-diia-red" role="alert">{result.error.message}</p>
   )}
 
-  {selectedProfile ? (
+  {selectedProfile && selectedForm ? (
     <section class="flex flex-col gap-5">
-      <a
-        href={`/cabinet/application?campaignId=${selectedCampaign?.id}`}
-        class="self-start"
-      >
+      <a href={`/cabinet/application?campaignId=${selectedCampaign?.id}`} class="self-start">
+        ← Назад до профілів
       </a>
-      <h2 class="py-4">{selectedProfile.form.title}</h2>
-      {selectedProfile.form.description && (
-        <p class="pb-4">{selectedProfile.form.description}</p>
-      )}
-      <form
-        class="flex flex-col gap-5"
-        action={actions.submitForm}
-        method="POST"
-      >
-        <h3>Інформація учня</h3>
-        <div class="flex flex-row w-full gap-5">
-          <input class="w-full" name="studentfirstName" placeholder="Ім'я" required>
-          <input class="w-full" name="studentlastName" placeholder="Прізвище" required>
-          <input class="w-full" name="studentmiddleName" placeholder="По батькові" required>
+
+      <div>
+        <h2>{selectedForm.title}</h2>
+        {selectedForm.description && (
+          <p class="pt-2">{selectedForm.description}</p>
+        )}
+      </div>
+
+      <form class="flex flex-col gap-5" action={actions.submitForm} method="POST">
+        <div class="card flex flex-col gap-5">
+          <h3>Інформація учня</h3>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <label class="flex flex-col gap-1">
+              Ім'я
+              <input name="studentfirstName" required>
+            </label>
+            <label class="flex flex-col gap-1">
+              Прізвище
+              <input name="studentlastName" required>
+            </label>
+            <label class="flex flex-col gap-1">
+              По батькові
+              <input name="studentmiddleName" required>
+            </label>
+          </div>
+          <label class="flex flex-col gap-1">
+            Дата народження
+            <input name="studentBirthDate" type="date" required>
+          </label>
+          <label class="flex flex-col gap-1">
+            Телефон
+            <input name="studentTelephone" type="tel" required>
+          </label>
         </div>
 
-        <input class="lg:w-3/4 w-full" name="studentBirthDate" placeholder="Дата народження" type="date" required>
-        <input class="lg:w-3/4 w-full" name="studentTelephone" placeholder="Телефон" type="tel" required>
-
-        <h3>Інформація батьків</h3>
-        <div class="flex flex-row w-full gap-5">
-          <input class="w-full" name="parentfirstName" placeholder="Ім'я" required value={Astro.locals.user.firstName}>
-          <input class="w-full" name="parentlastName" placeholder="Прізвище" required value={Astro.locals.user.lastName}>
-          <input class="w-full" name="parentmiddleName" placeholder="По батькові" required value={Astro.locals.user.middleName}>
+        <div class="card flex flex-col gap-5">
+          <h3>Інформація батьків</h3>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <label class="flex flex-col gap-1">
+              Ім'я
+              <input name="parentfirstName" required value={Astro.locals.user.firstName}>
+            </label>
+            <label class="flex flex-col gap-1">
+              Прізвище
+              <input name="parentlastName" required value={Astro.locals.user.lastName}>
+            </label>
+            <label class="flex flex-col gap-1">
+              По батькові
+              <input name="parentmiddleName" required value={Astro.locals.user.middleName}>
+            </label>
+          </div>
+          <label class="flex flex-col gap-1">
+            Дата народження
+            <input
+              name="parentBirthDate"
+              type="date"
+              required
+              value={Astro.locals.user.birthDate?.toISOString().slice(0, 10) || ""}
+            >
+          </label>
+          <label class="flex flex-col gap-1">
+            Телефон
+            <input name="parentTelephone" type="tel" required value={Astro.locals.user.phone}>
+          </label>
         </div>
 
-        <input
-          class="lg:w-3/4 w-full"
-          name="parentBirthDate"
-          placeholder="Дата народження"
-          type="date"
-          required
-          value={Astro.locals.user.birthDate?.toISOString().slice(0, 10) || ""}
-        >
-        <input class="lg:w-3/4 w-full" name="parentTelephone" placeholder="Телефон" type="tel" required value={Astro.locals.user.phone}>
+        {selectedForm.schema.length > 0 && (
+          <div class="card flex flex-col gap-5">
+            <h3>Додаткові питання</h3>
+            {selectedForm.schema.map((field) => (
+              <FormField preview={false} previewValue={undefined} {field} />
+            ))}
+          </div>
+        )}
 
-        {selectedProfile.form.schema.map((field) => (
-          <FormField preview={false} previewValue={undefined} {field} />
-        ))}
-
-        <input type="hidden" name="formId" value={selectedProfile.form.id}>
+        <input type="hidden" name="formId" value={selectedForm.id}>
         <button class="btn-default">Надіслати</button>
       </form>
     </section>
   ) : availableCampaigns.length > 0 ? (
-    <div class="flex flex-col gap-5">
-      {availableCampaigns.length > 1 && (
-        <label class="flex flex-col gap-2 lg:w-3/4">
-          Оберіть кампанію
-          <select class="w-full" name="campaignId" data-campaign-select>
-            <option value="" selected={!selectedCampaign}>Оберіть кампанію</option>
-            {availableCampaigns.map((campaign) => (
-              <option
-                value={campaign.id}
-                selected={campaign.id === selectedCampaign?.id}
-              >
-                {campaign.title}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+    <section class="flex flex-col gap-5">
 
-      {availableCampaigns.map((campaign, index) => (
-        <section
-          class="flex flex-col gap-5"
-          data-campaign-profiles
-          data-campaign-id={campaign.id}
-          hidden={campaign.id !== selectedCampaign?.id}
-        >
+      {selectedCampaign ? (
+        <>
           <h2>Оберіть профіль</h2>
           <div class="flex flex-col gap-3">
-            {campaign.profiles.map((profile) => (
+            {selectedCampaign.profiles.map((profile) => (
               <ProfileDisplay
                 profile={profile}
                 selectable
-                href={`/cabinet/application?campaignId=${campaign.id}&profileId=${profile.id}`}
+                href={`/cabinet/application?campaignId=${selectedCampaign.id}&profileId=${profile.id}`}
               />
             ))}
           </div>
-        </section>
-      ))}
-    </div>
+        </>
+      ) : (
+        <>
+          <h2>Оберіть кампанію</h2>
+          <ul class="flex flex-col gap-3">
+            {availableCampaigns.map((campaign) => (
+              <li>
+                <a href={`/cabinet/application?campaignId=${campaign.id}`}>
+                  <div class="card">
+                    <div class="w-full flex flex-row justify-between items-center">
+                      <h4>{campaign.title}</h4>
+                      <p>{campaign.profiles.length} профілів</p>
+                    </div>
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
   ) : (
     <p>Наразі немає доступних заяв.</p>
   )}
