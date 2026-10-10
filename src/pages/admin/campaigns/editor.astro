@@ -3,8 +3,9 @@ import Layout from "@layouts/Layout.astro";
 import AdminSidebar from "@layouts/AdminSidebar.astro";
 import { getDrizzle } from "@db/drizzle";
 import CampaignEditor from "@components/CampaignEditor.svelte";
-import type {campaigns, profiles} from "@db/schema";
+import type {campaigns, forms, profiles} from "@db/schema";
 type Campaign = typeof campaigns.$inferSelect & {profiles: (typeof profiles.$inferSelect)[]}
+type Form = typeof forms.$inferSelect;
 
 const db = getDrizzle();
 let loadedCampaign: Campaign | undefined;
@@ -20,10 +21,11 @@ if (Astro.url.searchParams.has("campaign")) {
     }
 }
 const availableProfiles = await db.query.profiles.findMany();
+const availableForms: Form[] = await db.query.forms.findMany();
 ---
 
 <Layout>
     <AdminSidebar slot="left-side" />
     <h1 class="mb-5">Редактор кампанії</h1>
-    <CampaignEditor loadedCampaign={loadedCampaign} availableProfiles={availableProfiles} client:load />
+    <CampaignEditor loadedCampaign={loadedCampaign} availableProfiles={availableProfiles} availableForms={availableForms} client:load />
 </Layout>

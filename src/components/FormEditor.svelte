@@ -4,7 +4,12 @@
     import { onMount } from "svelte";
     type Form = typeof forms.$inferSelect;
     
-    const {loadedForm} : {loadedForm: Form|undefined} = $props() 
+    const { loadedForm, onSaved, onDeleted, standalone = true }: {
+        loadedForm: Form | undefined;
+        onSaved?: (form: Form) => void;
+        onDeleted?: (formId: number) => void;
+        standalone?: boolean;
+    } = $props() 
     let form : Form = $state({
         id: 0,
         title: "Нова Форма",
@@ -25,7 +30,7 @@
 
     onMount(()=>{
         if (loadedForm){
-            form = loadedForm
+            form = { ...loadedForm, schema: loadedForm.schema.map((field) => ({ ...field })) }
         }
 
         savedSnapshot = currentSnapshot();
@@ -80,9 +85,12 @@
             if (!result.error) {
                 form.id = result.data.formId
                 savedSnapshot = currentSnapshot();
-                const url = new URL(window.location.href)
-                url.searchParams.set("form", String(form.id))
-                window.history.replaceState(null, "", url)
+                onSaved?.({ ...form })
+                if (standalone) {
+                    const url = new URL(window.location.href)
+                    url.searchParams.set("form", String(form.id))
+                    window.history.replaceState(null, "", url)
+                }
             }
         } catch (error) {
             result = { error: { message: error instanceof Error ? error.message : "Не вдалося зберегти форму" } };
@@ -102,8 +110,10 @@
             const deletion = await actions.deleteForm({ formId: form.id })
             if (deletion.error) {
                 deleteError = deletion.error.message
-            } else {
+            } else if (standalone) {
                 window.location.assign("/admin/forms")
+            } else {
+                onDeleted?.(form.id)
             }
         } catch (error) {
             deleteError = error instanceof Error ? error.message : "Не вдалося видалити форму"

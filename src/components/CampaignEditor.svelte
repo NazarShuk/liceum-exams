@@ -1,15 +1,18 @@
 <script lang="ts">
     import { actions } from "astro:actions";
     import { onMount } from "svelte";
-    import type { campaigns, profiles } from "@db/schema";
+    import type { campaigns, forms, profiles } from "@db/schema";
     import ProfileDisplay from "./ProfileDisplay.svelte";
+    import ProfileEditor from "./ProfileEditor.svelte";
 
     type Profile = typeof profiles.$inferSelect;
+    type Form = typeof forms.$inferSelect;
     type Campaign = typeof campaigns.$inferSelect & { profiles: Profile[] };
 
-    const { loadedCampaign, availableProfiles }: {
+    const { loadedCampaign, availableProfiles, availableForms }: {
         loadedCampaign: Campaign | undefined;
         availableProfiles: Profile[];
+        availableForms: Form[];
     } = $props();
 
     function dateInputValue(date: Date | null): string {
@@ -32,6 +35,12 @@
     let errorMessage = $state("");
     let saved = $state(false);
     let savedSnapshot = $state("");
+    let editingProfileId = $state<number | "new" | null>(null);
+    let editingProfile = $derived(
+        typeof editingProfileId === "number"
+            ? campaign.profiles.find(({ id }) => id === editingProfileId)
+            : undefined,
+    );
     const currentSnapshot = () => JSON.stringify({
         title: campaign.title,
         beginsAt: campaign.beginsAt,
@@ -61,6 +70,11 @@
 
         const select = event.currentTarget;
         const selectedId = select.value;
+        if (selectedId === "__new__") {
+            select.value = "";
+            openNewProfile();
+            return;
+        }
         const profile = profilesToAdd.find(({ id }) => String(id) === selectedId);
         if (!profile) return;
 
@@ -70,10 +84,37 @@
         errorMessage = "";
     }
 
+    function openNewProfile() {
+        editingProfileId = "new";
+    }
+
     function removeProfile(idx: number) {
         campaign.profiles = campaign.profiles.filter((profile, i) => i !== idx);
         saved = false;
         errorMessage = "";
+    }
+
+    function openProfileEditor(profileId: number) {
+        editingProfileId = profileId;
+    }
+
+    function closeProfileEditor() {
+        editingProfileId = null;
+    }
+
+    function handleProfileSaved(updated: Profile) {
+        const exists = campaign.profiles.some(({ id }) => id === updated.id);
+        campaign.profiles = exists
+            ? campaign.profiles.map((profile) =>
+                profile.id === updated.id ? { ...profile, ...updated } : profile,
+            )
+            : [...campaign.profiles, updated];
+        closeProfileEditor();
+    }
+
+    function handleProfileDeleted(profileId: number) {
+        campaign.profiles = campaign.profiles.filter(({ id }) => id !== profileId);
+        closeProfileEditor();
     }
 
     async function saveCampaign() {
@@ -149,7 +190,11 @@
     <ul class="flex flex-col gap-3">
         {#each campaign.profiles as profile, idx (profile.id)}
             <li>
-                <ProfileDisplay onRemove={()=> removeProfile(idx)} {profile} />
+                <ProfileDisplay
+                    onRemove={() => removeProfile(idx)}
+                    onClick={() => openProfileEditor(profile.id)}
+                    {profile}
+                />
             </li>
         {/each}
     </ul>
@@ -159,9 +204,9 @@
         <select
             class="w-full"
             onchange={addProfile}
-            disabled={profilesToAdd.length === 0}
         >
             <option value="">Оберіть профіль</option>
+            <option value="__new__">＋ Створити новий профіль</option>
             {#each profilesToAdd as profile (profile.id)}
                 <option value={profile.id}>{profile.title}</option>
             {/each}
@@ -197,5 +242,41 @@
             </button>
         {/if}
     </div>
+
+    {#if editingProfileId !== null}
+        <div
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
+            role="presentation"
+            onclick={closeProfileEditor}
+        >
+            <!-- svelte-ignore a11y_interactive_supports_focus -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <div
+                class="card flex w-full max-w-2xl flex-col gap-5 bg-white"
+                role="dialog"
+                aria-modal="true"
+                onclick={(event) => event.stopPropagation()}
+            >
+                <div class="flex flex-row items-center justify-between">
+                    <h3>{editingProfile ? "Редагувати профіль" : "Новий профіль"}</h3>
+                    <button
+                        type="button"
+                        class="cursor-pointer"
+                        aria-label="Закрити"
+                        onclick={closeProfileEditor}
+                    >X</button>
+                </div>
+                {#key editingProfileId}
+                    <ProfileEditor
+                        loadedProfile={editingProfile}
+                        {availableForms}
+                        standalone={false}
+                        onSaved={handleProfileSaved}
+                        onDeleted={handleProfileDeleted}
+                    />
+                {/key}
+            </div>
+        </div>
+    {/if}
 
 </div>
