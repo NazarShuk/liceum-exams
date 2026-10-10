@@ -33,7 +33,7 @@ export const submitForm = defineAction({
             if (!context.locals.user) 
                 throw new ActionError({code: "UNAUTHORIZED"})
             
-            const form = await db.query.forms.findFirst({where: {id:input.formId, visibility: "public"}})
+            const form = await db.query.forms.findFirst({where: {id:input.formId}})
             if (!form)
                 throw new ActionError({code: "BAD_REQUEST"})
             
