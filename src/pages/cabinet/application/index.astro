@@ -31,6 +31,19 @@ const selectedCampaign =
   (availableCampaigns.length === 1 ? availableCampaigns[0] : undefined);
 const selectedProfile = selectedCampaign?.profiles.find((profile)=> profile.id === requestedProfileId)
 const selectedForm = selectedProfile?.form ?? null
+const previewId = Number(Astro.url.searchParams.get("preview"));
+let previewApplication: any;
+if (Number.isInteger(previewId) && previewId > 0) {
+  const app = await db.query.applications.findFirst({
+    where: { id: previewId },
+    with: { user: true, student: true, form: true },
+  });
+  if (!app || app.userId !== Astro.locals.user.id) {
+    return new Response(null, { status: 404 });
+  }
+  previewApplication = app;
+}
+const applicationAnswers = (previewApplication?.answers ?? {}) as Record<string, unknown>;
 const result = Astro.getActionResult(actions.submitForm);
 
 if (result && !result.error) {
@@ -46,7 +59,81 @@ if (result && !result.error) {
     <p class="text-diia-red" role="alert">{result.error.message}</p>
   )}
 
-  {selectedProfile && selectedForm ? (
+  {previewApplication ? (
+    <section class="flex flex-col gap-5">
+      <a href="/cabinet" class="self-start">← До кабінету</a>
+
+      <div>
+        <h2>{previewApplication.form?.title ?? "Заява"}</h2>
+        {previewApplication.form?.description && (
+          <p class="pt-2">{previewApplication.form?.description}</p>
+        )}
+      </div>
+
+      <p class="text-sm opacity-70">Заява від {previewApplication.createdAt}</p>
+
+      <div class="card flex flex-col gap-5">
+        <h3>Інформація учня</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <label class="flex flex-col gap-1">
+            Ім'я
+            <input readonly value={previewApplication.student?.firstName ?? ""}>
+          </label>
+          <label class="flex flex-col gap-1">
+            Прізвище
+            <input readonly value={previewApplication.student?.lastName ?? ""}>
+          </label>
+          <label class="flex flex-col gap-1">
+            По батькові
+            <input readonly value={previewApplication.student?.middleName ?? ""}>
+          </label>
+        </div>
+        <label class="flex flex-col gap-1">
+          Дата народження
+          <input readonly type="date" value={previewApplication.student?.birthDate?.toISOString().slice(0, 10) || ""}>
+        </label>
+        <label class="flex flex-col gap-1">
+          Телефон
+          <input readonly type="tel" value={previewApplication.student?.phone ?? ""}>
+        </label>
+      </div>
+
+      <div class="card flex flex-col gap-5">
+        <h3>Інформація батьків</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <label class="flex flex-col gap-1">
+            Ім'я
+            <input readonly value={previewApplication.user?.firstName ?? ""}>
+          </label>
+          <label class="flex flex-col gap-1">
+            Прізвище
+            <input readonly value={previewApplication.user?.lastName ?? ""}>
+          </label>
+          <label class="flex flex-col gap-1">
+            По батькові
+            <input readonly value={previewApplication.user?.middleName ?? ""}>
+          </label>
+        </div>
+        <label class="flex flex-col gap-1">
+          Дата народження
+          <input readonly type="date" value={previewApplication.user?.birthDate?.toISOString().slice(0, 10) || ""}>
+        </label>
+        <label class="flex flex-col gap-1">
+          Телефон
+          <input readonly type="tel" value={previewApplication.user?.phone ?? ""}>
+        </label>
+      </div>
+
+      {previewApplication.form?.schema.length > 0 && (
+        <div class="card flex flex-col gap-5">
+          <h3>Додаткові питання</h3>
+          {previewApplication.form?.schema.map((field) => (
+            <FormField preview previewValue={applicationAnswers[field.slug]} {field} />
+          ))}
+        </div>
+      )}
+    </section>
+  ) : selectedProfile && selectedForm ? (
     <section class="flex flex-col gap-5">
       <a href={`/cabinet/application?campaignId=${selectedCampaign?.id}`} class="self-start">
         ← Назад до профілів

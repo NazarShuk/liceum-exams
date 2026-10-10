@@ -12,4 +12,16 @@ const {field, preview, previewValue} = Astro.props
 
 ---
 
-<input readonly={preview} value={preview ? previewValue : null} class="lg:w-3/4 w-full" required name={"form-" + field.slug} placeholder={field.title} type={field.type}>
+<label>
+    {field.title}
+
+    <input
+        readonly={preview}
+        required={!preview}
+        value={preview ? previewValue ?? "" : undefined}
+        class="lg:w-3/4 w-full"
+        name={"form-" + field.slug}
+        placeholder={"Ваша відповідь..."}
+        type={field.type}
+    >
+</label>
