@@ -206,7 +206,7 @@
             onchange={addProfile}
         >
             <option value="">Оберіть профіль</option>
-            <option value="__new__">＋ Створити новий профіль</option>
+            <option value="__new__">+ Створити новий профіль</option>
             {#each profilesToAdd as profile (profile.id)}
                 <option value={profile.id}>{profile.title}</option>
             {/each}

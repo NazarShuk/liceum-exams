@@ -1,5 +1,7 @@
 ---
 import { getDrizzle } from "@db/drizzle";
+import {format} from "date-fns"
+import { uk } from "date-fns/locale";
 
 const {id} = Astro.props;
 
@@ -13,8 +15,9 @@ if (!result) return
 
 ---
 
-<li class="border-b-2 p-1">
+<li class="card mb-5">
     <a href=`/cabinet/application?preview=${result.id}`>
-        <p>{result.student?.firstName} {result.student?.lastName}</p>
+        <h4>{result.student?.firstName} {result.student?.lastName}</h4>
+        <p class="opacity-50">{format(result.createdAt || new Date(), "PPP", {locale: uk})}</p>
     </a>
 </li>

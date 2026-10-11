@@ -185,7 +185,7 @@
                     {form.title}
                 </option>
             {/each}
-            <option value={-1}>＋ Створити нову форму</option>
+            <option value={-1}>+ Створити нову форму</option>
         </select>
     </label>
 
