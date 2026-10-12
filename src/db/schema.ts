@@ -30,7 +30,7 @@ export const applications = sqliteTable("applications", {
      .$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
     
     formId: integer("form_id").notNull().references(()=>forms.id, {onDelete: "cascade"}),
-    answers: text({mode:"json"}).notNull().default("{}"),
+    answers: text({mode:"json"}).notNull().default("{}").$type<{[key:string]: any}>(),
     state: text({enum: ["draft", "submitted"]}).notNull().default("draft")
 })
 

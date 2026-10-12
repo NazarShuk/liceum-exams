@@ -1,0 +1,21 @@
+---
+import { getDrizzle } from "@db/drizzle";
+import AdminSidebar from "@layouts/AdminSidebar.astro";
+import Layout from "@layouts/Layout.astro"
+import ApplicationsTable from "@components/ApplicationsTable.svelte";
+
+const db = getDrizzle()
+const applications = await db.query.applications.findMany({
+    where: {state: "submitted"},
+    with: {student: true, user: true, form: true}
+})
+const forms = await db.query.forms.findMany()
+---
+
+<Layout>
+    <AdminSidebar slot={"left-side"} />
+    <h1>Заяви</h1>
+    {forms.length > 0
+        ? <ApplicationsTable applications={applications} forms={forms} client:load />
+        : <p>Форму заяви ще не створено.</p>}
+</Layout>
