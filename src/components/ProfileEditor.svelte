@@ -242,7 +242,7 @@
             <!-- svelte-ignore a11y_interactive_supports_focus -->
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <div
-                class="card flex w-full max-w-2xl flex-col gap-5 bg-white"
+                class="card flex w-full max-w-2xl flex-col gap-5 bg-white max-h-screen overflow-auto"
                 role="dialog"
                 aria-modal="true"
                 onclick={(event) => event.stopPropagation()}
