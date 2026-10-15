@@ -16,6 +16,6 @@ const forms = await db.query.forms.findMany()
     <AdminSidebar slot={"left-side"} />
     <h1>Заяви</h1>
     {forms.length > 0
-        ? <ApplicationsTable applications={applications} forms={forms} client:load />
+        ? <ApplicationsTable applications={applications} forms={forms} client:load></ApplicationsTable>
         : <p>Форму заяви ще не створено.</p>}
 </Layout>

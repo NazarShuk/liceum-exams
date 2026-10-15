@@ -27,31 +27,51 @@
         if (!user) return "";
         return [user.firstName, user.lastName, user.middleName].filter(Boolean).join(" ");
     }
+
+    let filters = $state<{[key:string]: string}>({})
+    let filteredApplications = $derived(
+      applications.filter((application) => {
+        for (const field in filters) {
+          const filterValue = filters[field]
+          if (!filterValue) continue
+
+          const answer = application.answers[field]
+          if (answer == null) return false
+
+          if (!answer.toString().toLowerCase().includes(filterValue.toLowerCase())) {
+            return false
+          }
+        }
+        return true
+      })
+    )
 </script>
 
-<select bind:value={selectedFormId} class="mb-5">
+<select onchange={() => (filters = {})} bind:value={selectedFormId} class="mb-5">
     {#each availableForms as availableForm (availableForm.id)}
         <option value={availableForm.id}>
             {availableForm.title}
         </option>
     {/each}
 </select>
-
 {#if form}
     {#if applications.length > 0}
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="table-fixed" style="width: {(form.schema.length + 2) * 12}rem; min-width: 100%">
                 <thead class="bg-diia-bright-grey">
                     <tr>
                         <th class="px-4 py-5">Учень</th>
                         <th class="px-4 py-5">Опікун</th>
                         {#each form.schema as field (field.slug)}
-                            <th class="px-4 py-5">{field.title}</th>
+                            <th class="px-4 py-5">
+                            	{field.title}
+                             	<input class="w-full" bind:value={filters[field.slug]} placeholder="Фільтр..." />
+                            </th>
                         {/each}
                     </tr>
                 </thead>
                 <tbody>
-                    {#each applications as application (application.id)}
+                    {#each filteredApplications as application (application.id)}
                         <tr>
                             <td class="px-4 py-5 border-2 border-diia-bright-grey">
                                 {fullName(application.student)}
@@ -61,7 +81,7 @@
                             </td>
                             {#each form.schema as field (field.slug)}
                                 <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                    {String(application.answers[field.slug] ?? "")}
+                                	{String(application.answers[field.slug] ?? "")}
                                 </td>
                             {/each}
                         </tr>

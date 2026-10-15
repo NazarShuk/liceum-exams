@@ -24,16 +24,16 @@ const {className, title} = Astro.props;
   </head>
   <body>
     <main class="w-full flex flex-row justify-center">
-      <section class="h-screen p-1 w-1/4 lg:block hidden">
+      <section class="p-1 w-1/4 lg:block hidden">
         <slot name="left-side" />
       </section>
-      <section class={`lg:w-2/4 w-full h-screen p-1 ${className}`}>
+      <section class={`lg:w-2/4 w-full p-1 ${className}`}>
         <slot />
         <footer class="h-32">
         	<slot name="footer" />
         </footer>
       </section>
-      <section class="h-screen p-1 w-1/4 lg:block hidden">
+      <section class="p-1 w-1/4 lg:block hidden">
         <slot name="right-side" />
       </section>
     </main>
