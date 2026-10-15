@@ -1,0 +1,1 @@
+ALTER TABLE `applications` ADD `profile_id` integer REFERENCES profiles(id) ON DELETE SET NULL;

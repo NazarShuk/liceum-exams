@@ -3,13 +3,13 @@
     import { actions } from "astro:actions";
     import { onMount } from "svelte";
     type Form = typeof forms.$inferSelect;
-    
+
     const { loadedForm, onSaved, onDeleted, standalone = true }: {
         loadedForm: Form | undefined;
         onSaved?: (form: Form) => void;
         onDeleted?: (formId: number) => void;
         standalone?: boolean;
-    } = $props() 
+    } = $props()
     let form : Form = $state({
         id: 0,
         title: "Нова Форма",
@@ -61,43 +61,49 @@
             min: 0
         })
     }
-    async function saveForm(){
-        if (loading)
-            return
 
+    async function saveForm(duplicate = false) {
+        if (loading) return
         loading = true
-        // generate slugs
-        for (let i = 0; i < form.schema.length; i++) {
-            const element = form.schema[i];
+
+        for (const element of form.schema) {
             element.title = element.title.trim()
             element.slug = element.title.toLowerCase().replaceAll(" ", "-")
         }
 
-        console.log(form)
-
         try {
             result = await actions.submitFormEdit({
-                title: form.title,
+                title: form.title + (duplicate ? " (Копія)" : ""),
                 description: form.description || "",
                 schema: form.schema,
-                formId: form.id > 0 ? form.id : undefined,
+                formId: duplicate ? undefined : form.id > 0 ? form.id : undefined,
             })
-            if (!result.error) {
-                form.id = result.data.formId
-                savedSnapshot = currentSnapshot();
-                onSaved?.({ ...form })
-                if (standalone) {
-                    const url = new URL(window.location.href)
-                    url.searchParams.set("form", String(form.id))
-                    window.history.replaceState(null, "", url)
-                }
+
+            if (result.error) return undefined
+
+            const savedId = result.data.formId
+
+            if (duplicate) {
+                onSaved?.({ ...form, id: savedId, title: form.title + " (Копія)" })
+                return savedId
             }
+
+            form.id = savedId
+            savedSnapshot = currentSnapshot()
+            onSaved?.({ ...form })
+            if (standalone) {
+                const url = new URL(window.location.href)
+                url.searchParams.set("form", String(form.id))
+                window.history.replaceState(null, "", url)
+            }
+            return savedId
         } catch (error) {
-            result = { error: { message: error instanceof Error ? error.message : "Не вдалося зберегти форму" } };
+            result = { error: { message: error instanceof Error ? error.message : "Не вдалося зберегти форму" } }
         } finally {
             loading = false
         }
     }
+
     async function deleteForm(){
         if (loading || form.id <= 0)
             return
@@ -121,6 +127,13 @@
             loading = false
         }
     }
+
+    async function duplicateForm(){
+   		await saveForm()
+      	const newId = await saveForm(true)
+       	loading = true
+       	window.location.assign(`/admin/forms/editor?form=${newId}`)
+    }
 </script>
 
 <input class="w-full mb-2.5" placeholder="Назва форми" bind:value={form.title}>
@@ -136,7 +149,7 @@
 {/if}
 <ul>
     {#each form.schema as field, i (i)}
-        <li class="w-full h-24 p-1 border mb-5 flex flex-col">
+        <li class="card mb-5 relative">
             <div class="w-full flex flex-row gap-5">
                 <input class="w-full" placeholder={"Назва поля"} bind:value={field.title}>
 
@@ -155,17 +168,22 @@
                     </option>
                 </select>
             </div>
-            
 
-            <button class="text-diia-red cursor-pointer" onclick={()=> form.schema = form.schema.filter((value, idx) => idx !== i)}>Видалити</button>
+            <button
+                type="button"
+                class="absolute top-2 right-2 cursor-pointer"
+                onclick={()=> form.schema = form.schema.filter((value, idx) => idx !== i)}
+            >X</button>
+
         </li>
     {/each}
 </ul>
 
 
+<button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={() => saveForm()}>{loading ? "Збереження..." : "Зберегти"}</button>
 <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={addNewField}>+ Додати поле</button>
-<button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={saveForm}>{loading ? "Збереження..." : "Зберегти"}</button>
 {#if form.id > 0}
+    <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={duplicateForm}>Зробити копію</button>
     <button type="button" disabled={loading} class="btn-default text-diia-red {loading ? 'opacity-50' : ''}" onclick={deleteForm}>
         <span class="text-diia-red">
             Видалити форму

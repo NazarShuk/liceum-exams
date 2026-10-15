@@ -1,31 +1,60 @@
 <script lang="ts">
-    import type { applications as applicationsType, forms, users } from "@db/schema";
+    import type {
+        applications as applicationsType,
+        campaigns as campaignsType,
+        forms,
+        profiles,
+        users,
+    } from "@db/schema";
 
     type User = typeof users.$inferSelect;
     type Form = typeof forms.$inferSelect;
+    type Profile = typeof profiles.$inferSelect;
+    type Campaign = typeof campaignsType.$inferSelect;
     type Application = typeof applicationsType.$inferSelect & {
         student: User | null;
         user: User | null;
-        form: Form | null;
     };
 
-    const { applications: allApplications, forms: availableForms }: {
+    type ProfileWithForm = Profile & { form: Form | null };
+    type CampaignWithProfiles = Campaign & { profiles: ProfileWithForm[] };
+
+    const { applications: allApplications, campaigns }: {
         applications: Application[];
-        forms: Form[];
+        campaigns: CampaignWithProfiles[];
     } = $props();
 
-    let selectedFormId = $state<number | null>(availableForms[0]?.id ?? null);
+    let selectedCampaignId = $state<number | null>(campaigns[0]?.id ?? null);
+    let selectedProfileId = $state<number | null>(campaigns[0]?.profiles[0]?.id ?? null);
 
-    const form = $derived(
-        availableForms.find((availableForm) => availableForm.id === selectedFormId),
+    const selectedCampaign = $derived(
+        campaigns.find((campaign) => campaign.id === selectedCampaignId),
     );
+    const selectedProfile = $derived(
+        selectedCampaign?.profiles.find((profile) => profile.id === selectedProfileId),
+    );
+    const form = $derived(selectedProfile?.form ?? null);
     const applications = $derived(
-        allApplications.filter((application) => application.formId === selectedFormId),
+        allApplications.filter(
+            (application) => application.profileId === selectedProfileId,
+        ),
     );
 
     function fullName(user: User | null): string {
         if (!user) return "";
         return [user.firstName, user.lastName, user.middleName].filter(Boolean).join(" ");
+    }
+
+    function handleCampaignChange(event: Event) {
+        filters = {};
+        const campaignId = Number((event.currentTarget as HTMLSelectElement).value);
+        selectedCampaignId = campaignId;
+        const campaign = campaigns.find((campaign) => campaign.id === campaignId);
+        selectedProfileId = campaign?.profiles[0]?.id ?? null;
+    }
+
+    function handleProfileChange() {
+        filters = {};
     }
 
     let filters = $state<{[key:string]: string}>({})
@@ -47,15 +76,28 @@
     )
 </script>
 
-<select onchange={() => (filters = {})} bind:value={selectedFormId} class="mb-5">
-    {#each availableForms as availableForm (availableForm.id)}
-        <option value={availableForm.id}>
-            {availableForm.title}
+<select onchange={handleCampaignChange} bind:value={selectedCampaignId} class="mb-5">
+    {#each campaigns as campaign (campaign.id)}
+        <option value={campaign.id}>
+            {campaign.title}
         </option>
     {/each}
 </select>
-{#if form}
-    {#if applications.length > 0}
+{#if selectedCampaign}
+    {#if selectedCampaign.profiles.length > 0}
+        <select onchange={handleProfileChange} bind:value={selectedProfileId} class="mb-5">
+            {#each selectedCampaign.profiles as profile (profile.id)}
+                <option value={profile.id}>
+                    {profile.title}
+                </option>
+            {/each}
+        </select>
+    {/if}
+    {#if selectedCampaign.profiles.length === 0}
+        <p>До кампанії ще не додано профілів.</p>
+    {:else if !form}
+        <p>Для цього профілю не призначено форму.</p>
+    {:else if applications.length > 0}
         <div class="overflow-x-auto">
             <table class="table-fixed" style="width: {(form.schema.length + 2) * 12}rem; min-width: 100%">
                 <thead class="bg-diia-bright-grey">
@@ -93,5 +135,5 @@
         <p>Поданих заяв поки що немає.</p>
     {/if}
 {:else}
-    <p>Форму заяви ще не створено.</p>
+    <p>Кампаній ще немає.</p>
 {/if}

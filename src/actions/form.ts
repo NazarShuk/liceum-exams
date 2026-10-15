@@ -11,6 +11,7 @@ export const submitForm = defineAction({
     accept: "form",
     input: z.looseObject({
         formId: z.number(),
+        profileId: z.number().int().positive(),
 
         studentId: z.coerce.number().optional(),
         studentfirstName: z.string().nonempty(),
@@ -35,6 +36,10 @@ export const submitForm = defineAction({
             
             const form = await db.query.forms.findFirst({where: {id:input.formId}})
             if (!form)
+                throw new ActionError({code: "BAD_REQUEST"})
+
+            const profile = await db.query.profiles.findFirst({where: {id:input.profileId}})
+            if (!profile || profile.formId !== form.id)
                 throw new ActionError({code: "BAD_REQUEST"})
             
             // TODO: add validation for these
@@ -85,7 +90,8 @@ export const submitForm = defineAction({
                 userId: context.locals.user.id,
                 state: "submitted",
                 answers: formFields,
-                formId: input.formId
+                formId: input.formId,
+                profileId: input.profileId
             }).returning({id: applications.id})
 
             return {success: true, id: result[0].id}

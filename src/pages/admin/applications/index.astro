@@ -7,15 +7,21 @@ import ApplicationsTable from "@components/ApplicationsTable.svelte";
 const db = getDrizzle()
 const applications = await db.query.applications.findMany({
     where: {state: "submitted"},
-    with: {student: true, user: true, form: true}
+    with: {student: true, user: true}
 })
-const forms = await db.query.forms.findMany()
+const campaigns = await db.query.campaigns.findMany({
+    with: {
+        profiles: {
+            with: {form: true}
+        }
+    }
+})
 ---
 
 <Layout>
     <AdminSidebar slot={"left-side"} />
     <h1>Заяви</h1>
-    {forms.length > 0
-        ? <ApplicationsTable applications={applications} forms={forms} client:load></ApplicationsTable>
-        : <p>Форму заяви ще не створено.</p>}
+    {campaigns.length > 0
+        ? <ApplicationsTable applications={applications} campaigns={campaigns} client:load></ApplicationsTable>
+        : <p>Кампаній ще немає.</p>}
 </Layout>

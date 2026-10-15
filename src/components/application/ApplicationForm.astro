@@ -24,7 +24,7 @@ interface Props {
   user: User;
 }
 
-const { selectedForm, selectedCampaign, user } = Astro.props;
+const { selectedForm, selectedCampaign, selectedProfile, user } = Astro.props;
 ---
 
 <section class="flex flex-col gap-5">
@@ -109,6 +109,7 @@ const { selectedForm, selectedCampaign, user } = Astro.props;
     )}
 
     <input type="hidden" name="formId" value={selectedForm.id} />
+    <input type="hidden" name="profileId" value={selectedProfile.id} />
     <button class="btn-default">Надіслати</button>
   </form>
 </section>
