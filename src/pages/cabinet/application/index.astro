@@ -24,15 +24,19 @@ const availableCampaigns = await db.query.campaigns.findMany({
     },
   },
 });
+
 const requestedCampaignId = Number(Astro.url.searchParams.get("campaignId"));
 const requestedProfileId = Number(Astro.url.searchParams.get("profileId"));
+
 const selectedCampaign =
   availableCampaigns.find((campaign) => campaign.id === requestedCampaignId) ??
   (availableCampaigns.length === 1 ? availableCampaigns[0] : undefined);
 const selectedProfile = selectedCampaign?.profiles.find((profile)=> profile.id === requestedProfileId)
 const selectedForm = selectedProfile?.form ?? null
+
 const previewId = Number(Astro.url.searchParams.get("preview"));
 let previewApplication: any;
+
 if (Number.isInteger(previewId) && previewId > 0) {
   const app = await db.query.applications.findFirst({
     where: { id: previewId },
@@ -43,7 +47,9 @@ if (Number.isInteger(previewId) && previewId > 0) {
   }
   previewApplication = app;
 }
+
 const applicationAnswers = (previewApplication?.answers ?? {}) as Record<string, unknown>;
+
 const result = Astro.getActionResult(actions.submitForm);
 
 if (result && !result.error) {
@@ -205,8 +211,7 @@ if (result && !result.error) {
         </div>
 
         {selectedForm.schema.length > 0 && (
-          <div class="card flex flex-col gap-5">
-            <h3>Додаткові питання</h3>
+          <div>
             {selectedForm.schema.map((field) => (
               <FormField preview={false} previewValue={undefined} {field} />
             ))}

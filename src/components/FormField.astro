@@ -12,9 +12,8 @@ const {field, preview, previewValue} = Astro.props
 
 ---
 
-<label>
-    {field.title}
-
+<div class="card mb-5">
+    <h4 class="mb-5">{field.title}</h4>
     <input
         readonly={preview}
         required={!preview}
@@ -24,4 +23,5 @@ const {field, preview, previewValue} = Astro.props
         placeholder={"Ваша відповідь..."}
         type={field.type}
     >
-</label>
+</div>
+
