@@ -1,0 +1,59 @@
+---
+import ProfileDisplay from "@components/ProfileDisplay.svelte";
+import type { campaigns, profiles, forms } from "@db/schema";
+
+type Campaign = typeof campaigns.$inferSelect;
+type Profile = typeof profiles.$inferSelect;
+type Form = typeof forms.$inferSelect;
+
+interface ProfileWithForm extends Profile {
+  form: Form | null;
+}
+
+interface CampaignWithProfiles extends Campaign {
+  profiles: ProfileWithForm[];
+}
+
+interface Props {
+  availableCampaigns: CampaignWithProfiles[];
+  selectedCampaign?: CampaignWithProfiles;
+}
+
+const { availableCampaigns, selectedCampaign } = Astro.props;
+---
+
+<section class="flex flex-col gap-5">
+  {selectedCampaign ? (
+    <>
+      <h2>Оберіть профіль</h2>
+      <div class="flex flex-col gap-3">
+        {selectedCampaign.profiles.map((profile: ProfileWithForm) => (
+          <ProfileDisplay
+            profile={profile}
+            selectable
+            href={`/cabinet/application?campaignId=${selectedCampaign.id}&profileId=${profile.id}`}
+            client:load
+          />
+        ))}
+      </div>
+    </>
+  ) : (
+    <>
+      <h2>Оберіть кампанію</h2>
+      <ul class="flex flex-col gap-3">
+        {availableCampaigns.map((campaign: CampaignWithProfiles) => (
+          <li>
+            <a href={`/cabinet/application?campaignId=${campaign.id}`}>
+              <div class="card">
+                <div class="w-full flex flex-row justify-between items-center">
+                  <h4>{campaign.title}</h4>
+                  <p>{campaign.profiles.length} профілів</p>
+                </div>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+</section>

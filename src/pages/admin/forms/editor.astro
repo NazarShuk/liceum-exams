@@ -16,7 +16,7 @@ if (Astro.url.searchParams.has("form")){
 }
 ---
 
-<Layout>
+<Layout title={loadedForm ? loadedForm.title : "Нова форма"}>
     <AdminSidebar slot={"left-side"} />
     <h1 class="mb-5">Редактор форми</h1>
     <FormEditor loadedForm={loadedForm} client:load />

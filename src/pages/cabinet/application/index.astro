@@ -3,11 +3,33 @@ import { actions } from "astro:actions";
 import { getDrizzle } from "@db/drizzle";
 import Layout from "@layouts/Layout.astro";
 import CabinetHead from "@layouts/CabinetHead.astro";
-import FormField from "@components/FormField.astro";
-import ProfileDisplay from "@components/ProfileDisplay.svelte";
+import ApplicationPreview from "@components/application/ApplicationPreview.astro";
+import ApplicationForm from "@components/application/ApplicationForm.astro";
+import CampaignSelector from "@components/application/CampaignSelector.astro";
+import type { campaigns, profiles, forms, applications, users } from "@db/schema";
+
+type Campaign = typeof campaigns.$inferSelect;
+type Profile = typeof profiles.$inferSelect;
+type Form = typeof forms.$inferSelect;
+type Application = typeof applications.$inferSelect;
+type User = typeof users.$inferSelect;
+
+interface ProfileWithForm extends Profile {
+  form: Form | null;
+}
+
+interface CampaignWithProfiles extends Campaign {
+  profiles: ProfileWithForm[];
+}
+
+interface PreviewApplication extends Application {
+  form: Form | null;
+  user: User | null;
+  student: User | null;
+}
 
 const db = getDrizzle();
-const availableCampaigns = await db.query.campaigns.findMany({
+const availableCampaigns = (await db.query.campaigns.findMany({
   where: {
     beginsAt: { lt: new Date() },
   },
@@ -18,12 +40,12 @@ const availableCampaigns = await db.query.campaigns.findMany({
       },
       where: {
         formId: {
-            isNotNull: true
-        }
-      }
+          isNotNull: true,
+        },
+      },
     },
   },
-});
+})) as CampaignWithProfiles[];
 
 const requestedCampaignId = Number(Astro.url.searchParams.get("campaignId"));
 const requestedProfileId = Number(Astro.url.searchParams.get("profileId"));
@@ -31,31 +53,35 @@ const requestedProfileId = Number(Astro.url.searchParams.get("profileId"));
 const selectedCampaign =
   availableCampaigns.find((campaign) => campaign.id === requestedCampaignId) ??
   (availableCampaigns.length === 1 ? availableCampaigns[0] : undefined);
-const selectedProfile = selectedCampaign?.profiles.find((profile)=> profile.id === requestedProfileId)
-const selectedForm = selectedProfile?.form ?? null
+const selectedProfile = selectedCampaign?.profiles.find(
+  (profile) => profile.id === requestedProfileId
+);
+const selectedForm = selectedProfile?.form ?? null;
 
 const previewId = Number(Astro.url.searchParams.get("preview"));
-let previewApplication: any;
+let previewApplication: PreviewApplication | undefined;
 
 if (Number.isInteger(previewId) && previewId > 0) {
-  const app = await db.query.applications.findFirst({
+  const app = (await db.query.applications.findFirst({
     where: { id: previewId },
     with: { user: true, student: true, form: true },
-  });
+  })) as PreviewApplication | undefined;
   if (!app || app.userId !== Astro.locals.user.id) {
     return new Response(null, { status: 404 });
   }
   previewApplication = app;
 }
 
-const applicationAnswers = (previewApplication?.answers ?? {}) as Record<string, unknown>;
+const applicationAnswers = (previewApplication?.answers ?? {}) as Record<
+  string,
+  unknown
+>;
 
 const result = Astro.getActionResult(actions.submitForm);
 
 if (result && !result.error) {
   return Astro.redirect("/cabinet");
 }
-
 ---
 
 <Layout>
@@ -65,201 +91,24 @@ if (result && !result.error) {
     <p class="text-diia-red" role="alert">{result.error.message}</p>
   )}
 
-  {previewApplication ? (
-    <section class="flex flex-col gap-5">
-      <a href="/cabinet" class="self-start">← До кабінету</a>
-
-      <div>
-        <h2>{previewApplication.form?.title ?? "Заява"}</h2>
-        {previewApplication.form?.description && (
-          <p class="pt-2">{previewApplication.form?.description}</p>
-        )}
-      </div>
-
-      <p class="text-sm opacity-70">Заява від {previewApplication.createdAt}</p>
-
-      <div class="card flex flex-col gap-5">
-        <h3>Інформація учня</h3>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <label class="flex flex-col gap-1">
-            Ім'я
-            <input readonly value={previewApplication.student?.firstName ?? ""}>
-          </label>
-          <label class="flex flex-col gap-1">
-            Прізвище
-            <input readonly value={previewApplication.student?.lastName ?? ""}>
-          </label>
-          <label class="flex flex-col gap-1">
-            По батькові
-            <input readonly value={previewApplication.student?.middleName ?? ""}>
-          </label>
-        </div>
-        <label class="flex flex-col gap-1">
-          Дата народження
-          <input readonly type="date" value={previewApplication.student?.birthDate?.toISOString().slice(0, 10) || ""}>
-        </label>
-        <label class="flex flex-col gap-1">
-          Телефон
-          <input readonly type="tel" value={previewApplication.student?.phone ?? ""}>
-        </label>
-      </div>
-
-      <div class="card flex flex-col gap-5">
-        <h3>Інформація батьків</h3>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <label class="flex flex-col gap-1">
-            Ім'я
-            <input readonly value={previewApplication.user?.firstName ?? ""}>
-          </label>
-          <label class="flex flex-col gap-1">
-            Прізвище
-            <input readonly value={previewApplication.user?.lastName ?? ""}>
-          </label>
-          <label class="flex flex-col gap-1">
-            По батькові
-            <input readonly value={previewApplication.user?.middleName ?? ""}>
-          </label>
-        </div>
-        <label class="flex flex-col gap-1">
-          Дата народження
-          <input readonly type="date" value={previewApplication.user?.birthDate?.toISOString().slice(0, 10) || ""}>
-        </label>
-        <label class="flex flex-col gap-1">
-          Телефон
-          <input readonly type="tel" value={previewApplication.user?.phone ?? ""}>
-        </label>
-      </div>
-
-      {previewApplication.form?.schema.length > 0 && (
-        <div class="card flex flex-col gap-5">
-          <h3>Додаткові питання</h3>
-          {previewApplication.form?.schema.map((field) => (
-            <FormField preview previewValue={applicationAnswers[field.slug]} {field} />
-          ))}
-        </div>
-      )}
-    </section>
-  ) : selectedProfile && selectedForm ? (
-    <section class="flex flex-col gap-5">
-      <a href={`/cabinet/application?campaignId=${selectedCampaign?.id}`} class="self-start">
-        ← Назад до профілів
-      </a>
-
-      <div>
-        <h2>{selectedForm.title}</h2>
-        {selectedForm.description && (
-          <p class="pt-2">{selectedForm.description}</p>
-        )}
-      </div>
-
-      <form class="flex flex-col gap-5" action={actions.submitForm} method="POST">
-        <div class="card flex flex-col gap-5">
-          <h3>Інформація учня</h3>
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <label class="flex flex-col gap-1">
-              Ім'я
-              <input name="studentfirstName" required>
-            </label>
-            <label class="flex flex-col gap-1">
-              Прізвище
-              <input name="studentlastName" required>
-            </label>
-            <label class="flex flex-col gap-1">
-              По батькові
-              <input name="studentmiddleName" required>
-            </label>
-          </div>
-          <label class="flex flex-col gap-1">
-            Дата народження
-            <input name="studentBirthDate" type="date" required>
-          </label>
-          <label class="flex flex-col gap-1">
-            Телефон
-            <input name="studentTelephone" type="tel" required>
-          </label>
-        </div>
-
-        <div class="card flex flex-col gap-5">
-          <h3>Інформація батьків</h3>
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <label class="flex flex-col gap-1">
-              Ім'я
-              <input name="parentfirstName" required value={Astro.locals.user.firstName}>
-            </label>
-            <label class="flex flex-col gap-1">
-              Прізвище
-              <input name="parentlastName" required value={Astro.locals.user.lastName}>
-            </label>
-            <label class="flex flex-col gap-1">
-              По батькові
-              <input name="parentmiddleName" required value={Astro.locals.user.middleName}>
-            </label>
-          </div>
-          <label class="flex flex-col gap-1">
-            Дата народження
-            <input
-              name="parentBirthDate"
-              type="date"
-              required
-              value={Astro.locals.user.birthDate?.toISOString().slice(0, 10) || ""}
-            >
-          </label>
-          <label class="flex flex-col gap-1">
-            Телефон
-            <input name="parentTelephone" type="tel" required value={Astro.locals.user.phone}>
-          </label>
-        </div>
-
-        {selectedForm.schema.length > 0 && (
-          <div>
-            {selectedForm.schema.map((field) => (
-              <FormField preview={false} previewValue={undefined} {field} />
-            ))}
-          </div>
-        )}
-
-        <input type="hidden" name="formId" value={selectedForm.id}>
-        <button class="btn-default">Надіслати</button>
-      </form>
-    </section>
-  ) : availableCampaigns.length > 0 ? (
-    <section class="flex flex-col gap-5">
-
-      {selectedCampaign ? (
-        <>
-          <h2>Оберіть профіль</h2>
-          <div class="flex flex-col gap-3">
-            {selectedCampaign.profiles.map((profile) => (
-              <ProfileDisplay
-                profile={profile}
-                selectable
-                href={`/cabinet/application?campaignId=${selectedCampaign.id}&profileId=${profile.id}`}
-              />
-            ))}
-          </div>
-        </>
-      ) : (
-        <>
-          <h2>Оберіть кампанію</h2>
-          <ul class="flex flex-col gap-3">
-            {availableCampaigns.map((campaign) => (
-              <li>
-                <a href={`/cabinet/application?campaignId=${campaign.id}`}>
-                  <div class="card">
-                    <div class="w-full flex flex-row justify-between items-center">
-                      <h4>{campaign.title}</h4>
-                      <p>{campaign.profiles.length} профілів</p>
-                    </div>
-                  </div>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </section>
-  ) : (
-    <p>Наразі немає доступних заяв.</p>
-  )}
-
+  {
+    previewApplication ? (
+      <ApplicationPreview
+        previewApplication={previewApplication}
+        applicationAnswers={applicationAnswers}
+      />
+    ) : selectedProfile && selectedForm ? (
+      <ApplicationForm
+        selectedForm={selectedForm}
+        selectedCampaign={selectedCampaign}
+        selectedProfile={selectedProfile}
+        user={Astro.locals.user}
+      />
+    ) : (
+      <CampaignSelector
+        availableCampaigns={availableCampaigns}
+        selectedCampaign={selectedCampaign}
+      />
+    )
+  }
 </Layout>

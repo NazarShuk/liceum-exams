@@ -1,0 +1,112 @@
+---
+import FormField from "@components/FormField.astro";
+import type { forms, applications, users } from "@db/schema";
+
+type FormFieldSchema = typeof forms.$inferSelect["schema"][number];
+type Application = typeof applications.$inferSelect;
+type User = typeof users.$inferSelect;
+
+interface PreviewApplication extends Application {
+  form: typeof forms.$inferSelect | null;
+  user: User | null;
+  student: User | null;
+}
+
+interface Props {
+  previewApplication: PreviewApplication;
+  applicationAnswers: Record<string, unknown>;
+}
+
+const { previewApplication, applicationAnswers } = Astro.props;
+
+if (!previewApplication.form){
+	return
+}
+---
+
+<section class="flex flex-col gap-5">
+  <a href="/cabinet" class="self-start">← До кабінету</a>
+
+  <div>
+    <h2>{previewApplication.form?.title ?? "Заява"}</h2>
+    {previewApplication.form?.description && (
+      <p class="pt-2">{previewApplication.form?.description}</p>
+    )}
+  </div>
+
+  <p class="text-sm opacity-70">
+    Заява від {previewApplication.createdAt}
+  </p>
+
+  <div class="card flex flex-col gap-5">
+    <h3>Інформація учня</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <label class="flex flex-col gap-1">
+        Ім'я
+        <input readonly value={previewApplication.student?.firstName ?? ""} />
+      </label>
+      <label class="flex flex-col gap-1">
+        Прізвище
+        <input readonly value={previewApplication.student?.lastName ?? ""} />
+      </label>
+      <label class="flex flex-col gap-1">
+        По батькові
+        <input readonly value={previewApplication.student?.middleName ?? ""} />
+      </label>
+    </div>
+    <label class="flex flex-col gap-1">
+      Дата народження
+      <input
+        readonly
+        type="date"
+        value={previewApplication.student?.birthDate
+          ?.toISOString()
+          .slice(0, 10) || ""}
+      />
+    </label>
+    <label class="flex flex-col gap-1">
+      Телефон
+      <input readonly type="tel" value={previewApplication.student?.phone ?? ""} />
+    </label>
+  </div>
+
+  <div class="card flex flex-col gap-5">
+    <h3>Інформація батьків</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <label class="flex flex-col gap-1">
+        Ім'я
+        <input readonly value={previewApplication.user?.firstName ?? ""} />
+      </label>
+      <label class="flex flex-col gap-1">
+        Прізвище
+        <input readonly value={previewApplication.user?.lastName ?? ""} />
+      </label>
+      <label class="flex flex-col gap-1">
+        По батькові
+        <input readonly value={previewApplication.user?.middleName ?? ""} />
+      </label>
+    </div>
+    <label class="flex flex-col gap-1">
+      Дата народження
+      <input
+        readonly
+        type="date"
+        value={previewApplication.user?.birthDate
+          ?.toISOString()
+          .slice(0, 10) || ""}
+      />
+    </label>
+    <label class="flex flex-col gap-1">
+      Телефон
+      <input readonly type="tel" value={previewApplication.user?.phone ?? ""} />
+    </label>
+  </div>
+
+  {previewApplication.form?.schema.length > 0 && (
+    <div>
+      {previewApplication.form.schema.map((field: FormFieldSchema) => (
+        <FormField preview previewValue={applicationAnswers[field.slug]} {field} />
+      ))}
+    </div>
+  )}
+</section>

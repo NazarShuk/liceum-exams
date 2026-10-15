@@ -21,7 +21,7 @@ if (Astro.url.searchParams.has("profile")) {
 const availableForms: Form[] = await db.query.forms.findMany();
 ---
 
-<Layout>
+<Layout title={loadedProfile ? loadedProfile.title : "Новий профіль"}>
     <AdminSidebar slot="left-side" />
     <h1 class="mb-5">Редактор профілю</h1>
     <ProfileEditor loadedProfile={loadedProfile} availableForms={availableForms} client:load />

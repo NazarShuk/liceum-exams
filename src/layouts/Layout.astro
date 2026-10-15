@@ -3,7 +3,12 @@ import { ClientRouter } from "astro:transitions";
 import { Font } from "astro:assets";
 import "../styles/global.css";
 
-const {className} = Astro.props;
+interface Props{
+	className?: string,
+	title?: string
+}
+
+const {className, title} = Astro.props;
 ---
 
 <!doctype html>
@@ -15,19 +20,22 @@ const {className} = Astro.props;
     <Font cssVariable="--font-e-ukraine" />
     <meta name="generator" content={Astro.generator} />
     <ClientRouter />
-    <title>Вступний кабінет Наукового Ліцею</title>
+    <title>{title ? title + " | " : ""} Вступний кабінет Наукового Ліцею</title>
   </head>
   <body>
     <main class="w-full flex flex-row justify-center">
-      <div class="h-screen p-1 w-1/4 lg:block hidden">
+      <section class="h-screen p-1 w-1/4 lg:block hidden">
         <slot name="left-side" />
-      </div>
-      <div class={`lg:w-2/4 w-full h-screen p-1 ${className}`}>
+      </section>
+      <section class={`lg:w-2/4 w-full h-screen p-1 ${className}`}>
         <slot />
-      </div>
-      <div class="h-screen p-1 w-1/4 lg:block hidden">
+        <footer class="h-32">
+        	<slot name="footer" />
+        </footer>
+      </section>
+      <section class="h-screen p-1 w-1/4 lg:block hidden">
         <slot name="right-side" />
-      </div>
+      </section>
     </main>
   </body>
 </html>

@@ -24,7 +24,7 @@ const availableProfiles = await db.query.profiles.findMany();
 const availableForms: Form[] = await db.query.forms.findMany();
 ---
 
-<Layout>
+<Layout title={loadedCampaign ? loadedCampaign.title : "Нова кампанія"}>
     <AdminSidebar slot="left-side" />
     <h1 class="mb-5">Редактор кампанії</h1>
     <CampaignEditor loadedCampaign={loadedCampaign} availableProfiles={availableProfiles} availableForms={availableForms} client:load />

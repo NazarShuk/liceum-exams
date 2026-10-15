@@ -1,0 +1,114 @@
+---
+import { actions } from "astro:actions";
+import FormField from "@components/FormField.astro";
+import type { campaigns, profiles, forms, users } from "@db/schema";
+
+type Form = typeof forms.$inferSelect;
+type Campaign = typeof campaigns.$inferSelect;
+type Profile = typeof profiles.$inferSelect;
+type User = typeof users.$inferSelect;
+type FormFieldSchema = Form["schema"][number];
+
+interface ProfileWithForm extends Profile {
+  form: Form | null;
+}
+
+interface CampaignWithProfiles extends Campaign {
+  profiles: ProfileWithForm[];
+}
+
+interface Props {
+  selectedForm: Form;
+  selectedCampaign: CampaignWithProfiles | undefined;
+  selectedProfile: ProfileWithForm;
+  user: User;
+}
+
+const { selectedForm, selectedCampaign, user } = Astro.props;
+---
+
+<section class="flex flex-col gap-5">
+  <a
+    href={`/cabinet/application?campaignId=${selectedCampaign?.id}`}
+    class="self-start"
+  >
+    ← Назад до профілів
+  </a>
+
+  <div>
+    <h2>{selectedForm.title}</h2>
+    {selectedForm.description && (
+      <p class="pt-2">{selectedForm.description}</p>
+    )}
+  </div>
+
+  <form class="flex flex-col gap-5" action={actions.submitForm} method="POST">
+    <div class="card flex flex-col gap-5">
+      <h3>Інформація учня</h3>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <label class="flex flex-col gap-1">
+          Ім'я
+          <input name="studentfirstName" required />
+        </label>
+        <label class="flex flex-col gap-1">
+          Прізвище
+          <input name="studentlastName" required />
+        </label>
+        <label class="flex flex-col gap-1">
+          По батькові
+          <input name="studentmiddleName" required />
+        </label>
+      </div>
+      <label class="flex flex-col gap-1">
+        Дата народження
+        <input name="studentBirthDate" type="date" required />
+      </label>
+      <label class="flex flex-col gap-1">
+        Телефон
+        <input name="studentTelephone" type="tel" required />
+      </label>
+    </div>
+
+    <div class="card flex flex-col gap-5">
+      <h3>Інформація батьків</h3>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <label class="flex flex-col gap-1">
+          Ім'я
+          <input name="parentfirstName" required value={user.firstName} />
+        </label>
+        <label class="flex flex-col gap-1">
+          Прізвище
+          <input name="parentlastName" required value={user.lastName} />
+        </label>
+        <label class="flex flex-col gap-1">
+          По батькові
+          <input name="parentmiddleName" required value={user.middleName} />
+        </label>
+      </div>
+      <label class="flex flex-col gap-1">
+        Дата народження
+        <input
+          name="parentBirthDate"
+          type="date"
+          required
+          value={user.birthDate?.toISOString().slice(0, 10) || ""}
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        Телефон
+        <input name="parentTelephone" type="tel" required value={user.phone} />
+      </label>
+    </div>
+
+    {selectedForm.schema.length > 0 && (
+      <div>
+        {selectedForm.schema.map((field: FormFieldSchema) => (
+          <FormField preview={false} previewValue={undefined} {field} />
+        ))}
+      </div>
+    )}
+
+    <input type="hidden" name="formId" value={selectedForm.id} />
+    <button class="btn-default">Надіслати</button>
+  </form>
+</section>

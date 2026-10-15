@@ -15,7 +15,7 @@ const campaigns = await db.query.campaigns.findMany({
 })
 ---
 
-<Layout>
+<Layout title="Кампнії">
     <AdminSidebar slot={"left-side"} />
     <h1>Кампанії</h1>
     <a href="campaigns/editor">+ Створити кампанію</a>
@@ -35,7 +35,7 @@ const campaigns = await db.query.campaigns.findMany({
                                 <a href={`/admin/profiles/editor?profile=${profile.id}`}>{profile.title}</a>
                             </li>
                         )))}
-                        
+
                     </ul>
                 </li>
             </a>
