@@ -30,7 +30,14 @@
 
     onMount(()=>{
         if (loadedForm){
-            form = { ...loadedForm, schema: loadedForm.schema.map((field) => ({ ...field })) }
+            form = {
+                ...loadedForm,
+                schema: loadedForm.schema.map((field) => ({
+                    ...field,
+                    required: field.required !== false,
+                    options: field.options ?? [],
+                })),
+            }
         }
 
         savedSnapshot = currentSnapshot();
@@ -58,7 +65,9 @@
             type: "text",
             regex: "",
             max: 32,
-            min: 0
+            min: 0,
+            required: true,
+            options: []
         })
     }
 
@@ -69,6 +78,9 @@
         for (const element of form.schema) {
             element.title = element.title.trim()
             element.slug = element.title.toLowerCase().replaceAll(" ", "-")
+            if (element.options) {
+                element.options = element.options.map((option) => option.trim()).filter(Boolean)
+            }
         }
 
         try {
@@ -151,22 +163,57 @@
     {#each form.schema as field, i (i)}
         <li class="card mb-5 relative">
             <div class="w-full flex flex-row gap-5">
-                <input class="w-full" placeholder={"Назва поля"} bind:value={field.title}>
+             		<input class="w-full" placeholder={"Назва поля"} bind:value={field.title}>
+	                <select class="w-full" placeholder="Тип поля" bind:value={field.type}>
+	                    <option value="text">
+	                        Текст
+	                    </option>
+	                    <option value="number">
+	                        Число
+	                    </option>
+	                    <option value="date">
+	                        Дата
+	                    </option>
+	                    <option value="file">
+	                        Файл
+	                    </option>
+	                    <option value="select">
+	                        Вибір
+	                    </option>
+	                    <option value="multiselect">
+	                        Множинний вибір
+	                    </option>
+	               </select>
+            </div>
 
-                <select class="w-full" placeholder="Тип поля" bind:value={field.type}>
-                    <option value="text">
-                        Текст
-                    </option>
-                    <option value="number">
-                        Число
-                    </option>
-                    <option value="date">
-                        Дата
-                    </option>
-                    <option value="file">
-                        Файл
-                    </option>
-                </select>
+            {#if field.type === "select" || field.type === "multiselect"}
+                <textarea
+                    class="w-full mt-2.5"
+                    placeholder={"Варіанти (по одному в рядку)"}
+                    value={(field.options ?? []).join("\n")}
+                    oninput={(e) => field.options = (e.currentTarget as HTMLTextAreaElement).value.split("\n")}
+                ></textarea>
+            {/if}
+
+            <div class="w-full flex flex-row gap-5 mt-10 items-end justify-between">
+	            <label class="flex flex-col gap-1">
+	                Regex
+	                <input class="w-full" placeholder="Регулярний вираз" bind:value={field.regex}>
+	            </label>
+                <div class="flex flex-row items-center gap-5">
+	              	<label class="flex flex-row items-center gap-2 pb-2">
+	                    <input type="checkbox" bind:checked={field.required}>
+	                    Обов'язкове
+	                </label>
+	                <label class="flex flex-col gap-1 w-12">
+	                    Min
+	                    <input class="w-full" type="number" bind:value={field.min}>
+	                </label>
+	                <label class="flex flex-col gap-1 w-12">
+	                    Max
+	                    <input class="w-full" type="number" bind:value={field.max}>
+	                </label>
+                </div>
             </div>
 
             <button

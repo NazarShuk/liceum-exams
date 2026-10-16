@@ -10,17 +10,45 @@ interface Props {
 
 const {field, preview, previewValue} = Astro.props
 
+const name = "form-" + field.slug
+const options = field.options ?? []
+const required = !preview && field.required !== false
+
+const selectedValues = (Array.isArray(previewValue) ? previewValue : previewValue == null ? [] : [previewValue]).map(String)
+const textValue = Array.isArray(previewValue) ? previewValue.join(", ") : String(previewValue ?? "")
 ---
 
 <div class="card mb-5">
     <h4 class="mb-5">{field.title}</h4>
-    <input
-        readonly={preview}
-        required={!preview}
-        value={preview ? previewValue ?? "" : undefined}
-        class="lg:w-3/4 w-full"
-        name={"form-" + field.slug}
-        placeholder={"Ваша відповідь..."}
-        type={field.type}
-    >
+    {field.type === "select" || field.type === "multiselect" ? (
+        <select
+            name={name}
+            class="lg:w-3/4 w-full"
+            required={required}
+            multiple={field.type === "multiselect"}
+            disabled={preview}
+        >
+            {field.type === "select" && !required && (
+                <option value="">-</option>
+            )}
+            {options.map((option) => (
+                <option value={option} selected={preview && selectedValues.includes(option)}>{option}</option>
+            ))}
+        </select>
+    ) : (
+        <input
+            readonly={preview}
+            required={required}
+            value={preview ? textValue : undefined}
+            class="lg:w-3/4 w-full"
+            name={name}
+            placeholder={"Ваша відповідь..."}
+            type={field.type}
+            minlength={field.type === "text" && field.min > 0 ? field.min : undefined}
+            maxlength={field.type === "text" && field.max > 0 ? field.max : undefined}
+            min={field.type === "number" && field.min > 0 ? field.min : undefined}
+            max={field.type === "number" && field.max > 0 ? field.max : undefined}
+            pattern={field.type === "text" && field.regex ? field.regex : undefined}
+        >
+    )}
 </div>

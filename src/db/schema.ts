@@ -51,10 +51,12 @@ export const forms = sqliteTable("forms", {
         {
             slug:string,
             title:string,
-            type: "text"|"number"|"date"|"file",
+            type: "text"|"number"|"date"|"file"|"select"|"multiselect",
             regex:string,
             max:number,
-            min:number
+            min:number,
+            required?:boolean,
+            options?:string[]
         }[]
     >().notNull().default([]),
 })

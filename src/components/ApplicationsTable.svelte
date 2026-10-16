@@ -123,7 +123,11 @@
                             </td>
                             {#each form.schema as field (field.slug)}
                                 <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                	{String(application.answers[field.slug] ?? "")}
+                                	{(() => {
+                                		const answer = application.answers[field.slug]
+                                		if (Array.isArray(answer)) return answer.join(", ")
+                                		return String(answer ?? "")
+                                	})()}
                                 </td>
                             {/each}
                         </tr>

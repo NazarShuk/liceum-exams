@@ -7,6 +7,65 @@ type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
 type Field = Schema[number]
 const birthDate = z.string().min(1, "Вкажіть дату народження").pipe(z.coerce.date());
 
+function validateAnswer(field: Field, value: unknown): string | null {
+    const required = field.required !== false
+    const label = field.title || field.slug
+    const options = field.options ?? []
+
+    if (field.type === "multiselect") {
+        const values = (Array.isArray(value) ? value : value == null ? [] : [value])
+            .map(String)
+            .filter(Boolean)
+        if (required && values.length === 0)
+            return `«${label}»: виберіть хоча б один варіант`
+        if (!values.every((v) => options.includes(v)))
+            return `«${label}»: некоректне значення`
+        if (field.min > 0 && values.length < field.min)
+            return `«${label}»: виберіть щонайменше ${field.min}`
+        if (field.max > 0 && values.length > field.max)
+            return `«${label}»: виберіть не більше ${field.max}`
+        return null
+    }
+
+    const str = value == null ? "" : String(value)
+    if (str.trim() === "")
+        return required ? `«${label}»: обов'язкове поле` : null
+
+    if (field.type === "number") {
+        const num = Number(str)
+        if (!Number.isFinite(num))
+            return `«${label}»: введіть число`
+        if (field.min > 0 && num < field.min)
+            return `«${label}»: мінімум ${field.min}`
+        if (field.max > 0 && num > field.max)
+            return `«${label}»: максимум ${field.max}`
+    }
+
+    if (field.type === "date" && Number.isNaN(Date.parse(str)))
+        return `«${label}»: некоректна дата`
+
+    if (field.type === "select" && !options.includes(str))
+        return `«${label}»: некоректне значення`
+
+    if (field.regex) {
+        try {
+            if (!new RegExp("^(?:" + field.regex + ")$").test(str))
+                return `«${label}»: невірний формат`
+        } catch {
+            // malformed regex — skip validation
+        }
+    }
+
+    if (field.type === "text") {
+        if (field.min > 0 && str.length < field.min)
+            return `«${label}»: мінімум ${field.min} символів`
+        if (field.max > 0 && str.length > field.max)
+            return `«${label}»: максимум ${field.max} символів`
+    }
+
+    return null
+}
+
 export const submitForm = defineAction({
     accept: "form",
     input: z.looseObject({
@@ -45,23 +104,31 @@ export const submitForm = defineAction({
             if (!profile || profile.formId !== form.id)
                 throw new ActionError({code: "BAD_REQUEST"})
 
-            // TODO: add validation for these
-            const formFields = Object.entries(input)
-                .filter(([key]) => key.startsWith("form-"))
-                .reduce((acc, [key, value]) => {
-                    acc[key.replace(/^form-/, "")] = value;
-                    return acc;
-                }, {} as Record<string, unknown>);
+            let rawForm: FormData | null = null
+            try {
+                rawForm = await context.request.formData()
+            } catch {
+                rawForm = null
+            }
 
+            const formFields: Record<string, unknown> = {}
+            const errors: string[] = []
+            for (const field of form.schema) {
+                const key = "form-" + field.slug
+                const value = field.type === "multiselect"
+                    ? rawForm
+                        ? rawForm.getAll(key).map(String).filter((v) => v !== "")
+                        : (input as Record<string, unknown>)[key] ?? []
+                    : rawForm
+                        ? rawForm.get(key) ?? ""
+                        : (input as Record<string, unknown>)[key] ?? ""
 
-            let hasAllFields = true
-            form.schema.forEach(field=>{
-                if (!formFields[field.slug]){
-                    hasAllFields = false
-                }
-            })
-            if (!hasAllFields)
-                throw new ActionError({code: "BAD_REQUEST"})
+                formFields[field.slug] = value
+                const error = validateAnswer(field, value)
+                if (error) errors.push(error)
+            }
+            if (errors.length > 0)
+                throw new ActionError({code: "BAD_REQUEST", message: errors.join("; ")})
 
 
             await db.update(users).set({
@@ -152,10 +219,12 @@ export const submitFormEdit = defineAction({
         schema: z.array(z.object({
             slug: z.string(),
             title: z.string(),
-            type: z.enum(["number", "date", "text", "file"]),
+            type: z.enum(["number", "date", "text", "file", "select", "multiselect"]),
             regex: z.string(),
             max: z.number(),
             min: z.number(),
+            required: z.boolean().optional(),
+            options: z.array(z.string()).optional(),
         })).nonempty(),
         formId: z.number().optional(),
     }),

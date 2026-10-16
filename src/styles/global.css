@@ -38,7 +38,7 @@ h4 {
     @apply px-6.25 py-3.75 text-white rounded-[40px] bg-black w-fit transition-colors;
     @apply hover:cursor-pointer brightness-110;
 }
-input {
+input, textarea {
     @apply px-[5px] py-[4px] border-b-2 outline-none;
 }
 
