@@ -22,11 +22,11 @@ const campaigns = await db.query.campaigns.findMany({
     <ul>
         {campaigns.map(campaign => (
             <a href={`campaigns/editor?campaign=${campaign.id}`}>
-                <li class="card">
+                <li class="card mb-5">
                     <div class="w-full flex flex-row justify-between items-center">
                         <h4>{campaign.title}</h4>
-                        {isBefore(new Date(), campaign.beginsAt || 0) && <p>Почнеться {formatRelative(campaign.beginsAt || 0, new Date(), {locale: uk})}</p>}
-                        {!isBefore(new Date(), campaign.beginsAt || 0) && <p>Закінчиться {formatRelative(campaign.endsAt || 0, new Date(), {locale: uk})}</p>}
+                        {isBefore(new Date(), campaign.beginsAt || 0) && <p>Почнеться {formatRelative(new Date(campaign.beginsAt || 0), new Date(), {locale: uk})}</p>}
+                        {!isBefore(new Date(), campaign.beginsAt || 0) && <p>Закінчиться {formatRelative(new Date(campaign.endsAt || 0), new Date(), {locale: uk})}</p>}
                     </div>
                     <p>{campaign.profiles.length} Профілі</p>
                     <ul>

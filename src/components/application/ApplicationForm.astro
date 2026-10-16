@@ -22,9 +22,10 @@ interface Props {
   selectedCampaign: CampaignWithProfiles | undefined;
   selectedProfile: ProfileWithForm;
   user: User;
+  children?: User[];
 }
 
-const { selectedForm, selectedCampaign, selectedProfile, user } = Astro.props;
+const { selectedForm, selectedCampaign, selectedProfile, user, children = [] } = Astro.props;
 ---
 
 <section class="flex flex-col gap-5">
@@ -45,27 +46,39 @@ const { selectedForm, selectedCampaign, selectedProfile, user } = Astro.props;
   <form class="flex flex-col gap-5" action={actions.submitForm} method="POST">
     <div class="card flex flex-col gap-5">
       <h3>Інформація учня</h3>
+      {children.length > 0 && (
+        <label class="flex flex-col gap-1">
+          Оберіть учня
+          <select id="studentSelect">
+            <option value="">Новий учень</option>
+            {children.map((child) => (
+              <option value={child.id}>{child.firstName} {child.lastName} {child.middleName || ""}</option>
+            ))}
+          </select>
+        </label>
+      )}
+      <input type="hidden" name="studentId" id="studentIdInput" />
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <label class="flex flex-col gap-1">
           Ім'я
-          <input name="studentfirstName" required />
+          <input name="studentfirstName" id="studentfirstName" required />
         </label>
         <label class="flex flex-col gap-1">
           Прізвище
-          <input name="studentlastName" required />
+          <input name="studentlastName" id="studentlastName" required />
         </label>
         <label class="flex flex-col gap-1">
           По батькові
-          <input name="studentmiddleName" required />
+          <input name="studentmiddleName" id="studentmiddleName" required />
         </label>
       </div>
       <label class="flex flex-col gap-1">
         Дата народження
-        <input name="studentBirthDate" type="date" required />
+        <input name="studentBirthDate" id="studentBirthDate" type="date" required />
       </label>
       <label class="flex flex-col gap-1">
         Телефон
-        <input name="studentTelephone" type="tel" required />
+        <input name="studentTelephone" id="studentTelephone" type="tel" required />
       </label>
     </div>
 
@@ -91,7 +104,7 @@ const { selectedForm, selectedCampaign, selectedProfile, user } = Astro.props;
           name="parentBirthDate"
           type="date"
           required
-          value={user.birthDate?.toISOString().slice(0, 10) || ""}
+          value={user.birthDate ? new Date(user.birthDate as any).toISOString().slice(0, 10) : ""}
         />
       </label>
       <label class="flex flex-col gap-1">
@@ -112,4 +125,46 @@ const { selectedForm, selectedCampaign, selectedProfile, user } = Astro.props;
     <input type="hidden" name="profileId" value={selectedProfile.id} />
     <button class="btn-default">Надіслати</button>
   </form>
+  <script define:vars={{ children }} is:inline>
+    const select = document.getElementById('studentSelect');
+    const studentIdInput = document.getElementById('studentIdInput');
+    const firstName = document.getElementById('studentfirstName');
+    const lastName = document.getElementById('studentlastName');
+    const middleName = document.getElementById('studentmiddleName');
+    const birthDate = document.getElementById('studentBirthDate');
+    const telephone = document.getElementById('studentTelephone');
+    if (select) {
+      select.addEventListener('change', () => {
+        const val = select.value;
+        if (val === '') {
+          studentIdInput.value = '';
+          firstName.value = '';
+          lastName.value = '';
+          middleName.value = '';
+          birthDate.value = '';
+          telephone.value = '';
+          firstName.readOnly = false;
+          lastName.readOnly = false;
+          middleName.readOnly = false;
+          birthDate.readOnly = false;
+          telephone.readOnly = false;
+        } else {
+          const child = children.find(c => String(c.id) === val);
+          if (child) {
+            studentIdInput.value = child.id;
+            firstName.value = child.firstName || '';
+            lastName.value = child.lastName || '';
+            middleName.value = child.middleName || '';
+            birthDate.value = child.birthDate ? new Date(child.birthDate).toISOString().slice(0,10) : '';
+            telephone.value = child.phone || '';
+            firstName.readOnly = true;
+            lastName.readOnly = true;
+            middleName.readOnly = true;
+            birthDate.readOnly = true;
+            telephone.readOnly = true;
+          }
+        }
+      });
+    }
+  </script>
 </section>

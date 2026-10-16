@@ -29,9 +29,11 @@ interface PreviewApplication extends Application {
 }
 
 const db = getDrizzle();
+const now = new Date()
 const availableCampaigns = (await db.query.campaigns.findMany({
   where: {
-    beginsAt: { lt: new Date() },
+    beginsAt: { lt: now },
+    endsAt: { gt: now },
   },
   with: {
     profiles: {
@@ -56,6 +58,12 @@ const selectedCampaign =
 const selectedProfile = selectedCampaign?.profiles.find(
   (profile) => profile.id === requestedProfileId
 );
+let userChildren: User[] = []
+if (Astro.locals.user) {
+  userChildren = await db.query.users.findMany({
+    where: { parentId: Astro.locals.user.id }
+  })
+}
 const selectedForm = selectedProfile?.form ?? null;
 
 const previewId = Number(Astro.url.searchParams.get("preview"));
@@ -80,13 +88,15 @@ const applicationAnswers = (previewApplication?.answers ?? {}) as Record<
 const result = Astro.getActionResult(actions.submitForm);
 
 if (result && !result.error) {
-  return Astro.redirect("/cabinet");
+  return Astro.redirect("/cabinet/application?success=true&preview=" + Number(result.data.id));
 }
 ---
 
 <Layout>
   <CabinetHead />
-
+  {(Astro.url.searchParams.has("success") && !result?.error) && (
+  	<h4 class="text-diia-green">Заяву відправлено!</h4>
+  )}
   {result?.error && (
     <p class="text-diia-red" role="alert">{result.error.message}</p>
   )}
@@ -103,6 +113,7 @@ if (result && !result.error) {
         selectedCampaign={selectedCampaign}
         selectedProfile={selectedProfile}
         user={Astro.locals.user}
+        children={userChildren}
       />
     ) : (
       <CampaignSelector

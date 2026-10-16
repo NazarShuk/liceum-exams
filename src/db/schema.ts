@@ -30,7 +30,8 @@ export const applications = sqliteTable("applications", {
      .$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
     
     formId: integer("form_id").notNull().references(()=>forms.id, {onDelete: "cascade"}),
-    profileId: integer("profile_id").references(()=>profiles.id, {onDelete: "set null"}),
+    profileId: integer("profile_id").notNull().references(()=>profiles.id, {onDelete: "cascade"}),
+    campaignId: integer("campaign_id").references(()=>campaigns.id, {onDelete: "set null"}),
     answers: text({mode:"json"}).notNull().default("{}").$type<{[key:string]: any}>(),
     state: text({enum: ["draft", "submitted"]}).notNull().default("draft")
 })
@@ -75,5 +76,5 @@ export const profiles = sqliteTable("profiles", {
 
 export const campaignsToProfiles = sqliteTable("campaigns_to_profiles", {
     campaignId: integer("campaign_id").notNull().references(()=> campaigns.id, {onDelete: "cascade"}),
-    profileId: integer("profile_id").notNull().references(()=> profiles.id, {onDelete: "cascade"})
+    profileId: integer("profile_id").notNull().unique().references(()=> profiles.id, {onDelete: "cascade"})
 }, (t) => [primaryKey({ columns: [t.campaignId, t.profileId] })])

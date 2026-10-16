@@ -71,9 +71,15 @@ export const submitCampaignEdit = defineAction({
                 ));
             }
             if (addedProfileIds.length) {
-                await db.insert(campaignsToProfiles).values(
-                    addedProfileIds.map((profileId) => ({ campaignId, profileId })),
-                );
+                for (const profileId of addedProfileIds) {
+                    const existingAssignment = await db.query.campaignsToProfiles.findFirst({
+                        where: { profileId: profileId }
+                    })
+                    if (existingAssignment) {
+                        throw new ActionError({ code: "BAD_REQUEST", message: "Профіль уже належить до іншої кампанії" })
+                    }
+                    await db.insert(campaignsToProfiles).values({ campaignId, profileId })
+                }
             }
 
             return { success: true, campaignId };

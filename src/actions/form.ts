@@ -13,13 +13,16 @@ export const submitForm = defineAction({
         formId: z.number(),
         profileId: z.number().int().positive(),
 
-        studentId: z.coerce.number().optional(),
-        studentfirstName: z.string().nonempty(),
-        studentlastName: z.string().nonempty(),
+        studentId: z.preprocess(
+            (v) => (v === "" || v == null ? undefined : v),
+            z.coerce.number().int().positive().optional()
+        ),
+        studentfirstName: z.string(),
+        studentlastName: z.string(),
         studentmiddleName: z.string(),
 
-        studentBirthDate: birthDate,
-        studentTelephone: z.string().nonempty(),
+        studentBirthDate: z.string().optional(),
+        studentTelephone: z.string(),
 
         parentfirstName: z.string().nonempty(),
         parentlastName: z.string().nonempty(),
@@ -31,9 +34,9 @@ export const submitForm = defineAction({
     handler: async (input, context) => {
         try{
             const db = getDrizzle()
-            if (!context.locals.user) 
+            if (!context.locals.user)
                 throw new ActionError({code: "UNAUTHORIZED"})
-            
+
             const form = await db.query.forms.findFirst({where: {id:input.formId}})
             if (!form)
                 throw new ActionError({code: "BAD_REQUEST"})
@@ -41,7 +44,7 @@ export const submitForm = defineAction({
             const profile = await db.query.profiles.findFirst({where: {id:input.profileId}})
             if (!profile || profile.formId !== form.id)
                 throw new ActionError({code: "BAD_REQUEST"})
-            
+
             // TODO: add validation for these
             const formFields = Object.entries(input)
                 .filter(([key]) => key.startsWith("form-"))
@@ -72,17 +75,42 @@ export const submitForm = defineAction({
             let studentId = input.studentId
 
             if (studentId == null){
+                if (!input.studentfirstName || !input.studentlastName || !input.studentTelephone || !input.studentBirthDate)
+                    throw new ActionError({code: "BAD_REQUEST", message: "Заповніть інформацію про учня"})
+
                 const created = await db.insert(users).values({
                     firstName: input.studentfirstName,
                     lastName: input.studentlastName,
                     middleName: input.studentmiddleName,
                     phone: input.studentTelephone,
-                    birthDate: input.studentBirthDate,
+                    birthDate: new Date(input.studentBirthDate),
                     role: "applicant",
                     parentId: context.locals.user.id
                 }).returning({id: users.id})
 
                 studentId = created[0].id
+            } else {
+                const student = await db.query.users.findFirst({where: {id: studentId}})
+                if (!student || student.role !== "applicant" || student.parentId !== context.locals.user.id)
+                    throw new ActionError({code: "BAD_REQUEST", message: "Учня не знайдено серед ваших дітей"})
+            }
+
+            const campaignAssignment = await db.query.campaignsToProfiles.findFirst({
+                where: { profileId: input.profileId }
+            })
+            if (!campaignAssignment) {
+                throw new ActionError({code: "BAD_REQUEST", message: "Профіль не належить жодній кампанії"})
+            }
+            const campaignId = campaignAssignment.campaignId
+
+            const existingApplication = await db.query.applications.findFirst({
+                where: {
+                    studentId: studentId,
+                    campaignId: campaignId
+                }
+            })
+            if (existingApplication) {
+                throw new ActionError({code: "BAD_REQUEST", message: "Заява для цієї дитини в цій кампанії вже існує"})
             }
 
             const result = await db.insert(applications).values({
@@ -91,7 +119,8 @@ export const submitForm = defineAction({
                 state: "submitted",
                 answers: formFields,
                 formId: input.formId,
-                profileId: input.profileId
+                profileId: input.profileId,
+                campaignId: campaignId
             }).returning({id: applications.id})
 
             return {success: true, id: result[0].id}
@@ -122,11 +151,11 @@ export const submitFormEdit = defineAction({
     handler: async(input, context)=> {
         try{
             const db = getDrizzle()
-            if (!context.locals.user) 
+            if (!context.locals.user)
                 throw new ActionError({code: "UNAUTHORIZED"})
-            if (context.locals.user.role !== "admin") 
+            if (context.locals.user.role !== "admin")
                 throw new ActionError({code: "UNAUTHORIZED"})
-            
+
             let formId: number
             if (!input.formId){
                 const [createdForm] = await db.insert(forms).values({
@@ -155,7 +184,7 @@ export const submitFormEdit = defineAction({
                     formId = form.id
                 }
             }
-            
+
             return {success: true, formId}
         }
         catch(e){
