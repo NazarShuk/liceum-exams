@@ -29,7 +29,7 @@ const links = [
     </li>
     {links.map(link => (
         <li>
-            <a class={`${Astro.url.pathname.endsWith(link.href) ? "border-b-2" : ""}`} href={link.href}>{link.name}</a>
+            <a class={`${Astro.url.pathname.startsWith(link.href) ? "border-b-2" : ""}`} href={link.href}>{link.name}</a>
         </li>
     ))}
 </ul>

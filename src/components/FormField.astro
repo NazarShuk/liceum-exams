@@ -5,7 +5,7 @@ type Schema = typeof forms.$inferSelect["schema"][0];
 interface Props {
     field: Schema,
     preview: boolean,
-    previewValue: any|undefined
+    previewValue: unknown|undefined
 }
 
 const {field, preview, previewValue} = Astro.props
@@ -24,4 +24,3 @@ const {field, preview, previewValue} = Astro.props
         type={field.type}
     >
 </div>
-

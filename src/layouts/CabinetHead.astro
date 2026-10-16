@@ -22,6 +22,6 @@ const links = [
 
 <div class="w-full flex flex-row gap-12 py-3">
     {links.filter(link=> link.visible).map(link => (
-        <a class={`cursor-pointer ${Astro.url.pathname.endsWith(link.href) ? "border-b-2" : ""}`} href={link.href}>{link.name}</a>
+        <a class={`cursor-pointer ${Astro.url.pathname === link.href ? "border-b-2" : ""}`} href={link.href}>{link.name}</a>
     ))}
 </div>

@@ -18,6 +18,6 @@ if (!result) return
 <li class="card mb-5">
     <a href=`/cabinet/application?preview=${result.id}`>
         <h4>{result.student?.firstName} {result.student?.lastName}</h4>
-        <p class="opacity-50">{format(new Date(result.createdAt || new Date()), "PPP", {locale: uk})}</p>
+        <p class="opacity-50">{result.createdAt ? format(new Date(result.createdAt), "PPP", {locale: uk}) : ''}</p>
     </a>
 </li>

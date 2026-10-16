@@ -14,7 +14,7 @@ export async function generateToken(id: number, firstName: string, lastName: str
 export const logout = defineAction({
     accept: "form",
     handler: async (data, context) => {
-        console.log("logout")
+
         context.cookies.delete("session", {path: "/"})
         return {success: true}
     }

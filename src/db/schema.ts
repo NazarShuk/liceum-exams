@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 
 export const users = sqliteTable("users", {
     id: integer("id").primaryKey({autoIncrement: true}),
-    externalId: integer("external_id"),
+    externalId: text("external_id"),
 
     firstName: text().notNull(),
     lastName: text().notNull(),
@@ -32,7 +32,7 @@ export const applications = sqliteTable("applications", {
     formId: integer("form_id").notNull().references(()=>forms.id, {onDelete: "cascade"}),
     profileId: integer("profile_id").notNull().references(()=>profiles.id, {onDelete: "cascade"}),
     campaignId: integer("campaign_id").references(()=>campaigns.id, {onDelete: "set null"}),
-    answers: text({mode:"json"}).notNull().default("{}").$type<{[key:string]: any}>(),
+    answers: text({mode:"json"}).notNull().default("{}").$type<{[key:string]: unknown}>(),
     state: text({enum: ["draft", "submitted"]}).notNull().default("draft")
 })
 

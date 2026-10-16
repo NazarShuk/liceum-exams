@@ -33,7 +33,7 @@ if (!previewApplication.form){
   </div>
 
   <p class="text-sm opacity-70">
-    Заява від {previewApplication.createdAt}
+    Заява від {previewApplication.createdAt ? new Date(previewApplication.createdAt as any).toLocaleDateString('uk-UA') : ''}
   </p>
 
   <div class="card flex flex-col gap-5">

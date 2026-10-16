@@ -25,8 +25,8 @@ const campaigns = await db.query.campaigns.findMany({
                 <li class="card mb-5">
                     <div class="w-full flex flex-row justify-between items-center">
                         <h4>{campaign.title}</h4>
-                        {isBefore(new Date(), campaign.beginsAt || 0) && <p>Почнеться {formatRelative(new Date(campaign.beginsAt || 0), new Date(), {locale: uk})}</p>}
-                        {!isBefore(new Date(), campaign.beginsAt || 0) && <p>Закінчиться {formatRelative(new Date(campaign.endsAt || 0), new Date(), {locale: uk})}</p>}
+                        {campaign.beginsAt && isBefore(new Date(), campaign.beginsAt) && <p>Почнеться {formatRelative(new Date(campaign.beginsAt), new Date(), {locale: uk})}</p>}
+                        {campaign.endsAt && !isBefore(new Date(), campaign.beginsAt || new Date(0)) && <p>Закінчиться {formatRelative(new Date(campaign.endsAt), new Date(), {locale: uk})}</p>}
                     </div>
                     <p>{campaign.profiles.length} Профілі</p>
                     <ul>

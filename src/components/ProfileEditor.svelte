@@ -179,7 +179,7 @@
             bind:this={formSelect}
             onchange={handleFormSelect}
         >
-            <option value={null}>Без форми</option>
+            <option value="">Без форми</option>
             {#each forms as form (form.id)}
                 <option value={form.id}>
                     {form.title}
@@ -195,7 +195,7 @@
             class="btn-default {loading ? 'opacity-50' : ''}"
             disabled={loading || profile.formId == null}
             onclick={() => {
-                if (profile.formId != null) openFormEditor(profile.formId);
+                if (profile.formId != null) openFormEditor(profile.formId as number);
             }}
         >
             Редагувати форму

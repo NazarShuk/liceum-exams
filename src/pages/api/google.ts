@@ -30,10 +30,10 @@ export const GET = (async (context) => {
             return new Response(null, {status: 500})
         }
         const userdata = await userResult.json() as {sub: string, name: String, given_name: string, family_name: string, picture: string, email:string, email_verified: boolean}
-        console.log(userdata)
+
 
         const db = getDrizzle()
-        const account = await db.query.users.findFirst({where: {externalId: parseInt(userdata.sub)}})
+        const account = await db.query.users.findFirst({where: {externalId: userdata.sub}})
         if (account){
             const token = await generateToken(account.id, account.firstName, account.lastName)
 
@@ -47,7 +47,7 @@ export const GET = (async (context) => {
         }
         else{
             const newAccount = await db.insert(users).values({
-                externalId: parseInt(userdata.sub),
+                externalId: userdata.sub,
                 firstName: userdata.given_name,
                 lastName: userdata.family_name,
             }).returning({id: users.id, firstName: users.firstName, lastName: users.lastName})

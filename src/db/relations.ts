@@ -14,7 +14,15 @@ export const relations = defineRelations(schema, (r) => ({
     form: r.one.forms({
       from: r.applications.formId,
       to: r.forms.id
-    })
+    }),
+    profile: r.one.profiles({
+      from: r.applications.profileId,
+      to: r.profiles.id,
+    }),
+    campaign: r.one.campaigns({
+      from: r.applications.campaignId,
+      to: r.campaigns.id,
+    }),
   },
   users: {
     children: r.many.users({

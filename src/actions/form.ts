@@ -19,14 +19,14 @@ export const submitForm = defineAction({
         ),
         studentfirstName: z.string(),
         studentlastName: z.string(),
-        studentmiddleName: z.string(),
+        studentmiddleName: z.string().optional(),
 
         studentBirthDate: z.string().optional(),
         studentTelephone: z.string(),
 
         parentfirstName: z.string().nonempty(),
         parentlastName: z.string().nonempty(),
-        parentmiddleName: z.string(),
+        parentmiddleName: z.string().optional(),
 
         parentBirthDate: birthDate,
         parentTelephone: z.string().nonempty(),
@@ -52,7 +52,7 @@ export const submitForm = defineAction({
                     acc[key.replace(/^form-/, "")] = value;
                     return acc;
                 }, {} as Record<string, unknown>);
-            console.log(formFields)
+
 
             let hasAllFields = true
             form.schema.forEach(field=>{
@@ -67,7 +67,7 @@ export const submitForm = defineAction({
             await db.update(users).set({
                 firstName: input.parentfirstName,
                 lastName: input.parentlastName,
-                middleName: input.parentmiddleName,
+                middleName: input.parentmiddleName || null,
                 birthDate: input.parentBirthDate,
                 phone: input.parentTelephone,
             }).where(eq(users.id, context.locals.user.id))
@@ -81,7 +81,7 @@ export const submitForm = defineAction({
                 const created = await db.insert(users).values({
                     firstName: input.studentfirstName,
                     lastName: input.studentlastName,
-                    middleName: input.studentmiddleName,
+                    middleName: input.studentmiddleName || null,
                     phone: input.studentTelephone,
                     birthDate: new Date(input.studentBirthDate),
                     role: "applicant",
@@ -102,6 +102,17 @@ export const submitForm = defineAction({
                 throw new ActionError({code: "BAD_REQUEST", message: "Профіль не належить жодній кампанії"})
             }
             const campaignId = campaignAssignment.campaignId
+            const campaign = await db.query.campaigns.findFirst({ where: { id: campaignId } })
+            if (!campaign) {
+                throw new ActionError({ code: "BAD_REQUEST", message: "Кампанію не знайдено" })
+            }
+            const now = new Date()
+            if (campaign.beginsAt && new Date(campaign.beginsAt) > now) {
+                throw new ActionError({ code: "BAD_REQUEST", message: "Кампанія ще не розпочалася" })
+            }
+            if (campaign.endsAt && new Date(campaign.endsAt) < now) {
+                throw new ActionError({ code: "BAD_REQUEST", message: "Кампанія вже завершилася" })
+            }
 
             const existingApplication = await db.query.applications.findFirst({
                 where: {
