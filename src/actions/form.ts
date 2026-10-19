@@ -2,7 +2,7 @@ import { ActionError, defineAction } from "astro:actions";
 import {z} from "astro/zod";
 import { eq } from "drizzle-orm";
 import { getDrizzle } from "../db/drizzle";
-import { applications, forms, profiles, users } from "@db/schema";
+import { applications, forms, profiles, users, applicantInvites} from "@db/schema";
 type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
 type Field = Schema[number]
 const birthDate = z.string().min(1, "Вкажіть дату народження").pipe(z.coerce.date());
@@ -17,40 +17,40 @@ function validateAnswer(field: Field, value: unknown): string | null {
             .map(String)
             .filter(Boolean)
         if (required && values.length === 0)
-            return `«${label}»: виберіть хоча б один варіант`
+            return `"${label}": виберіть хоча б один варіант`
         if (!values.every((v) => options.includes(v)))
-            return `«${label}»: некоректне значення`
+            return `"${label}": некоректне значення`
         if (field.min > 0 && values.length < field.min)
-            return `«${label}»: виберіть щонайменше ${field.min}`
+            return `"${label}": виберіть щонайменше ${field.min}`
         if (field.max > 0 && values.length > field.max)
-            return `«${label}»: виберіть не більше ${field.max}`
+            return `"${label}": виберіть не більше ${field.max}`
         return null
     }
 
     const str = value == null ? "" : String(value)
     if (str.trim() === "")
-        return required ? `«${label}»: обов'язкове поле` : null
+        return required ? `"${label}": обов'язкове поле` : null
 
     if (field.type === "number") {
         const num = Number(str)
         if (!Number.isFinite(num))
-            return `«${label}»: введіть число`
+            return `"${label}": введіть число`
         if (field.min > 0 && num < field.min)
-            return `«${label}»: мінімум ${field.min}`
+            return `"${label}": мінімум ${field.min}`
         if (field.max > 0 && num > field.max)
-            return `«${label}»: максимум ${field.max}`
+            return `"${label}": максимум ${field.max}`
     }
 
     if (field.type === "date" && Number.isNaN(Date.parse(str)))
-        return `«${label}»: некоректна дата`
+        return `"${label}": некоректна дата`
 
     if (field.type === "select" && !options.includes(str))
-        return `«${label}»: некоректне значення`
+        return `"${label}": некоректне значення`
 
     if (field.regex) {
         try {
             if (!new RegExp("^(?:" + field.regex + ")$").test(str))
-                return `«${label}»: невірний формат`
+                return `"${label}": невірний формат`
         } catch {
             // malformed regex — skip validation
         }
@@ -58,9 +58,9 @@ function validateAnswer(field: Field, value: unknown): string | null {
 
     if (field.type === "text") {
         if (field.min > 0 && str.length < field.min)
-            return `«${label}»: мінімум ${field.min} символів`
+            return `"${label}": мінімум ${field.min} символів`
         if (field.max > 0 && str.length > field.max)
-            return `«${label}»: максимум ${field.max} символів`
+            return `"${label}": максимум ${field.max} символів`
     }
 
     return null
@@ -304,3 +304,36 @@ export const deleteForm = defineAction({
         }
     },
 });
+
+export const applicantLink = defineAction({
+    accept: "form",
+    input: z.object({
+        applicationId: z.number().int().positive()
+    }),
+    handler: async (input, context) => {
+        try {
+            if (!context.locals.user || context.locals.user.role === "applicant") {
+                throw new ActionError({ code: "UNAUTHORIZED" });
+            }
+
+            const db = getDrizzle();
+            const application = await db.query.applications.findFirst({where: {id: input.applicationId, userId: context.locals.user.id}})
+            if (!application) {
+                throw new ActionError({ code: "BAD_REQUEST" });
+            }
+            const existingInvite = await db.query.applicantInvites.findFirst({where: {applicationId: application.id}})
+            if (existingInvite) {
+                return { success: true, id: existingInvite.id};
+            }
+            const newInvite = await db.insert(applicantInvites).values({
+                applicationId: application.id
+            }).returning({id: applicantInvites.id})
+
+            return { success: true, id: newInvite[0].id};
+        } catch (error) {
+            if (error instanceof ActionError) throw error;
+            console.error(error);
+            throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
+        }
+    }
+})

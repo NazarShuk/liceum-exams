@@ -1,8 +1,6 @@
 ---
+import GoogleSignIn from "@components/GoogleSignIn.astro";
 import Layout from "@layouts/Layout.astro";
-import {env} from "cloudflare:workers"
-
-const googleURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${env.GOOGLE_CLIENT_ID}&redirect_uri=${Astro.url.origin}/api/google&response_type=code&scope=openid%20email%20profile`
 
 if (Astro.locals.user){
   return Astro.redirect("/cabinet")
@@ -13,5 +11,5 @@ if (Astro.locals.user){
   <h1 class="py-8">Вступний кабінет</h1>
 
   
-  <a href={googleURL}>Увійти з Google</a>
+  <GoogleSignIn />
 </Layout>

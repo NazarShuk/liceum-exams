@@ -2,7 +2,8 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { getDrizzle } from "@db/drizzle";
 import { generateToken } from "@actions/auth";
-import { users } from "@db/schema";
+import { applicantInvites, users } from "@db/schema";
+import {eq} from "drizzle-orm"
 
 export const GET = (async (context) => {
     const code = context.url.searchParams.get("code") || ""
@@ -31,6 +32,8 @@ export const GET = (async (context) => {
         }
         const userdata = await userResult.json() as {sub: string, name: String, given_name: string, family_name: string, picture: string, email:string, email_verified: boolean}
 
+        const state = context.url.searchParams.get("state")?.split("=")
+        const inviteId = state ? state[0] === "inviteId" ? state[1] : undefined : undefined
 
         const db = getDrizzle()
         const account = await db.query.users.findFirst({where: {externalId: userdata.sub}})
@@ -46,21 +49,60 @@ export const GET = (async (context) => {
             })
         }
         else{
-            const newAccount = await db.insert(users).values({
-                externalId: userdata.sub,
-                firstName: userdata.given_name,
-                lastName: userdata.family_name,
-            }).returning({id: users.id, firstName: users.firstName, lastName: users.lastName})
+            if  (inviteId){
+                const application = await db.query.applicantInvites.findFirst({
+                    where: {
+                        id: inviteId
+                    },
+                    with: {
+                        application: {
+                            columns: {
+                                studentId: true,
+                                userId: true
+                            }
+                        }
+                    }
+                })
+                if (application){
+                    const user = await db.update(users).set({
+                        externalId: userdata.sub
+                    }).where(eq(users.id, application.application?.studentId || -1)).returning({id: users.id, firstName: users.firstName, lastName: users.lastName})
 
-            const token = await generateToken(newAccount[0].id, newAccount[0].firstName, newAccount[0].lastName)
+                    await db.delete(applicantInvites).where(eq(applicantInvites.id, inviteId))
 
-            context.cookies.set("session", token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'lax',
-                path: '/',
-                maxAge: 60 * 60 * 24 * 7,
-            })
+                    const token = await generateToken(user[0].id, user[0].firstName, user[0].lastName)
+    
+                    context.cookies.set("session", token, {
+                        httpOnly: true,
+                        secure: true,
+                        sameSite: 'lax',
+                        path: '/',
+                        maxAge: 60 * 60 * 24 * 7,
+                    })
+                }
+                else {
+                    return new Response(null, {status: 404})
+                }
+            }
+            else{
+                const newAccount = await db.insert(users).values({
+                    externalId: userdata.sub,
+                    firstName: userdata.given_name,
+                    lastName: userdata.family_name,
+                }).returning({id: users.id, firstName: users.firstName, lastName: users.lastName})
+    
+                const token = await generateToken(newAccount[0].id, newAccount[0].firstName, newAccount[0].lastName)
+    
+                context.cookies.set("session", token, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'lax',
+                    path: '/',
+                    maxAge: 60 * 60 * 24 * 7,
+                })
+            }
+
+
         }
         
     }

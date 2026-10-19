@@ -247,7 +247,6 @@
         <div
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
             role="presentation"
-            onclick={closeProfileEditor}
         >
             <!-- svelte-ignore a11y_interactive_supports_focus -->
             <!-- svelte-ignore a11y_click_events_have_key_events -->

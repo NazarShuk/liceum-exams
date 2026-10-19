@@ -2,23 +2,62 @@
 import Layout from "@layouts/Layout.astro";
 import CabinetHead from "@layouts/CabinetHead.astro";
 import { getDrizzle } from "@db/drizzle";
-import ApplicationPreview from "@layouts/ApplicationPreview.astro";
+import {format} from "date-fns"
+import { uk } from "date-fns/locale";
+import { actions } from "astro:actions";
 
 const db = getDrizzle()
 const results = await db.query.applications.findMany({
     where: {
-        userId: Astro.locals.user.id
-    }
+        userId: Astro.locals.user.role !== "applicant" ? Astro.locals.user.id : undefined,
+        studentId: Astro.locals.user.role !== "applicant" ? Astro.locals.user.id : undefined
+    },
+    with: {student: true, profile: {columns: {title: true}}, campaign: {columns: {title: true}}},
 })
+
+const linkResult = Astro.getActionResult(actions.applicantLink)
 ---
 
 <Layout title="Кабінет">
     <CabinetHead />
-    <a href="/cabinet/application">+ Створити заяву</a>
+    {Astro.locals.user.role !== "applicant" && <a href="/cabinet/application">+ Створити заяву</a>}
+    
     <ul class="mt-5">
         {results.length === 0 && <p>У Вас поки що немає заяв</p>}
         {results.map(result => (
-            <ApplicationPreview id={result.id} />
+            <li class="card mb-5">
+                <a href={`/cabinet/application?preview=${result.id}`}>
+                    <h4>{result.student?.firstName} {result.student?.lastName}</h4>
+                    <p>{result.campaign?.title} - {result.profile?.title}</p>
+                    <p class="opacity-50">Подано {result.createdAt ? format(new Date(result.createdAt), "PPP", {locale: uk}) : ''}</p>
+                </a>
+                
+                {Astro.locals.user.role !== "applicant" && (
+                    <form method="POST" action={actions.applicantLink}>
+                        <input hidden name="applicationId" value={result.id}>
+                        <button>Посилання для абітурієнта</button>
+                    </form>
+                )}
+                
+            </li>
         ))}
     </ul>
+
+    {linkResult && linkResult.data?.id && (
+        <div
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
+            role="presentation"
+        >
+            <div
+                class="card flex w-full max-w-2xl flex-col gap-5 bg-white max-h-screen overflow-auto"
+                role="dialog"
+                aria-modal="true"
+            >
+                <h4>Посилання для абітурієнта</h4>
+                <p class="text-center text-diia-blue">{`${Astro.url.origin}/applicant/${linkResult.data.id}`}</p>
+                <p>Скопіюйте це посилання та надішліть його абітурієнту. Абітурієнт зможе зареєструватися та слідкувати за заявою самостійно.</p>
+                <button class="cursor-pointer" onclick="window.location.reload()">Закрити</button>
+            </div>
+        </div>
+    )}
 </Layout>

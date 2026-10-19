@@ -14,6 +14,7 @@ if (result && !result.error){
 
     <ul>
         <li>Ім'я {Astro.locals.user?.firstName} {Astro.locals.user?.lastName}</li>
+        <li>Роль {Astro.locals.user.role === "applicant" && "Абітурієнт"} {Astro.locals.user.role === "parent" && "Опікун"}</li>
         <li>Телефон {Astro.locals.user.phone}</li>
     </ul>
 

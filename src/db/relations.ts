@@ -50,4 +50,10 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.forms.id,
     }),
   },
+  applicantInvites:{
+    application: r.one.applications({
+      from: r.applicantInvites.applicationId,
+      to: r.applications.id,
+    })
+  } 
 }));

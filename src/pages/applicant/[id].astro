@@ -1,0 +1,22 @@
+---
+import Layout from "@layouts/Layout.astro";
+import { getDrizzle } from "@db/drizzle";
+import GoogleSignIn from "@components/GoogleSignIn.astro";
+
+if (Astro.locals.user){
+  return Astro.redirect("/cabinet")
+}
+
+const db = getDrizzle()
+const applicantInvite = await db.query.applicantInvites.findFirst({where: {id: Astro.params.id}, with: {application: {with: {student: {columns: {firstName: true, lastName: true}}, profile: {columns:{title:true}}}}}})
+if (!applicantInvite){
+    return new Response(null, { status: 404 })
+}
+---
+
+<Layout className="flex flex-col justify-center">
+    <h1 class="py-8">Привіт, {applicantInvite.application?.student?.firstName}!</h1>
+    <h3>Вам надано доступ на перегляд вашої заяви "{applicantInvite.application?.profile?.title}".</h3>
+    <p>Зробіть аккаунт щоб переглянути заяву та оцінки з екзаменів.</p>
+    <GoogleSignIn state={`inviteId=${applicantInvite.id}`} />
+</Layout>
