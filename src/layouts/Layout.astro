@@ -19,21 +19,22 @@ const {className, title} = Astro.props;
     <link rel="icon" href="/favicon.ico" />
     <Font cssVariable="--font-e-ukraine" />
     <meta name="generator" content={Astro.generator} />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=visibility_off,more_vert&display=block" rel="stylesheet" />
     <ClientRouter />
     <title>{title ? title + " | " : ""} Вступний кабінет Наукового Ліцею</title>
   </head>
   <body>
     <main class="w-full flex flex-row justify-center">
-      <section class="p-1 w-1/4 lg:block hidden">
+      <section class="p-1 w-1/8 lg:block hidden">
         <slot name="left-side" />
       </section>
-      <section class={`lg:w-2/4 w-full p-1 ${className}`}>
+      <section class={`lg:w-6/8 w-full p-1 ${className}`}>
         <slot />
         <footer class="h-32">
         	<slot name="footer" />
         </footer>
       </section>
-      <section class="p-1 w-1/4 lg:block hidden">
+      <section class="p-1 w-1/8 lg:block hidden">
         <slot name="right-side" />
       </section>
     </main>

@@ -6,6 +6,7 @@
         profiles,
         users,
     } from "@db/schema";
+    import { onMount } from "svelte";
 
     type User = typeof users.$inferSelect;
     type Form = typeof forms.$inferSelect;
@@ -39,10 +40,51 @@
             (application) => application.profileId === selectedProfileId,
         ),
     );
+    const keyedColumns = $derived([
+        { key: "student.name", title: "Учень" },
+        { key: "student.birthDate", title: "Дата народження учня" },
+        { key: "student.phone", title: "Телефон учня" },
+        { key: "user.name", title: "Опікун" },
+        { key: "user.birthDate", title: "Дата народження опікуна" },
+        { key: "user.phone", title: "Телефон опікуна" },
+        ...(form?.schema.map((field) => ({
+            key: `answer:${field.slug}`,
+            title: field.title,
+        })) ?? []),
+    ]);
+    const columns = $derived(keyedColumns.filter(column=> !hiddenColumns.includes(column.key)))
 
     function fullName(user: User | null): string {
         if (!user) return "";
         return [user.firstName, user.lastName, user.middleName].filter(Boolean).join(" ");
+    }
+
+    function cellValue(application: Application, key: string): unknown {
+        switch (key) {
+            case "student.name":
+                return fullName(application.student);
+            case "student.birthDate":
+                return application.student?.birthDate;
+            case "student.phone":
+                return application.student?.phone;
+            case "user.name":
+                return fullName(application.user);
+            case "user.birthDate":
+                return application.user?.birthDate;
+            case "user.phone":
+                return application.user?.phone;
+            default:
+                return key.startsWith("answer:")
+                    ? application.answers[key.slice("answer:".length)]
+                    : "";
+        }
+    }
+
+    function formatCellValue(value: unknown): string {
+        if (value == null) return "";
+        if (value instanceof Date) return value.toLocaleDateString("uk-UA");
+        if (Array.isArray(value)) return value.map(formatCellValue).join(", ");
+        return String(value);
     }
 
     function handleCampaignChange(event: Event) {
@@ -55,88 +97,128 @@
 
     function handleProfileChange() {
         filters = {};
+        hiddenColumns = [];
+    }
+
+    function toggleColumn(key: string) {
+        hiddenColumns = hiddenColumns.includes(key)
+            ? hiddenColumns.filter((hiddenKey) => hiddenKey !== key)
+            : [...hiddenColumns, key];
     }
 
     let filters = $state<{[key:string]: string}>({})
     let filteredApplications = $derived(
       applications.filter((application) => {
-        for (const field in filters) {
-          const filterValue = filters[field]
+        for (const column of columns) {
+          const filterValue = filters[column.key]
           if (!filterValue) continue
 
-          const answer = application.answers[field]
-          if (answer == null) return false
-
-          if (!answer.toString().toLowerCase().includes(filterValue.toLowerCase())) {
+          const value = formatCellValue(cellValue(application, column.key))
+          if (!value.toLowerCase().includes(filterValue.toLowerCase())) {
             return false
           }
         }
         return true
       })
     )
+
+    let hiddenColumns = $state<string[]>([])
+
+    onMount(()=>{
+    	const url = new URL(location.toString())
+     	if (url.searchParams.has("campaign")){
+      		const campaignId = Number(url.searchParams.get("campaign"))
+        	const foundCampaign = campaigns.find((campaign) => campaign.id === campaignId)
+     		if (foundCampaign){
+       			selectedCampaignId = campaignId
+          		selectedProfileId = foundCampaign.profiles[0].id
+       		}
+      	}
+    })
 </script>
 
-<select onchange={handleCampaignChange} bind:value={selectedCampaignId} class="mb-5">
-    {#each campaigns as campaign (campaign.id)}
-        <option value={campaign.id}>
-            {campaign.title}
-        </option>
-    {/each}
-</select>
-{#if selectedCampaign}
-    {#if selectedCampaign.profiles.length > 0}
-        <select onchange={handleProfileChange} bind:value={selectedProfileId} class="mb-5">
-            {#each selectedCampaign.profiles as profile (profile.id)}
-                <option value={profile.id}>
-                    {profile.title}
+<div class="flex flex-row gap-5">
+    <label>
+        Кампанія
+        <select onchange={handleCampaignChange} bind:value={selectedCampaignId} class="mb-5">
+            {#each campaigns as campaign (campaign.id)}
+                <option value={campaign.id}>
+                    {campaign.title}
                 </option>
             {/each}
-        </select>
+            </select>
+    </label>
+
+
+    {#if selectedCampaign && selectedCampaign.profiles.length > 0}
+        <label>
+            Профіль
+            <select onchange={handleProfileChange} bind:value={selectedProfileId} class="mb-5">
+                {#each selectedCampaign.profiles as profile (profile.id)}
+                    <option value={profile.id}>
+                        {profile.title}
+                    </option>
+                {/each}
+            </select>
+        </label>
     {/if}
+</div>
+
+{#if selectedCampaign}
     {#if selectedCampaign.profiles.length === 0}
         <p>До кампанії ще не додано профілів.</p>
     {:else if !form}
         <p>Для цього профілю не призначено форму.</p>
-    {:else if applications.length > 0}
-        <div class="overflow-x-auto">
-            <table class="table-fixed" style="width: {(form.schema.length + 2) * 12}rem; min-width: 100%">
-                <thead class="bg-diia-bright-grey">
-                    <tr>
-                        <th class="px-4 py-5">Учень</th>
-                        <th class="px-4 py-5">Опікун</th>
-                        {#each form.schema as field (field.slug)}
-                            <th class="px-4 py-5">
-                            	{field.title}
-                             	<input class="w-full" bind:value={filters[field.slug]} placeholder="Фільтр..." />
-                            </th>
-                        {/each}
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each filteredApplications as application (application.id)}
+    {:else}
+        <div class="relative">
+            <details class="absolute right-2 top-2 z-20">
+                <summary
+                    aria-label="Налаштувати видимість колонок"
+                    class="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full text-diia-grey hover:bg-diia-bright-grey hover:text-black"
+                >
+                    <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
+                </summary>
+                <div class="absolute right-0 z-10 mt-2 max-h-80 min-w-64 overflow-y-auto rounded border border-diia-bright-grey bg-white p-3 shadow-lg">
+                    {#each keyedColumns as column (column.key)}
+                        <label class="flex min-h-10 cursor-pointer items-center gap-2 py-2">
+                            <input
+                                type="checkbox"
+                                checked={!hiddenColumns.includes(column.key)}
+                                onchange={() => toggleColumn(column.key)}
+                            />
+                            <span class="text-[16px]/[24px] font-light text-black">{column.title}</span>
+                        </label>
+                    {/each}
+                </div>
+            </details>
+            <div class="overflow-x-auto">
+                <table class="table-fixed" style="width: {columns.length * 12}rem; min-width: 100%">
+                    <thead class="bg-diia-bright-grey">
                         <tr>
-                            <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                {fullName(application.student)}
-                            </td>
-                            <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                {fullName(application.user)}
-                            </td>
-                            {#each form.schema as field (field.slug)}
-                                <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                	{(() => {
-                                		const answer = application.answers[field.slug]
-                                		if (Array.isArray(answer)) return answer.join(", ")
-                                		return String(answer ?? "")
-                                	})()}
-                                </td>
+                            {#each columns as column (column.key)}
+                                <th class="px-4 py-5">
+                                    <div class="flex min-h-24 flex-col justify-between relative">
+                                        <p>{column.title}</p>
+                                        <input class="mt-auto w-full" bind:value={filters[column.key]} placeholder="Фільтр..." />
+                                    </div>
+                                </th>
                             {/each}
                         </tr>
-                    {/each}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {#each filteredApplications as application (application.id)}
+                            <tr>
+                                {#each columns as column (column.key)}
+                                    <td class="px-4 py-5 border-2 border-diia-bright-grey">
+                                        {formatCellValue(cellValue(application, column.key))}
+                                    </td>
+                                {/each}
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    {:else}
-        <p>Поданих заяв поки що немає.</p>
     {/if}
 {:else}
     <p>Кампаній ще немає.</p>

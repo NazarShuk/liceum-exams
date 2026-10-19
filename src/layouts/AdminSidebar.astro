@@ -23,10 +23,7 @@ const links = [
 ]
 
 ---
-<ul class="w-1/2 ml-auto border-r h-screen sticky top-0">
-    <li class="mb-5 ">
-        <h1>Адмін</h1>
-    </li>
+<ul class="border-r h-screen sticky top-0">
     {links.map(link => (
         <li>
             <a class={`${Astro.url.pathname.startsWith(link.href) ? "border-b-2" : ""}`} href={link.href}>{link.name}</a>

@@ -4,6 +4,8 @@ import AdminSidebar from "@layouts/AdminSidebar.astro"
 import { getDrizzle } from "@db/drizzle";
 import {formatRelative, isBefore} from "date-fns"
 import {uk} from "date-fns/locale"
+import { applications } from "@db/schema";
+import { eq } from "drizzle-orm";
 
 const db = getDrizzle()
 const campaigns = await db.query.campaigns.findMany({
@@ -11,8 +13,12 @@ const campaigns = await db.query.campaigns.findMany({
         profiles: {
             columns: {id: true, title: true}
         }
+    },
+    orderBy: {
+    	endsAt: "desc"
     }
 })
+
 ---
 
 <Layout title="Кампнії">
@@ -20,22 +26,27 @@ const campaigns = await db.query.campaigns.findMany({
     <h1>Кампанії</h1>
     <a href="campaigns/editor">+ Створити кампанію</a>
     <ul>
-        {campaigns.map(campaign => (
+        {campaigns.map(async campaign => (
             <a href={`campaigns/editor?campaign=${campaign.id}`}>
-                <li class="card mb-5">
+                <li class={`card mb-5 ${campaign.endsAt && !isBefore(new Date(), campaign.beginsAt || new Date(0)) && !isBefore(new Date(), campaign.endsAt || new Date(0)) ? "opacity-75" : ""}`}>
                     <div class="w-full flex flex-row justify-between items-center">
                         <h4>{campaign.title}</h4>
                         {campaign.beginsAt && isBefore(new Date(), campaign.beginsAt) && <p>Почнеться {formatRelative(new Date(campaign.beginsAt), new Date(), {locale: uk})}</p>}
-                        {campaign.endsAt && !isBefore(new Date(), campaign.beginsAt || new Date(0)) && <p>Закінчиться {formatRelative(new Date(campaign.endsAt), new Date(), {locale: uk})}</p>}
+                        {campaign.endsAt && !isBefore(new Date(), campaign.beginsAt || new Date(0)) && isBefore(new Date(), campaign.endsAt || new Date(0)) && <p>Закінчиться {formatRelative(new Date(campaign.endsAt), new Date(), {locale: uk})}</p>}
+                        {campaign.endsAt && !isBefore(new Date(), campaign.beginsAt || new Date(0)) && !isBefore(new Date(), campaign.endsAt || new Date(0)) && <p>Закінчилась {formatRelative(new Date(campaign.endsAt), new Date(), {locale: uk})}</p>}
                     </div>
-                    <p>{campaign.profiles.length} Профілі</p>
+                   	<a href={`/admin/applications?campaign=${campaign.id}`}>
+                    <h7>
+                    		{await db.$count(applications, eq(applications.campaignId, campaign.id))} Заяв
+                    </h7>
+                   	</a>
+
                     <ul>
                         {campaign.profiles.map((profile => (
                             <li>
                                 <a href={`/admin/profiles/editor?profile=${profile.id}`}>{profile.title}</a>
                             </li>
                         )))}
-
                     </ul>
                 </li>
             </a>

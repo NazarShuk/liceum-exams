@@ -33,6 +33,9 @@ h3 {
 h4 {
     @apply text-[24px]/[32px] /*text-[16px]/[20px]*/
 }
+h7 {
+    @apply text-[16px]/[24px] /*text-[16px]/[20px]*/
+}
 
 .btn-default {
     @apply px-6.25 py-3.75 text-white rounded-[40px] bg-black w-fit transition-colors;
@@ -84,4 +87,49 @@ select option:checked {
 
 .is-navigating {
     opacity: 0.75;
+}
+
+input[type="checkbox"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 2px solid #000;
+    border-radius: 0;
+    background-color: #fff;
+    cursor: pointer;
+}
+input[type="checkbox"]:checked {
+    background-image: url("/checkbox-check.svg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+input[type="checkbox"]:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+}
+
+/* Diia scrollbar */
+:not(.Mac-OS)::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 15px;
+}
+:not(.Mac-OS)::-webkit-scrollbar-button, :not(.Mac-OS)::-webkit-scrollbar-corner {
+    display: none;
+}
+:not(.Mac-OS)::-webkit-scrollbar-button, :not(.Mac-OS)::-webkit-scrollbar-corner {
+    display: none;
+}
+:not(.Mac-OS)::-webkit-scrollbar-thumb {
+    width: 24px;
+    height: 50px;
+    background: #ccc;
+    background-clip: padding-box;
+    border: 5px solid transparent;
+    border-radius: 10px;
+}
+:not(.Mac-OS)::-webkit-scrollbar-track {
+    background: #fff;
 }
