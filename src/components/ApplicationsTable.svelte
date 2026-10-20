@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { actions } from "astro:actions";
     import type {
         applications as applicationsType,
         campaigns as campaignsType,
@@ -25,8 +26,12 @@
         campaigns: CampaignWithProfiles[];
     } = $props();
 
+    let applicationRecords = $state<Application[]>([...allApplications]);
     let selectedCampaignId = $state<number | null>(campaigns[0]?.id ?? null);
     let selectedProfileId = $state<number | null>(campaigns[0]?.profiles[0]?.id ?? null);
+    let selectedApplicationIds = $state<number[]>([]);
+    let deleting = $state(false);
+    let deleteError = $state("");
 
     const selectedCampaign = $derived(
         campaigns.find((campaign) => campaign.id === selectedCampaignId),
@@ -36,7 +41,7 @@
     );
     const form = $derived(selectedProfile?.form ?? null);
     const applications = $derived(
-        allApplications.filter(
+        applicationRecords.filter(
             (application) => application.profileId === selectedProfileId,
         ),
     );
@@ -90,6 +95,7 @@
 
     function handleCampaignChange(event: Event) {
         filters = {};
+        selectedApplicationIds = [];
         const campaignId = Number((event.currentTarget as HTMLSelectElement).value);
         selectedCampaignId = campaignId;
         const campaign = campaigns.find((campaign) => campaign.id === campaignId);
@@ -99,6 +105,7 @@
     function handleProfileChange() {
         filters = {};
         hiddenColumns = [];
+        selectedApplicationIds = [];
     }
 
     function toggleColumn(key: string) {
@@ -122,6 +129,59 @@
         return true
       })
     )
+
+    const allVisibleSelected = $derived(
+        filteredApplications.length > 0 &&
+            filteredApplications.every((application) => selectedApplicationIds.includes(application.id)),
+    );
+
+    function toggleApplication(id: number) {
+        selectedApplicationIds = selectedApplicationIds.includes(id)
+            ? selectedApplicationIds.filter((selectedId) => selectedId !== id)
+            : [...selectedApplicationIds, id];
+    }
+
+    function toggleVisibleApplications() {
+        const visibleIds = filteredApplications.map((application) => application.id);
+        selectedApplicationIds = allVisibleSelected
+            ? selectedApplicationIds.filter((id) => !visibleIds.includes(id))
+            : [...new Set([...selectedApplicationIds, ...visibleIds])];
+    }
+
+    function getFileKey(value: unknown): string | null {
+        if (typeof value !== "object" || value === null || !("key" in value)) return null;
+        return typeof value.key === "string" && value.key.trim() ? value.key : null;
+    }
+
+    async function deleteApplications(applicationIds: number[]) {
+        if (deleting || applicationIds.length === 0) return;
+        const message = applicationIds.length === 1
+            ? "Видалити цю заяву?"
+            : `Видалити вибрані заяви (${applicationIds.length})?`;
+        if (!window.confirm(message)) return;
+
+        deleting = true;
+        deleteError = "";
+        try {
+            const result = await actions.deleteApplications({ applicationIds });
+            if (result.error) {
+                deleteError = result.error.message;
+                return;
+            }
+
+            const deletedIds = new Set(applicationIds);
+            applicationRecords = applicationRecords.filter((application) => !deletedIds.has(application.id));
+            selectedApplicationIds = selectedApplicationIds.filter((id) => !deletedIds.has(id));
+        } catch (error) {
+            deleteError = error instanceof Error ? error.message : "Не вдалося видалити заяви";
+        } finally {
+            deleting = false;
+        }
+    }
+
+    function deleteSelectedApplications() {
+        return deleteApplications(selectedApplicationIds);
+    }
 
     let hiddenColumns = $state<string[]>([])
 
@@ -192,10 +252,34 @@
                     {/each}
                 </div>
             </details>
+            <div class="mb-3 flex items-center gap-3 pr-12">
+                <button
+                    type="button"
+                    class="btn-default text-diia-red disabled:opacity-50"
+                    disabled={deleting || selectedApplicationIds.length === 0}
+                    onclick={deleteSelectedApplications}
+                >
+                    {deleting ? "Видалення..." : `Видалити вибрані (${selectedApplicationIds.length})`}
+                </button>
+                {#if deleteError}
+                    <p class="text-diia-red" role="alert">{deleteError}</p>
+                {/if}
+            </div>
             <div class="overflow-x-auto">
-                <table class="table-fixed" style="width: {columns.length * 12}rem; min-width: 100%">
+                <table class="table-fixed" style="width: {(columns.length + 1) * 12}rem; min-width: 100%">
                     <thead class="bg-diia-bright-grey">
                         <tr>
+                            <th class="px-4 py-5">
+                                <label class="flex min-h-24 items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        aria-label="Вибрати всі видимі заяви"
+                                        checked={allVisibleSelected}
+                                        onchange={toggleVisibleApplications}
+                                    />
+                                    <span>Дії</span>
+                                </label>
+                            </th>
                             {#each columns as column (column.key)}
                                 <th class="px-4 py-5">
                                     <div class="flex min-h-24 flex-col justify-between relative">
@@ -209,14 +293,34 @@
                     <tbody>
                         {#each filteredApplications as application (application.id)}
                             <tr>
+                                <td class="border-2 border-diia-bright-grey px-4 py-5">
+                                    <div class="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            aria-label={`Вибрати заяву ${application.id}`}
+                                            checked={selectedApplicationIds.includes(application.id)}
+                                            onchange={() => toggleApplication(application.id)}
+                                        />
+                                        <button
+                                            type="button"
+                                            class="text-diia-red disabled:opacity-50"
+                                            disabled={deleting}
+                                            aria-label={`Видалити заяву ${application.id}`}
+                                            onclick={() => deleteApplications([application.id])}
+                                        >
+                                            Видалити
+                                        </button>
+                                    </div>
+                                </td>
                                 {#each columns as column (column.key)}
                                     <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                        {#if cellValue(application, column.key)}
-                                            {#if column.type !== "file"}
-                                                {formatCellValue(cellValue(application, column.key))}
-                                            {:else}
-                                                <a target="_blank" href="/file?key={encodeURIComponent((cellValue(application, column.key) as {key?: string}).key || "")}">Переглянути файл</a>
+                                        {#if column.type === "file"}
+                                            {@const key = getFileKey(cellValue(application, column.key))}
+                                            {#if key}
+                                                <a target="_blank" href="/file?key={encodeURIComponent(key)}">Переглянути файл</a>
                                             {/if}
+                                        {:else if cellValue(application, column.key)}
+                                            {formatCellValue(cellValue(application, column.key))}
                                         {/if}
                                     </td>
                                 {/each}

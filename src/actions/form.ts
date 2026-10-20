@@ -1,6 +1,6 @@
 import { ActionError, defineAction } from "astro:actions";
 import {z} from "astro/zod";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getDrizzle } from "../db/drizzle";
 import { applications, forms, profiles, users, applicantInvites} from "@db/schema";
 import { env } from "cloudflare:workers";
@@ -312,6 +312,49 @@ export const deleteForm = defineAction({
             await db.update(profiles).set({ formId: null }).where(eq(profiles.formId, input.formId));
             await db.delete(forms).where(eq(forms.id, input.formId));
             return { success: true };
+        } catch (error) {
+            if (error instanceof ActionError) throw error;
+            console.error(error);
+            throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
+        }
+    },
+});
+
+export const deleteApplications = defineAction({
+    accept: "json",
+    input: z.object({
+        applicationIds: z.array(z.number().int().positive()).min(1),
+    }),
+    handler: async (input, context) => {
+        try {
+            if (!context.locals.user || context.locals.user.role !== "admin") {
+                throw new ActionError({ code: "UNAUTHORIZED" });
+            }
+
+            const db = getDrizzle();
+            const records = await db
+                .select()
+                .from(applications)
+                .where(inArray(applications.id, input.applicationIds));
+            if (records.length === 0) {
+                throw new ActionError({ code: "BAD_REQUEST", message: "Заяв не знайдено" });
+            }
+
+            const fileKeys = records.flatMap(({ answers }) =>
+                Object.values(answers).flatMap((answer) => {
+                    if (typeof answer !== "object" || answer === null || !("key" in answer)) {
+                        return [];
+                    }
+                    const key = answer.key;
+                    return typeof key === "string" && key.startsWith("applications/") ? [key] : [];
+                }),
+            );
+            if (fileKeys.length > 0) {
+                await env.LICEUM_BUCKET.delete(fileKeys);
+            }
+
+            await db.delete(applications).where(inArray(applications.id, input.applicationIds));
+            return { success: true, deletedCount: records.length };
         } catch (error) {
             if (error instanceof ActionError) throw error;
             console.error(error);
