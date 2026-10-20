@@ -215,7 +215,7 @@
                                             {#if column.type !== "file"}
                                                 {formatCellValue(cellValue(application, column.key))}
                                             {:else}
-                                                <a target="_blank" href="/file?key={encodeURIComponent((cellValue(application, column.key) as {key: string}).key)}">Переглянути файл</a>
+                                                <a target="_blank" href="/file?key={encodeURIComponent((cellValue(application, column.key) as {key?: string}).key || "")}">Переглянути файл</a>
                                             {/if}
                                         {/if}
                                     </td>
