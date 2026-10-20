@@ -211,10 +211,12 @@
                             <tr>
                                 {#each columns as column (column.key)}
                                     <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                        {#if column.type !== "file"}
-                                            {formatCellValue(cellValue(application, column.key))}
-                                        {:else}
-                                            <a target="_blank" href="/file?key={encodeURIComponent((cellValue(application, column.key) as {key: string}).key)}">Переглянути файл</a>
+                                        {#if cellValue(application, column.key)}
+                                            {#if column.type !== "file"}
+                                                {formatCellValue(cellValue(application, column.key))}
+                                            {:else}
+                                                <a target="_blank" href="/file?key={encodeURIComponent((cellValue(application, column.key) as {key: string}).key)}">Переглянути файл</a>
+                                            {/if}
                                         {/if}
                                     </td>
                                 {/each}
