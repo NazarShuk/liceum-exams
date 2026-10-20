@@ -83,6 +83,6 @@ export const campaignsToProfiles = sqliteTable("campaigns_to_profiles", {
 
 export const applicantInvites = sqliteTable("applicant_invites", {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    applicationId: integer("application_id").notNull().references(() => applications.id),
+    applicationId: integer("application_id").notNull().references(() => applications.id, {onDelete: "cascade"}),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 })

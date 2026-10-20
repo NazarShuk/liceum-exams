@@ -41,15 +41,16 @@
         ),
     );
     const keyedColumns = $derived([
-        { key: "student.name", title: "Учень" },
-        { key: "student.birthDate", title: "Дата народження учня" },
-        { key: "student.phone", title: "Телефон учня" },
-        { key: "user.name", title: "Опікун" },
-        { key: "user.birthDate", title: "Дата народження опікуна" },
-        { key: "user.phone", title: "Телефон опікуна" },
+        { key: "student.name", title: "Учень", type: "text"},
+        { key: "student.birthDate", title: "Дата народження учня", type: "date"},
+        { key: "student.phone", title: "Телефон учня", type: "text"},
+        { key: "user.name", title: "Опікун", type: "text"},
+        { key: "user.birthDate", title: "Дата народження опікуна", type: "date"},
+        { key: "user.phone", title: "Телефон опікуна", type: "text"},
         ...(form?.schema.map((field) => ({
             key: `answer:${field.slug}`,
             title: field.title,
+            type: field.type
         })) ?? []),
     ]);
     const columns = $derived(keyedColumns.filter(column=> !hiddenColumns.includes(column.key)))
@@ -210,7 +211,11 @@
                             <tr>
                                 {#each columns as column (column.key)}
                                     <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                        {formatCellValue(cellValue(application, column.key))}
+                                        {#if column.type !== "file"}
+                                            {formatCellValue(cellValue(application, column.key))}
+                                        {:else}
+                                            <a target="_blank" href="/file?key={encodeURIComponent((cellValue(application, column.key) as {key: string}).key)}">Переглянути файл</a>
+                                        {/if}
                                     </td>
                                 {/each}
                             </tr>

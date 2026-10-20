@@ -24,5 +24,11 @@
 	],
 	"vars": {
 		"GOOGLE_CLIENT_ID": "140530214278-da3mfhac8mmhgu86miaub1he4s8lobkq.apps.googleusercontent.com"
-	}
+	},
+	"r2_buckets": [
+		{
+			"binding": "LICEUM_BUCKET",
+			"bucket_name": "liceum-exams",
+		}
+	]
 }

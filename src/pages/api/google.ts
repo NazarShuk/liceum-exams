@@ -88,7 +88,7 @@ export const GET = (async (context) => {
                 const newAccount = await db.insert(users).values({
                     externalId: userdata.sub,
                     firstName: userdata.given_name,
-                    lastName: userdata.family_name,
+                    lastName: userdata.family_name || "",
                 }).returning({id: users.id, firstName: users.firstName, lastName: users.lastName})
     
                 const token = await generateToken(newAccount[0].id, newAccount[0].firstName, newAccount[0].lastName)

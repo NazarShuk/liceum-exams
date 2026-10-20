@@ -1,0 +1,20 @@
+---
+import { env } from "cloudflare:workers";
+
+const key = Astro.url.searchParams.get("key") || ""
+const keyPattern = /^applications\/\d+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[^/]+$/
+
+if (!keyPattern.test(key))
+    return new Response(null, {status: 404})
+if (!Astro.locals.user)
+    return new Response(null, {status: 401})
+
+const file = await env.LICEUM_BUCKET.get(key)
+if (!file)
+    return new Response(null, {status: 404})
+if (!file.customMetadata || !file.customMetadata.owner)
+    return new Response(null, {status: 500})
+if (Astro.locals.user.role !== "admin" && (file.customMetadata.owner !== Astro.locals.user.id.toString() && file.customMetadata.owner !== Astro.locals.user.parentId?.toString()))
+    return new Response(null, {status: 403})
+return new Response(await file.arrayBuffer())
+---

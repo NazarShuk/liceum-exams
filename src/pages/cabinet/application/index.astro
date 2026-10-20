@@ -74,7 +74,7 @@ if (Number.isInteger(previewId) && previewId > 0) {
     where: { id: previewId },
     with: { user: true, student: true, form: true },
   })) as PreviewApplication | undefined;
-  if (!app || app.userId !== Astro.locals.user.id) {
+  if (!app || (app.userId !== Astro.locals.user.id && app.userId !== Astro.locals.user.parentId)) {
     return new Response(null, { status: 404 });
   }
   previewApplication = app;

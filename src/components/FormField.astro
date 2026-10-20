@@ -16,11 +16,17 @@ const required = !preview && field.required !== false
 
 const selectedValues = (Array.isArray(previewValue) ? previewValue : previewValue == null ? [] : [previewValue]).map(String)
 const textValue = Array.isArray(previewValue) ? previewValue.join(", ") : String(previewValue ?? "")
+const fileKey = typeof previewValue === "object" && previewValue !== null && "key" in previewValue && typeof previewValue.key === "string"
+    ? previewValue.key
+    : null
+const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null
 ---
 
 <div class="card mb-5">
     <h4 class="mb-5">{field.title}</h4>
-    {field.type === "select" || field.type === "multiselect" ? (
+    {field.type === "file" && preview && fileHref ? (
+        <a target="_blank" href={fileHref}>Переглянути файл</a>
+    ) : field.type === "select" || field.type === "multiselect" ? (
         <select
             name={name}
             class="lg:w-3/4 w-full"
@@ -51,4 +57,5 @@ const textValue = Array.isArray(previewValue) ? previewValue.join(", ") : String
             pattern={field.type === "text" && field.regex ? field.regex : undefined}
         >
     )}
+
 </div>

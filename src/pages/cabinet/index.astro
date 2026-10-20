@@ -10,7 +10,7 @@ const db = getDrizzle()
 const results = await db.query.applications.findMany({
     where: {
         userId: Astro.locals.user.role !== "applicant" ? Astro.locals.user.id : undefined,
-        studentId: Astro.locals.user.role !== "applicant" ? Astro.locals.user.id : undefined
+        studentId: Astro.locals.user.role === "applicant" ? Astro.locals.user.id : undefined
     },
     with: {student: true, profile: {columns: {title: true}}, campaign: {columns: {title: true}}},
 })
@@ -35,7 +35,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
                 {Astro.locals.user.role !== "applicant" && (
                     <form method="POST" action={actions.applicantLink}>
                         <input hidden name="applicationId" value={result.id}>
-                        <button>Посилання для абітурієнта</button>
+                        <button class="cursor-pointer">Посилання для абітурієнта</button>
                     </form>
                 )}
                 

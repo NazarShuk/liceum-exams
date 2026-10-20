@@ -3,6 +3,8 @@ import {z} from "astro/zod";
 import { eq } from "drizzle-orm";
 import { getDrizzle } from "../db/drizzle";
 import { applications, forms, profiles, users, applicantInvites} from "@db/schema";
+import { env } from "cloudflare:workers";
+
 type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
 type Field = Schema[number]
 const birthDate = z.string().min(1, "Вкажіть дату народження").pipe(z.coerce.date());
@@ -125,11 +127,11 @@ export const submitForm = defineAction({
 
                 formFields[field.slug] = value
                 const error = validateAnswer(field, value)
-                if (error) errors.push(error)
+                if (error) 
+                    errors.push(error)
             }
             if (errors.length > 0)
                 throw new ActionError({code: "BAD_REQUEST", message: errors.join("; ")})
-
 
             await db.update(users).set({
                 firstName: input.parentfirstName,
@@ -189,6 +191,19 @@ export const submitForm = defineAction({
             })
             if (existingApplication) {
                 throw new ActionError({code: "BAD_REQUEST", message: "Заява для цієї дитини в цій кампанії вже існує"})
+            }
+
+            for (const field in formFields) {
+                const file = formFields[field]
+                if (file instanceof File) {
+                    const key = `applications/${context.locals.user.id}/${crypto.randomUUID()}/${encodeURIComponent(field)}`
+                    await env.LICEUM_BUCKET.put(key, await file.arrayBuffer(), {
+                        customMetadata: {
+                            owner: context.locals.user.id.toString()
+                        }
+                    })
+                    formFields[field] = { key }
+                }
             }
 
             const result = await db.insert(applications).values({
