@@ -16,5 +16,13 @@ if (!file.customMetadata || !file.customMetadata.owner)
     return new Response(null, {status: 500})
 if (Astro.locals.user.role !== "admin" && (file.customMetadata.owner !== Astro.locals.user.id.toString() && file.customMetadata.owner !== Astro.locals.user.parentId?.toString()))
     return new Response(null, {status: 403})
-return new Response(await file.arrayBuffer())
+
+const fileName = file.customMetadata.fileName || key.split("/").pop() || "download"
+const encodedFileName = encodeURIComponent(fileName).replace(/[!'()*]/g, char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
+return new Response(await file.arrayBuffer(), {
+    headers: {
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodedFileName}`,
+        "Content-Type": file.customMetadata.fileType || "application/octet-stream"
+    }
+})
 ---

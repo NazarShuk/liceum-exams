@@ -199,8 +199,10 @@ export const submitForm = defineAction({
                     const key = `applications/${context.locals.user.id}/${crypto.randomUUID()}/${encodeURIComponent(field)}`
                     await env.LICEUM_BUCKET.put(key, await file.arrayBuffer(), {
                         customMetadata: {
-                            owner: context.locals.user.id.toString()
-                        }
+                            owner: context.locals.user.id.toString(),
+                            fileName: file.name,
+                            fileType: file.type
+                        },
                     })
                     formFields[field] = { key }
                 }
