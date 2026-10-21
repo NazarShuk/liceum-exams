@@ -47,6 +47,6 @@
             >X</button>
         {/if}
         <h4>{profile.title}</h4>
-        <p>{profile.description}</p>
+        <p class="whitespace-pre-wrap">{profile.description}</p>
     </div>
 </a>
