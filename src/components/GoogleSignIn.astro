@@ -8,4 +8,9 @@ interface Props {
 const googleURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${env.GOOGLE_CLIENT_ID}&redirect_uri=${Astro.url.origin}/api/google&response_type=code&scope=openid%20email%20profile${Astro.props.state ? `&state=${Astro.props.state}` : ""}`
 ---
 
-<a href={googleURL}>Увійти з Google</a>
+<a
+  href={googleURL}
+  class="btn-default"
+>
+  <span>Увійти з Google</span>
+</a>
