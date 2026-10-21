@@ -1,0 +1,1 @@
+ALTER TABLE `campaigns` ADD `allow_multiple_profiles` integer DEFAULT false NOT NULL;

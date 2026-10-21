@@ -19,6 +19,7 @@ export const submitCampaignEdit = defineAction({
         beginsAt: dateInput,
         endsAt: dateInput,
         profileIds: z.array(z.number().int().positive()),
+        allowMultipleProfiles: z.boolean()
     }),
     handler: async (input, context) => {
         try {
@@ -40,6 +41,7 @@ export const submitCampaignEdit = defineAction({
                 title: input.title,
                 beginsAt: input.beginsAt ? new Date(`${input.beginsAt}T00:00:00.000Z`) : null,
                 endsAt: input.endsAt ? new Date(`${input.endsAt}T00:00:00.000Z`) : null,
+                allowMultipleProfiles: input.allowMultipleProfiles
             };
 
             let campaignId = input.campaignId;

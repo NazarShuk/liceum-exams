@@ -189,9 +189,10 @@ export const submitForm = defineAction({
                     campaignId: campaignId
                 }
             })
-            if (existingApplication) {
-                throw new ActionError({code: "BAD_REQUEST", message: "Заява для цієї дитини в цій кампанії вже існує"})
+            if (existingApplication && (!campaign.allowMultipleProfiles || existingApplication.profileId === input.profileId)) {
+                throw new ActionError({code: "BAD_REQUEST", message: `Заява для цієї дитини${existingApplication.profileId === input.profileId ? ' (на цей профіль)' : ''} в цій кампанії вже існує`})
             }
+            
 
             for (const field in formFields) {
                 const file = formFields[field]

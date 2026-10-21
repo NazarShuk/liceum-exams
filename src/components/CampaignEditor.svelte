@@ -30,6 +30,8 @@
         endsAt: dateInputValue(loadedCampaign?.endsAt ?? null),
         // svelte-ignore state_referenced_locally
         profiles: loadedCampaign?.profiles ?? [],
+        // svelte-ignore state_referenced_locally
+        allowMultipleProfiles: loadedCampaign?.allowMultipleProfiles
     });
     let loading = $state(false);
     let errorMessage = $state("");
@@ -131,6 +133,7 @@
                 beginsAt: campaign.beginsAt,
                 endsAt: campaign.endsAt,
                 profileIds: campaign.profiles.map(({ id }) => id),
+                allowMultipleProfiles: campaign.allowMultipleProfiles || false
             });
 
             if (result.error) {
@@ -211,6 +214,10 @@
                 <option value={profile.id}>{profile.title}</option>
             {/each}
         </select>
+    </label>
+    <label class="flex flex-row items-center gap-1">
+        <input type="checkbox" bind:checked={campaign.allowMultipleProfiles}>
+        Дозволити подачу заяв на декілька профілів
     </label>
 
     {#if errorMessage}
