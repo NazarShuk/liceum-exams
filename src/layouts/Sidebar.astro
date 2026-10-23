@@ -41,7 +41,7 @@ const links = [
 ---
 <nav class={"overflow-hidden flex flex-col justify-between h-full"}>
     <ul class="h-full overflow-auto" transition:name="sidebar">
-        {links.map(link => (
+        {links.filter(link=> link.visible).map(link => (
             <li class={`flex flex-row items-center p-2.5 gap-1 ${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl`}>
                 {link.icon && (
                     <span class="material-symbols-outlined">
