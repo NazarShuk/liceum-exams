@@ -1,6 +1,5 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import AdminSidebar from "@layouts/AdminSidebar.astro"
 import { getDrizzle } from "@db/drizzle";
 import ProfileDisplay from "@components/ProfileDisplay.svelte";
 
@@ -9,7 +8,6 @@ const profiles = await db.query.profiles.findMany()
 ---
 
 <Layout title="Профілі">
-    <AdminSidebar slot={"left-side"} />
     <h1>Профілі</h1>
     <a href="/admin/profiles/editor">+ Створити профіль</a>
     <ul>

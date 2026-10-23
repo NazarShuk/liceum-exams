@@ -1,0 +1,65 @@
+---
+const links = [
+    {
+        name: "Мої заяви",
+        href: "/cabinet",
+        visible: true,
+        icon: "draft"
+    },
+    {
+        name: "Нова заява",
+        href: "/cabinet/application",
+        visible: true,
+        icon: "add_circle"
+    },
+    {
+        name: "Заяви",
+        href: "/admin/applications",
+        visible: Astro.locals.user.role === "admin",
+        icon: "table"
+    },
+    {
+        name: "Кампанії",
+        href: "/admin/campaigns",
+        visible: Astro.locals.user.role === "admin",
+        icon: "event"
+    },
+    {
+        name: "Профілі",
+        href: "/admin/profiles",
+        visible: Astro.locals.user.role === "admin",
+        icon: "conversion_path"
+    },
+    {
+        name: "Форми",
+        href: "/admin/forms",
+        visible: Astro.locals.user.role === "admin",
+        icon: "ballot"
+    },
+]
+
+---
+<nav class={"overflow-hidden flex flex-col justify-between h-full"}>
+    <ul class="h-full overflow-auto" transition:name="sidebar">
+        {links.map(link => (
+            <li class={`flex flex-row items-center p-2.5 gap-1 ${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl`}>
+                {link.icon && (
+                    <span class="material-symbols-outlined">
+                        {link.icon}
+                    </span>
+                )}
+                
+                <a href={link.href}>{link.name}</a>
+            </li>
+        ))}
+    </ul>
+
+    <div class="flex flex-col justify-end h-fit gap-5 w-full p-1 border-t border-diia-bright-grey min-h-24">
+        <a href="/cabinet/account" class="flex flex-row items-center gap-1">
+            <span class="material-symbols-outlined">
+                account_circle
+            </span>
+            {Astro.locals.user.firstName + " " + Astro.locals.user.lastName}
+        </a>
+    </div>
+</nav>

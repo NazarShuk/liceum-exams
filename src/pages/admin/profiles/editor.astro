@@ -1,6 +1,5 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import AdminSidebar from "@layouts/AdminSidebar.astro";
 import { getDrizzle } from "@db/drizzle";
 import ProfileEditor from "@components/ProfileEditor.svelte";
 import type { forms, profiles } from "@db/schema";
@@ -22,7 +21,6 @@ const availableForms: Form[] = await db.query.forms.findMany();
 ---
 
 <Layout title={loadedProfile ? loadedProfile.title : "Новий профіль"}>
-    <AdminSidebar slot="left-side" />
     <h1 class="mb-5">Редактор профілю</h1>
     <ProfileEditor loadedProfile={loadedProfile} availableForms={availableForms} client:load />
 </Layout>

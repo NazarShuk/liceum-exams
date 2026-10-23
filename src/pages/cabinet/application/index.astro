@@ -2,7 +2,6 @@
 import { actions } from "astro:actions";
 import { getDrizzle } from "@db/drizzle";
 import Layout from "@layouts/Layout.astro";
-import CabinetHead from "@layouts/CabinetHead.astro";
 import ApplicationPreview from "@components/application/ApplicationPreview.astro";
 import ApplicationForm from "@components/application/ApplicationForm.astro";
 import CampaignSelector from "@components/application/CampaignSelector.astro";
@@ -92,8 +91,7 @@ if (result && !result.error) {
 }
 ---
 
-<Layout>
-  <CabinetHead />
+<Layout title="Заява">
   {(Astro.url.searchParams.has("success") && !result?.error) && (
   	<h4 class="text-diia-green">Заяву відправлено!</h4>
   )}

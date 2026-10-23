@@ -1,6 +1,5 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import AdminSidebar from "@layouts/AdminSidebar.astro";
 import { getDrizzle } from "@db/drizzle";
 import CampaignEditor from "@components/CampaignEditor.svelte";
 import type {campaigns, forms, profiles} from "@db/schema";
@@ -25,7 +24,6 @@ const availableForms: Form[] = await db.query.forms.findMany();
 ---
 
 <Layout title={loadedCampaign ? loadedCampaign.title : "Нова кампанія"}>
-    <AdminSidebar slot="left-side" />
     <h1 class="mb-5">Редактор кампанії</h1>
     <CampaignEditor loadedCampaign={loadedCampaign} availableProfiles={availableProfiles} availableForms={availableForms} client:load />
 </Layout>

@@ -2,6 +2,8 @@
 import { ClientRouter } from "astro:transitions";
 import { Font } from "astro:assets";
 import "../styles/global.css";
+import Sidebar from "./Sidebar.astro";
+import LiceumLogo from "../assets/LiceumLogo.svg"
 
 interface Props{
 	className?: string,
@@ -9,6 +11,19 @@ interface Props{
 }
 
 const {className, title} = Astro.props;
+const icons = [
+  "visibility_off",
+  "more_vert",
+  "draft",
+  "add_circle",
+  "edit",
+  "table",
+  "campaign",
+  "event",
+  "ballot",
+  "conversion_path",
+  "account_circle"
+]
 ---
 
 <!doctype html>
@@ -19,25 +34,39 @@ const {className, title} = Astro.props;
     <link rel="icon" href="/favicon.svg" />
     <Font cssVariable="--font-e-ukraine" />
     <meta name="generator" content={Astro.generator} />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=visibility_off,more_vert&display=block" rel="stylesheet" />
+    <link href={`https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=${icons.join(',')}&display=block`} rel="stylesheet" />
     <ClientRouter />
-    <title>{title ? title + " | " : ""} Вступний кабінет Наукового Ліцею</title>
+    <title>{title ? title + " | " : ""} Вступ до ліцею</title>
   </head>
-  <body>
-    <main class="w-full flex flex-row justify-center">
-      <section class="p-1 w-1/8 lg:block hidden">
-        <slot name="left-side" />
-      </section>
-      <section class={`lg:w-6/8 w-full p-1 ${className}`}>
-        <slot />
+  <body class="flex min-h-screen flex-col">
+    {Astro.locals.user && (
+      <header class="sticky top-0 z-40 w-full border-b border-diia-bright-grey bg-white">
+        <nav class="flex h-16 w-full items-center gap-4 px-4 py-1">
+          <slot name="navbar" transition:name="navbar">
+            <LiceumLogo class={"h-full"} />
+            <a href="/" class="text-lg">
+              <h3>Вступ до ліцею</h3>
+            </a>
+          </slot>
+        </nav>
+      </header>
+    )}
+    <div class="flex w-full flex-1">
+      {Astro.locals.user && (
+        <aside class="sticky top-16 hidden h-[calc(100svh-4rem)] w-1/8 shrink-0 overflow-y-auto border-r border-diia-bright-grey p-1 lg:block">
+          <Sidebar />
+        </aside>
+      )}
+        
+      <div class="flex min-w-0 flex-1 flex-col">
+        <main class={`w-full flex-1 p-1 ${className}`}>
+          <slot />
+        </main>
         <footer class="h-32">
-        	<slot name="footer" />
+          <slot name="footer" />
         </footer>
-      </section>
-      <section class="p-1 w-1/8 lg:block hidden">
-        <slot name="right-side" />
-      </section>
-    </main>
+      </div>
+    </div>
   </body>
 </html>
 

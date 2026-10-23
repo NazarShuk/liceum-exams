@@ -1,6 +1,5 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import AdminSidebar from "@layouts/AdminSidebar.astro"
 import { getDrizzle } from "@db/drizzle";
 import FormEditor from "@components/FormEditor.svelte";
 import type { forms } from "@db/schema";
@@ -17,7 +16,6 @@ if (Astro.url.searchParams.has("form")){
 ---
 
 <Layout title={loadedForm ? loadedForm.title : "Нова форма"}>
-    <AdminSidebar slot={"left-side"} />
     <h1 class="mb-5">Редактор форми</h1>
     <FormEditor loadedForm={loadedForm} client:load />
 </Layout>

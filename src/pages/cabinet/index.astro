@@ -1,6 +1,5 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import CabinetHead from "@layouts/CabinetHead.astro";
 import { getDrizzle } from "@db/drizzle";
 import {format} from "date-fns"
 import { uk } from "date-fns/locale";
@@ -18,12 +17,19 @@ const results = await db.query.applications.findMany({
 const linkResult = Astro.getActionResult(actions.applicantLink)
 ---
 
-<Layout title="Кабінет">
-    <CabinetHead />
-    {Astro.locals.user.role !== "applicant" && <a href="/cabinet/application">+ Створити заяву</a>}
+<Layout title="Мої заяви">
+    <h1 class="mb-5">Мої заяви</h1>
     
     <ul class="mt-5">
         {results.length === 0 && <p>У Вас поки що немає заяв</p>}
+        <a href="/cabinet/application">
+            <li class="mb-5 border-dashed border-2 border-diia-grey py-[28px] px-[24px] flex flex-row justify-center items-center gap-1">
+                <span class="material-symbols-outlined">
+                    add_circle
+                </span>
+                <h4>Нова заява</h4>
+            </li>
+        </a>
         {results.map(result => (
             <li class="card mb-5">
                 <a href={`/cabinet/application?preview=${result.id}`}>

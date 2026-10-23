@@ -1,6 +1,5 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import AdminSidebar from "@layouts/AdminSidebar.astro"
 import { getDrizzle } from "@db/drizzle";
 
 const db = getDrizzle()
@@ -8,7 +7,6 @@ const forms = await db.query.forms.findMany()
 ---
 
 <Layout title="Форми">
-    <AdminSidebar slot={"left-side"} />
     <h1>Форми</h1>
     <a href="/admin/forms/editor">+ Створити форму</a>
     <ul>

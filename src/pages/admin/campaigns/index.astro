@@ -1,6 +1,5 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import AdminSidebar from "@layouts/AdminSidebar.astro"
 import { getDrizzle } from "@db/drizzle";
 import {formatRelative, isBefore} from "date-fns"
 import {uk} from "date-fns/locale"
@@ -21,8 +20,7 @@ const campaigns = await db.query.campaigns.findMany({
 
 ---
 
-<Layout title="Кампнії">
-    <AdminSidebar slot={"left-side"} />
+<Layout title="Кампанії">
     <h1>Кампанії</h1>
     <a href="campaigns/editor">+ Створити кампанію</a>
     <ul>

@@ -1,6 +1,5 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import CabinetHead from "@layouts/CabinetHead.astro";
 import { actions } from "astro:actions";
 
 const result = Astro.getActionResult(actions.logout);
@@ -10,8 +9,7 @@ if (result && !result.error){
 ---
 
 <Layout title="Аккаунт">
-    <CabinetHead />
-
+    <h1>Аккаунт</h1>
     <ul>
         <li>Ім'я {Astro.locals.user?.firstName} {Astro.locals.user?.lastName}</li>
         <li>Роль {Astro.locals.user.role === "applicant" && "Абітурієнт"} {Astro.locals.user.role === "parent" && "Опікун"}</li>
