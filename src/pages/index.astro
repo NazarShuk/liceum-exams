@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import LiceumLogo from "../assets/LiceumLogo.svg";
 import { getDrizzle } from "@db/drizzle";
+import { markdownExcerpt } from "../lib/markdown";
 
 if (Astro.locals.user) {
   return Astro.redirect("/cabinet");
@@ -35,7 +36,7 @@ const db = getDrizzle()
 const news = await db.query.news.findMany({
   limit: 3,
   orderBy: {
-    createdAt: "asc"
+    createdAt: "desc"
   }
 })
 ---
@@ -80,7 +81,15 @@ const news = await db.query.news.findMany({
 
     <section id="news" class="px-5 py-20 sm:px-8 lg:px-12" aria-labelledby="news-heading">
       <div class="mx-auto max-w-6xl">
-        <h2 id="news-heading" class="mb-10 border-b border-diia-bright-grey pb-8">Новини</h2>
+        <div class="mb-10 flex flex-wrap items-end justify-between gap-5 border-b border-diia-bright-grey pb-8">
+          <h2 id="news-heading">Новини</h2>
+          <a
+            href="/news"
+            class="inline-flex items-center transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
+          >
+            Усі новини →
+          </a>
+        </div>
 
         <div class="grid gap-5 md:grid-cols-3">
           {news.map((item) => (
@@ -90,12 +99,12 @@ const news = await db.query.news.findMany({
                   <span class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue">
                     {item.tag}
                   </span>
-                  <time datetime={item.createdAt.toString()} class="text-sm text-black/60">
-                    {format(item.createdAt, "d MMMM yyyy", { locale: uk })}
+                  <time datetime={new Date(item.createdAt).toISOString()} class="text-sm text-black/60">
+                    {format(new Date(item.createdAt), "d MMMM yyyy", { locale: uk })}
                   </time>
                 </div>
                 <h3 class="news-card-title">{item.title}</h3>
-                <p class="text-black/65">{item.content.slice(0, 32)}...</p>
+                <p class="text-black/65">{markdownExcerpt(item.content, 120)}</p>
               </a>
             </article>
           ))}

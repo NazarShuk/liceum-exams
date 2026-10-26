@@ -1,0 +1,26 @@
+---
+import Layout from "@layouts/Layout.astro";
+import { getDrizzle } from "@db/drizzle";
+import NewsEditor from "@components/NewsEditor.svelte";
+import type { news } from "@db/schema";
+
+type News = typeof news.$inferSelect;
+
+const db = getDrizzle();
+let loadedNews: News | undefined;
+
+if (Astro.url.searchParams.has("news")) {
+    const item = await db.query.news.findFirst({
+        where: { id: Number.parseInt(Astro.url.searchParams.get("news") || "-1") }
+    });
+
+    if (item) {
+        loadedNews = item;
+    }
+}
+---
+
+<Layout title={loadedNews ? loadedNews.title : "Нова новина"}>
+    <h1 class="mb-5">Редактор новини</h1>
+    <NewsEditor loadedNews={loadedNews} client:load />
+</Layout>

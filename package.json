@@ -23,6 +23,7 @@
     "date-fns": "^4.4.0",
     "drizzle-orm": "^1.0.0-rc.4",
     "jose": "^6.2.12",
+    "marked": "^18.1.2",
     "svelte": "^5.57.1",
     "tailwindcss": "^4.3.3"
   },

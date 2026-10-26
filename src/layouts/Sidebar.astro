@@ -13,6 +13,12 @@ const links = [
         icon: "add_circle"
     },
     {
+        name: "Новини",
+        href: "/news",
+        visible: true,
+        icon: "campaign"
+    },
+    {
         name: "Адміністрування",
         visible: Astro.locals.user.role === "admin",
     },
@@ -39,6 +45,12 @@ const links = [
         href: "/admin/forms",
         visible: Astro.locals.user.role === "admin",
         icon: "ballot"
+    },
+    {
+        name: "Новини",
+        href: "/admin/news",
+        visible: Astro.locals.user.role === "admin",
+        icon: "campaign"
     },
 ]
 

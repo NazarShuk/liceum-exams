@@ -2,16 +2,19 @@ import { applicantLink, deleteApplications, deleteForm, submitForm, submitFormEd
 import { logout } from "./auth";
 import { deleteCampaign, submitCampaignEdit } from "./campaign";
 import { deleteProfile, submitProfileEdit } from "./profile";
+import { deleteNews, submitNewsEdit } from "./news";
 
 export const server = {
     submitForm: submitForm,
     submitFormEdit: submitFormEdit,
     submitCampaignEdit: submitCampaignEdit,
     submitProfileEdit: submitProfileEdit,
+    submitNewsEdit: submitNewsEdit,
     applicantLink: applicantLink,
     deleteForm: deleteForm,
     deleteApplications: deleteApplications,
     deleteCampaign: deleteCampaign,
     deleteProfile: deleteProfile,
+    deleteNews: deleteNews,
     logout: logout
 };
