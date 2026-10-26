@@ -43,7 +43,7 @@ const icons = [
     <meta name="generator" content={Astro.generator} />
     <link href={`https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=${icons.join(',')}&display=block`} rel="stylesheet" />
     <ClientRouter />
-    <title>{title ? title + " | " : ""} Вступ до ліцею</title>
+    <title>{title ? title + " - " : ""} Вступ до ліцею</title>
   </head>
   <body class="flex min-h-screen flex-col">
     {Astro.locals.user && (
@@ -59,7 +59,7 @@ const icons = [
       {Astro.locals.user && <Sidebar />}
         
       <div class="flex min-w-0 flex-1 flex-col">
-        <main class={`w-full flex-1 p-1 ${className}`}>
+        <main class={`w-full flex-1 ${className}`}>
           <slot />
         </main>
         <footer class="h-32">
