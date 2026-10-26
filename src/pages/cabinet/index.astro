@@ -55,13 +55,27 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
             role="presentation"
         >
             <div
-                class="card flex w-full max-w-2xl flex-col gap-5 bg-white max-h-screen overflow-auto"
+                class="card flex w-full max-w-2xl flex-col gap-5 bg-white max-h-screen overflow-auto text-center"
                 role="dialog"
                 aria-modal="true"
             >
                 <h4>Посилання для абітурієнта</h4>
                 <p class="text-center text-diia-blue">{`${Astro.url.origin}/applicant/${linkResult.data.id}`}</p>
-                <p>Скопіюйте це посилання та надішліть його абітурієнту. Абітурієнт зможе зареєструватися та слідкувати за заявою самостійно.</p>
+                <div class="flex flex-row gap-5 items-center justify-center">
+                    <button class="btn-default flex flex-row items-center gap-1" onclick={`navigator.clipboard.writeText("${`${Astro.url.origin}/applicant/${linkResult.data.id}`}")`}>
+                        <span class="material-symbols-outlined">
+                            content_copy
+                        </span>
+                        Копіювати
+                    </button>
+                    <button class="btn-default flex flex-row items-center gap-1" onclick={`navigator.share({url:"${`${Astro.url.origin}/applicant/${linkResult.data.id}`}"})`}>
+                        <span class="material-symbols-outlined">
+                            share
+                        </span>
+                        Поділитися    
+                    </button>
+                </div>
+                <p>Надішліть це посилання абітурієнту. Абітурієнт зможе зареєструватися та слідкувати за заявою самостійно.</p>
                 <button class="cursor-pointer" onclick="window.location.reload()">Закрити</button>
             </div>
         </div>

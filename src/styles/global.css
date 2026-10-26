@@ -17,11 +17,25 @@
     --color-diia-bright-grey: #E7EEF3;
     --color-diia-gorse: #FFF7DB;
 
+    --color-liceum-blue: #234A99;
+    --color-liceum-orange: #EF5F01;
+    --color-liceum-green: #55AB03;
+    --color-liceum-red: #DE2405;
+    --color-liceum-grey: #A9ADB6;
+
     --color-black: #18181B;
     --color-white: #F4F4F5;
 }
 * {
     @apply font-light lg:text-[16px]/[24px] font-e-ukraine;
+}
+html {
+    scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
 }
 body {
     @apply bg-white;
@@ -97,7 +111,7 @@ select option:checked {
 }
 
 .is-navigating {
-    @apply translate-y-0.5 transition;
+    @apply opacity-75 transition;
 }
 
 input[type="checkbox"] {

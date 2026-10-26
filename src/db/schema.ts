@@ -87,3 +87,12 @@ export const applicantInvites = sqliteTable("applicant_invites", {
     applicationId: integer("application_id").notNull().references(() => applications.id, {onDelete: "cascade"}),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 })
+
+export const news = sqliteTable("news", {
+    id: integer("id").primaryKey({autoIncrement: true}),
+    title: text("title").notNull(),
+    tag: text("tag").notNull(),
+    content: text("content").notNull(),
+
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+})
