@@ -7,10 +7,11 @@ import LiceumLogoVstup from "../assets/LiceumLogoVstup.svg"
 
 interface Props{
 	className?: string,
-	title?: string
+	title?: string,
+  noPadding?: boolean
 }
 
-const {className, title} = Astro.props;
+const {className, title, noPadding} = Astro.props;
 const icons = [
   "visibility_off",
   "more_vert",
@@ -59,7 +60,7 @@ const icons = [
       {Astro.locals.user && <Sidebar />}
         
       <div class="flex min-w-0 flex-1 flex-col">
-        <main class={`w-full flex-1 ${className}`}>
+        <main class={`w-full flex-1 ${!noPadding ? "p-1" : ""} ${className}`}>
           <slot />
         </main>
         <footer class="h-32">
