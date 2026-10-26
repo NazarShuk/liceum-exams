@@ -7,10 +7,14 @@ const links = [
         icon: "draft"
     },
     {
-        name: "Нова заява",
+        name: "Створити заяву",
         href: "/cabinet/application",
         visible: true,
         icon: "add_circle"
+    },
+    {
+        name: "Адміністрування",
+        visible: Astro.locals.user.role === "admin",
     },
     {
         name: "Заяви",
@@ -71,8 +75,8 @@ const visibleLinks = links.filter(link => link.visible)
                             {link.icon}
                         </span>
                     )}
-
-                    <a href={link.href} aria-current={Astro.url.pathname === link.href ? "page" : undefined}>{link.name}</a>
+                    {link.href && <a href={link.href} aria-current={Astro.url.pathname === link.href ? "page" : undefined}>{link.name}</a>}
+                    {!link.href && <p class="mt-2.5">{link.name}</p>}
                 </li>
             ))}
         </ul>
