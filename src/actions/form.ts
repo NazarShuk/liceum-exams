@@ -82,15 +82,15 @@ export const submitForm = defineAction({
         studentlastName: z.string(),
         studentmiddleName: z.string().optional(),
 
-        studentBirthDate: z.string().optional(),
-        studentTelephone: z.string(),
+        studentBirthDate: z.string(),
+        studentTelephone: z.string().regex(/^380\d{9}$/),
 
         parentfirstName: z.string().nonempty(),
         parentlastName: z.string().nonempty(),
         parentmiddleName: z.string().optional(),
 
         parentBirthDate: birthDate,
-        parentTelephone: z.string().nonempty(),
+        parentTelephone: z.string().regex(/^380\d{9}$/),
     }),
     handler: async (input, context) => {
         try{

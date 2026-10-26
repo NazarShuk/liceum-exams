@@ -43,8 +43,8 @@ const { selectedForm, selectedCampaign, selectedProfile, user, children = [] } =
     )}
   </div>
 
-  <form class="flex flex-col gap-5" action={actions.submitForm} method="POST">
-    <div class="card flex flex-col gap-5">
+  <form class="flex flex-col" action={actions.submitForm} method="POST">
+    <div class="card flex flex-col gap-5 mb-5">
       <h3>Інформація учня</h3>
       {children.length > 0 && (
         <label class="flex flex-col gap-1">
@@ -78,11 +78,11 @@ const { selectedForm, selectedCampaign, selectedProfile, user, children = [] } =
       </label>
       <label class="flex flex-col gap-1">
         Телефон
-        <input name="studentTelephone" id="studentTelephone" type="tel" required />
+        <input name="studentTelephone" id="studentTelephone" type="tel" pattern="380\d{9}" required />
       </label>
     </div>
 
-    <div class="card flex flex-col gap-5">
+    <div class="card flex flex-col gap-5 mb-5">
       <h3>Інформація батьків</h3>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <label class="flex flex-col gap-1">
@@ -109,7 +109,7 @@ const { selectedForm, selectedCampaign, selectedProfile, user, children = [] } =
       </label>
       <label class="flex flex-col gap-1">
         Телефон
-        <input name="parentTelephone" type="tel" required value={user.phone} />
+        <input name="parentTelephone" type="tel" required value={user.phone} pattern="380\d{9}"  />
       </label>
     </div>
 
@@ -124,6 +124,7 @@ const { selectedForm, selectedCampaign, selectedProfile, user, children = [] } =
     <input type="hidden" name="formId" value={selectedForm.id} />
     <input type="hidden" name="profileId" value={selectedProfile.id} />
     <button class="btn-default">Надіслати</button>
+    <p class="opacity-75">Натискаючи кнопку "Надіслати", ви надаєте згоду на обробку ваших персональних даних відповідно до Закону України "Про захист персональних даних"</p>
   </form>
   <script define:vars={{ children }} is:inline>
     const select = document.getElementById('studentSelect');

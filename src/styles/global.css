@@ -16,25 +16,36 @@
     --color-diia-grey: #959595;
     --color-diia-bright-grey: #E7EEF3;
     --color-diia-gorse: #FFF7DB;
+
+    --color-black: #18181B;
+    --color-white: #F4F4F5;
 }
 * {
     @apply font-light lg:text-[16px]/[24px] font-e-ukraine;
 }
+body {
+    @apply bg-white;
+}
 
 h1 {
-    @apply text-[56px]/[64px] /*text-[26px]/[38px]*/
+    @apply text-[56px]/[64px]; /*text-[26px]/[38px]*/
+    @apply text-black;
 }
 h2 {
-    @apply text-[38px]/[40px] /*text-[20px]/[24px]*/
+    @apply text-[38px]/[40px]; /*text-[20px]/[24px]*/
+    @apply text-black;
 }
 h3 {
-    @apply text-[28px]/[32px] /*text-[18px]/[24px]*/
+    @apply text-[28px]/[32px]; /*text-[18px]/[24px]*/
+    @apply text-black;
 }
 h4 {
-    @apply text-[24px]/[32px] /*text-[16px]/[20px]*/
+    @apply text-[24px]/[32px]; /*text-[16px]/[20px]*/
+    @apply text-black;
 }
 h7 {
-    @apply text-[16px]/[24px] /*text-[16px]/[20px]*/
+    @apply text-[16px]/[24px]; /*text-[16px]/[20px]*/
+    @apply text-black;
 }
 
 .btn-default {
@@ -42,7 +53,7 @@ h7 {
     @apply hover:cursor-pointer brightness-110;
 }
 input, textarea {
-    @apply px-[5px] py-[4px] border-b-2 outline-none;
+    @apply px-[5px] py-[4px] border-b-2 outline-none border-b-black;
 }
 
 select {
@@ -86,19 +97,11 @@ select option:checked {
 }
 
 .is-navigating {
-    opacity: 0.75;
+    @apply translate-y-0.5 transition;
 }
 
 input[type="checkbox"] {
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    padding: 0;
-    border: 2px solid #000;
-    border-radius: 0;
-    background-color: #fff;
-    cursor: pointer;
+    @apply appearance-none w-5 h-5 shrink-0 p-0 border-2 border-solid border-black bg-white cursor-pointer;
 }
 input[type="checkbox"]:checked {
     background-image: url("/checkbox-check.svg");
@@ -131,5 +134,5 @@ input[type="checkbox"]:focus-visible {
     border-radius: 10px;
 }
 :not(.Mac-OS)::-webkit-scrollbar-track {
-    background: #fff;
+    background: #F4F4F5;
 }

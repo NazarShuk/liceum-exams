@@ -63,7 +63,7 @@ const visibleLinks = links.filter(link => link.visible)
     class="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] -translate-x-full flex-col border-r border-diia-bright-grey bg-white p-1 pt-16 shadow-xl transition-transform duration-300 ease-in-out lg:sticky lg:top-16 lg:z-auto lg:h-[calc(100svh-4rem)] lg:w-1/8 lg:max-w-none lg:shrink-0 lg:translate-x-0 lg:overflow-y-auto lg:p-1 lg:pt-1 lg:shadow-none"
 >
     <nav class="overflow-hidden flex flex-col justify-between h-full">
-        <ul class="h-full overflow-auto" transition:name="sidebar">
+        <ul class="h-full overflow-auto">
             {visibleLinks.map(link => (
                 <li class={`flex flex-row items-center p-2.5 gap-1 ${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl`}>
                     {link.icon && (

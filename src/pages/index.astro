@@ -8,15 +8,10 @@ if (Astro.locals.user){
 }
 ---
 
-<Layout className="relative isolate flex min-h-[calc(100svh-8rem)] items-center overflow-hidden px-6 py-16 text-left sm:px-10 lg:px-16">
-    <div class="max-w-2xl text-left">
-      <LiceumLogo width={248} class="mb-14 block h-auto w-48 sm:w-56" />
-      <h1 class="mb-6 text-left text-[clamp(2.75rem,6vw,4.5rem)] leading-[1.08] tracking-[-0.045em]">
-        Вступний кабінет
-      </h1>
-      <p class="mb-10 max-w-xl text-left text-lg leading-8">
-        Єдиний портал вступу до ліцею
-      </p>
+<Layout >
+    <section class="flex flex-col justify-center items-center w-full h-96 gap-5">
+      <h1>Єдиний портал вступу до ліцею</h1>
+
       <GoogleSignIn />
-    </div>
+    </section>
 </Layout>
