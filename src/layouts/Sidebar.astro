@@ -76,7 +76,7 @@ const visibleLinks = links.filter(link => link.visible)
                         </span>
                     )}
                     {link.href && <a href={link.href} aria-current={Astro.url.pathname === link.href ? "page" : undefined}>{link.name}</a>}
-                    {!link.href && <p class="mt-2.5">{link.name}</p>}
+                    {!link.href && <p class="mt-2.5 min-w-0 break-words">{link.name}</p>}
                 </li>
             ))}
         </ul>
