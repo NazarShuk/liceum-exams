@@ -9,7 +9,7 @@ if (!keyPattern.test(key))
 if (!Astro.locals.user)
     return new Response(null, {status: 401})
 
-const file = await env.LICEUM_BUCKET.get(key)
+const file = await env.FILE_BUCKET.get(key)
 if (!file)
     return new Response(null, {status: 404})
 if (!file.customMetadata || !file.customMetadata.owner)

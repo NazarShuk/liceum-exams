@@ -4,5 +4,5 @@ import { relations } from "./relations";
 
 
 export function getDrizzle(){
-    return drizzle(env.liceum_exams, { relations })
+    return drizzle(env.DB, { relations })
 }

@@ -15,7 +15,7 @@
 	},
 	"d1_databases": [
 		{
-			"binding": "liceum_exams",
+			"binding": "DB",
 			"database_name": "liceum-exams",
 			"database_id": "df1a28a6-9f1c-4a23-8468-a0424f4c5f3d",
 			"migrations_dir": "migrations",
@@ -27,7 +27,7 @@
 	},
 	"r2_buckets": [
 		{
-			"binding": "LICEUM_BUCKET",
+			"binding": "FILE_BUCKET",
 			"bucket_name": "liceum-exams",
 		}
 	]

@@ -198,7 +198,7 @@ export const submitForm = defineAction({
                 const file = formFields[field]
                 if (file instanceof File) {
                     const key = `applications/${context.locals.user.id}/${crypto.randomUUID()}/${encodeURIComponent(field)}`
-                    await env.LICEUM_BUCKET.put(key, await file.arrayBuffer(), {
+                    await env.FILE_BUCKET.put(key, await file.arrayBuffer(), {
                         customMetadata: {
                             owner: context.locals.user.id.toString(),
                             fileName: file.name,
@@ -353,7 +353,7 @@ export const deleteApplications = defineAction({
                 }),
             );
             if (fileKeys.length > 0) {
-                await env.LICEUM_BUCKET.delete(fileKeys);
+                await env.FILE_BUCKET.delete(fileKeys);
             }
 
             await db.delete(applications).where(inArray(applications.id, input.applicationIds));
