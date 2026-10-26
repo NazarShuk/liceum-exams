@@ -38,28 +38,115 @@ const links = [
     },
 ]
 
+const visibleLinks = links.filter(link => link.visible)
 ---
-<nav class={"overflow-hidden flex flex-col justify-between h-full"}>
-    <ul class="h-full overflow-auto" transition:name="sidebar">
-        {links.filter(link=> link.visible).map(link => (
-            <li class={`flex flex-row items-center p-2.5 gap-1 ${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl`}>
-                {link.icon && (
-                    <span class="material-symbols-outlined">
-                        {link.icon}
-                    </span>
-                )}
-                
-                <a href={link.href}>{link.name}</a>
-            </li>
-        ))}
-    </ul>
 
-    <div class="flex flex-col justify-end h-fit gap-5 w-full p-1 border-t border-diia-bright-grey min-h-24">
-        <a href="/cabinet/account" class="flex flex-row items-center gap-1">
-            <span class="material-symbols-outlined">
-                account_circle
-            </span>
-            {Astro.locals.user.firstName + " " + Astro.locals.user.lastName}
-        </a>
-    </div>
-</nav>
+<button
+    type="button"
+    id="sidebar-toggle"
+    aria-controls="sidebar"
+    aria-expanded="false"
+    aria-label="Відкрити меню"
+    class="fixed left-2 top-2 z-60 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-diia-bright-grey focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black lg:hidden"
+>
+    <span class="material-symbols-outlined" data-sidebar-icon="open">menu</span>
+</button>
+
+<div
+    id="sidebar-backdrop"
+    class="fixed inset-0 z-40 hidden bg-black/40 lg:hidden"
+    aria-hidden="true"
+></div>
+
+<aside
+    id="sidebar"
+    class="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] -translate-x-full flex-col border-r border-diia-bright-grey bg-white p-1 pt-16 shadow-xl transition-transform duration-300 ease-in-out lg:sticky lg:top-16 lg:z-auto lg:h-[calc(100svh-4rem)] lg:w-1/8 lg:max-w-none lg:shrink-0 lg:translate-x-0 lg:overflow-y-auto lg:p-1 lg:pt-1 lg:shadow-none"
+>
+    <nav class="overflow-hidden flex flex-col justify-between h-full">
+        <ul class="h-full overflow-auto" transition:name="sidebar">
+            {visibleLinks.map(link => (
+                <li class={`flex flex-row items-center p-2.5 gap-1 ${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl`}>
+                    {link.icon && (
+                        <span class="material-symbols-outlined">
+                            {link.icon}
+                        </span>
+                    )}
+
+                    <a href={link.href} aria-current={Astro.url.pathname === link.href ? "page" : undefined}>{link.name}</a>
+                </li>
+            ))}
+        </ul>
+
+        <div class="flex flex-col justify-end h-fit gap-5 w-full p-1 border-t border-diia-bright-grey min-h-24">
+            <a href="/cabinet/account" class="flex flex-row items-center gap-1">
+                <span class="material-symbols-outlined">
+                    account_circle
+                </span>
+                {Astro.locals.user.firstName + " " + Astro.locals.user.lastName}
+            </a>
+        </div>
+    </nav>
+</aside>
+
+<script>
+    let listenersAttached = false;
+
+    const isMobile = () => !window.matchMedia("(min-width: 64rem)").matches;
+
+    function setSidebarOpen(open: boolean) {
+        const toggle = document.getElementById("sidebar-toggle");
+        const sidebar = document.getElementById("sidebar");
+        const backdrop = document.getElementById("sidebar-backdrop");
+        if (!toggle || !sidebar || !backdrop) return;
+
+        sidebar.classList.toggle("-translate-x-full", !open);
+        sidebar.classList.toggle("translate-x-0", open);
+        backdrop.classList.toggle("hidden", !open);
+        document.body.classList.toggle("overflow-hidden", open);
+
+        const hidden = isMobile() && !open;
+        sidebar.inert = hidden;
+        sidebar.setAttribute("aria-hidden", String(hidden));
+
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.setAttribute("aria-label", open ? "Закрити меню" : "Відкрити меню");
+        toggle.querySelector('[data-sidebar-icon="open"]')?.classList.toggle("hidden", open);
+        toggle.querySelector('[data-sidebar-icon="close"]')?.classList.toggle("hidden", !open);
+    }
+
+    function initSidebar() {
+        // Reset the drawer on every (client-side) page load.
+        setSidebarOpen(false);
+
+        if (listenersAttached) return;
+        listenersAttached = true;
+
+        document.addEventListener("click", (event) => {
+            const target = event.target as HTMLElement | null;
+            if (!target) return;
+
+            if (target.closest("#sidebar-toggle")) {
+                const open = document.getElementById("sidebar-toggle")?.getAttribute("aria-expanded") === "true";
+                setSidebarOpen(!open);
+            } else if (target.closest("#sidebar-backdrop") || target.closest("#sidebar a")) {
+                setSidebarOpen(false);
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") setSidebarOpen(false);
+        });
+
+        window.matchMedia("(min-width: 64rem)").addEventListener("change", () => {
+            setSidebarOpen(false);
+        });
+    }
+
+    document.addEventListener("astro:page-load", initSidebar);
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initSidebar);
+    } else {
+        initSidebar();
+    }
+</script>

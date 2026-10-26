@@ -13,7 +13,7 @@ export async function generateToken(id: number, firstName: string, lastName: str
 
 export const logout = defineAction({
     accept: "form",
-    handler: async (data, context) => {
+    handler: async (_, context) => {
 
         context.cookies.delete("session", {path: "/"})
         return {success: true}

@@ -2,7 +2,7 @@ import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro/zod";
 import { eq } from "drizzle-orm";
 import { getDrizzle } from "@db/drizzle";
-import { forms, profiles } from "@db/schema";
+import { profiles } from "@db/schema";
 
 export const submitProfileEdit = defineAction({
     accept: "json",
