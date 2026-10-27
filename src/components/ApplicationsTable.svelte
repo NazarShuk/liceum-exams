@@ -93,6 +93,37 @@
         return String(value);
     }
 
+    function csvCell(value: unknown): string {
+        let text = formatCellValue(value);
+        if (/^[\t\r\n ]*[=+\-@]/.test(text)) text = `'${text}`;
+        return `"${text.replaceAll('"', '""')}"`;
+    }
+
+    function exportApplicationsToCsv() {
+        const rows = [
+            columns.map((column) => column.title),
+            ...filteredApplications.map((application) =>
+                columns.map((column) => {
+                    const value = cellValue(application, column.key);
+                    if (column.type === "file") {
+                        const key = getFileKey(value);
+                        return key
+                            ? new URL(`/file?key=${encodeURIComponent(key)}`, window.location.origin).toString()
+                            : "";
+                    }
+                    return value;
+                }),
+            ),
+        ];
+        const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
+        const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `applications-${selectedCampaignId}-${selectedProfileId}.csv`;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
     function handleCampaignChange(event: Event) {
         filters = {};
         selectedApplicationIds = [];
@@ -253,17 +284,7 @@
                 </div>
             </details>
             <div class="mb-3 flex items-center gap-3 pr-12">
-                <button
-                    type="button"
-                    class="btn-default text-diia-red disabled:opacity-50"
-                    disabled={deleting || selectedApplicationIds.length === 0}
-                    onclick={deleteSelectedApplications}
-                >
-                    {deleting ? "Видалення..." : `Видалити вибрані (${selectedApplicationIds.length})`}
-                </button>
-                {#if deleteError}
-                    <p class="text-diia-red" role="alert">{deleteError}</p>
-                {/if}
+                
             </div>
             <div class="overflow-x-auto">
                 <table class="table-fixed" style="width: {(columns.length + 1) * 12}rem; min-width: 100%">
@@ -279,6 +300,37 @@
                                     />
                                     <span>Дії</span>
                                 </label>
+
+                                <div class="flex flex-row w-full justify-between">
+                                    <button
+                                        type="button"
+                                        disabled={deleting || selectedApplicationIds.length === 0}
+                                        onclick={deleteSelectedApplications}
+                                        class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                        aria-label="Видалити"
+                                        title="Видалити"
+                                    >
+                                        <span class="material-symbols-outlined">
+                                            delete
+                                        </span>
+                                        {#if deleteError}
+                                            <p class="text-diia-red" role="alert">{deleteError}</p>
+                                        {/if}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                        aria-label="Експортувати CSV"
+                                        title="Експортувати CSV"
+                                        disabled={filteredApplications.length === 0 || columns.length === 0}
+                                        onclick={exportApplicationsToCsv}
+                                    >
+                                        <span class="material-symbols-outlined">
+                                            export_notes
+                                        </span>
+                                    </button>
+                                </div>
                             </th>
                             {#each columns as column (column.key)}
                                 <th class="px-4 py-5">
@@ -301,15 +353,6 @@
                                             checked={selectedApplicationIds.includes(application.id)}
                                             onchange={() => toggleApplication(application.id)}
                                         />
-                                        <button
-                                            type="button"
-                                            class="text-diia-red disabled:opacity-50"
-                                            disabled={deleting}
-                                            aria-label={`Видалити заяву ${application.id}`}
-                                            onclick={() => deleteApplications([application.id])}
-                                        >
-                                            Видалити
-                                        </button>
                                     </div>
                                 </td>
                                 {#each columns as column (column.key)}
