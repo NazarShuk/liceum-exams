@@ -4,11 +4,14 @@ import { getDrizzle } from "@db/drizzle";
 import { generateToken } from "@actions/auth";
 import { applicantInvites, users } from "@db/schema";
 import {eq} from "drizzle-orm"
+import { logErrorEvent } from "@lib/analytics";
 
 export const GET = (async (context) => {
     const code = context.url.searchParams.get("code") || ""
-    if (!code) 
+    if (!code) {
+        logErrorEvent({ source: "server", type: "auth_google_missing_code", path: context.url.pathname });
         return new Response(null, {status: 400})
+    }
 
     try{
         const result = await fetch(`
@@ -19,6 +22,7 @@ export const GET = (async (context) => {
         
         if (!result.ok){
             console.error(data)
+            logErrorEvent({ source: "server", type: "auth_google_token_failed", path: context.url.pathname, status: String(result.status) });
             return new Response(null, {status: 500})
         }
 
@@ -28,6 +32,7 @@ export const GET = (async (context) => {
             }
         })
         if (!userResult.ok){
+            logErrorEvent({ source: "server", type: "auth_google_userinfo_failed", path: context.url.pathname, status: String(userResult.status) });
             return new Response(null, {status: 500})
         }
         const userdata = await userResult.json() as {sub: string, name: String, given_name: string, family_name: string, picture: string, email:string, email_verified: boolean}
@@ -81,6 +86,7 @@ export const GET = (async (context) => {
                     })
                 }
                 else {
+                    logErrorEvent({ source: "server", type: "auth_google_invite_not_found", path: context.url.pathname });
                     return new Response(null, {status: 404})
                 }
             }
@@ -108,6 +114,7 @@ export const GET = (async (context) => {
     }
     catch(e){
         console.error(e)
+        logErrorEvent({ source: "server", type: "auth_google_exception", path: context.url.pathname, message: e instanceof Error ? e.message : String(e) });
         return new Response(null, {status: 500})
     }
 

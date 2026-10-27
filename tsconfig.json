@@ -14,7 +14,8 @@
       "@layouts/*": ["./src/layouts/*"],
       "@styles/*": ["./src/styles/*"],
       "@db/*": ["./src/db/*"],
-      "@actions/*": ["./src/actions/*"]
+      "@actions/*": ["./src/actions/*"],
+      "@lib/*": ["./src/lib/*"]
     }
   }
 }

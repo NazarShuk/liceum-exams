@@ -4,6 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import { getDrizzle } from "../db/drizzle";
 import { applications, forms, profiles, users, applicantInvites} from "@db/schema";
 import { env } from "cloudflare:workers";
+import { logErrorEvent } from "../lib/analytics";
 
 type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
 type Field = Schema[number]
@@ -95,16 +96,22 @@ export const submitForm = defineAction({
     handler: async (input, context) => {
         try{
             const db = getDrizzle()
-            if (!context.locals.user)
+            if (!context.locals.user) {
+                logErrorEvent({ source: "user", type: "form_unauthorized", path: context.url?.pathname || "/" });
                 throw new ActionError({code: "UNAUTHORIZED"})
+            }
 
             const form = await db.query.forms.findFirst({where: {id:input.formId}})
-            if (!form)
+            if (!form) {
+                logErrorEvent({ source: "user", type: "form_not_found", path: context.url?.pathname || "/", userId: context.locals.user?.id });
                 throw new ActionError({code: "BAD_REQUEST"})
+            }
 
             const profile = await db.query.profiles.findFirst({where: {id:input.profileId}})
-            if (!profile || profile.formId !== form.id)
+            if (!profile || profile.formId !== form.id) {
+                logErrorEvent({ source: "user", type: "form_profile_mismatch", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: `formId:${form.id},profileId:${input.profileId}` });
                 throw new ActionError({code: "BAD_REQUEST"})
+            }
 
             let rawForm: FormData | null = null
             try {
@@ -127,8 +134,17 @@ export const submitForm = defineAction({
 
                 formFields[field.slug] = value
                 const error = validateAnswer(field, value)
-                if (error) 
+                if (error) {
                     errors.push(error)
+                    logErrorEvent({
+                        source: "user",
+                        type: "form_validation_error",
+                        path: context.url?.pathname || "/",
+                        field: field.slug,
+                        value: typeof value === "string" ? value.slice(0, 200) : Array.isArray(value) ? value.map(String).join(",").slice(0, 200) : "",
+                        userId: context.locals.user?.id,
+                    })
+                }
             }
             if (errors.length > 0)
                 throw new ActionError({code: "BAD_REQUEST", message: errors.join("; ")})
@@ -144,8 +160,10 @@ export const submitForm = defineAction({
             let studentId = input.studentId
 
             if (studentId == null){
-                if (!input.studentfirstName || !input.studentlastName || !input.studentTelephone || !input.studentBirthDate)
+                if (!input.studentfirstName || !input.studentlastName || !input.studentTelephone || !input.studentBirthDate) {
+                    logErrorEvent({ source: "user", type: "form_student_missing_fields", path: context.url?.pathname || "/", userId: context.locals.user?.id });
                     throw new ActionError({code: "BAD_REQUEST", message: "Заповніть інформацію про учня"})
+                }
 
                 const created = await db.insert(users).values({
                     firstName: input.studentfirstName,
@@ -160,26 +178,32 @@ export const submitForm = defineAction({
                 studentId = created[0].id
             } else {
                 const student = await db.query.users.findFirst({where: {id: studentId}})
-                if (!student || student.role !== "applicant" || student.parentId !== context.locals.user.id)
+                if (!student || student.role !== "applicant" || student.parentId !== context.locals.user.id) {
+                    logErrorEvent({ source: "user", type: "form_student_invalid", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: `studentId:${studentId}` });
                     throw new ActionError({code: "BAD_REQUEST", message: "Учня не знайдено серед ваших дітей"})
+                }
             }
 
             const campaignAssignment = await db.query.campaignsToProfiles.findFirst({
                 where: { profileId: input.profileId }
             })
             if (!campaignAssignment) {
+                logErrorEvent({ source: "user", type: "form_campaign_assignment_missing", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: `profileId:${input.profileId}` });
                 throw new ActionError({code: "BAD_REQUEST", message: "Профіль не належить жодній кампанії"})
             }
             const campaignId = campaignAssignment.campaignId
             const campaign = await db.query.campaigns.findFirst({ where: { id: campaignId } })
             if (!campaign) {
+                logErrorEvent({ source: "user", type: "form_campaign_not_found", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: `campaignId:${campaignId}` });
                 throw new ActionError({ code: "BAD_REQUEST", message: "Кампанію не знайдено" })
             }
             const now = new Date()
             if (campaign.beginsAt && new Date(campaign.beginsAt) > now) {
+                logErrorEvent({ source: "user", type: "form_campaign_not_started", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: `campaignId:${campaignId}` });
                 throw new ActionError({ code: "BAD_REQUEST", message: "Кампанія ще не розпочалася" })
             }
             if (campaign.endsAt && new Date(campaign.endsAt) < now) {
+                logErrorEvent({ source: "user", type: "form_campaign_ended", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: `campaignId:${campaignId}` });
                 throw new ActionError({ code: "BAD_REQUEST", message: "Кампанія вже завершилася" })
             }
 
@@ -190,6 +214,7 @@ export const submitForm = defineAction({
                 }
             })
             if (existingApplication && (!campaign.allowMultipleProfiles || existingApplication.profileId === input.profileId)) {
+                logErrorEvent({ source: "user", type: "form_duplicate_application", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: `studentId:${studentId},campaignId:${campaignId},profileId:${input.profileId}` });
                 throw new ActionError({code: "BAD_REQUEST", message: `Заява для цієї дитини${existingApplication.profileId === input.profileId ? ' (на цей профіль)' : ''} в цій кампанії вже існує`})
             }
             
@@ -224,6 +249,9 @@ export const submitForm = defineAction({
         catch(e){
             if (e instanceof ActionError) throw e
             console.error(e)
+            try {
+                logErrorEvent({ source: "server", type: "form_submit_exception", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: e instanceof Error ? e.message : String(e) });
+            } catch {}
             throw new ActionError({code: "INTERNAL_SERVER_ERROR"})
         }
     }
@@ -288,6 +316,7 @@ export const submitFormEdit = defineAction({
         catch(e){
             if (e instanceof ActionError) throw e
             console.error(e)
+            try { logErrorEvent({ source: "server", type: "form_edit_exception", userId: context.locals.user?.id, message: e instanceof Error ? e.message : String(e) }); } catch {}
             throw new ActionError({code: "INTERNAL_SERVER_ERROR"})
         }
     }
@@ -318,6 +347,7 @@ export const deleteForm = defineAction({
         } catch (error) {
             if (error instanceof ActionError) throw error;
             console.error(error);
+            try { logErrorEvent({ source: "server", type: "form_delete_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
             throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
         }
     },
@@ -361,6 +391,7 @@ export const deleteApplications = defineAction({
         } catch (error) {
             if (error instanceof ActionError) throw error;
             console.error(error);
+            try { logErrorEvent({ source: "server", type: "applications_delete_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
             throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
         }
     },
@@ -394,6 +425,7 @@ export const applicantLink = defineAction({
         } catch (error) {
             if (error instanceof ActionError) throw error;
             console.error(error);
+            try { logErrorEvent({ source: "server", type: "applicant_link_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
             throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
         }
     }

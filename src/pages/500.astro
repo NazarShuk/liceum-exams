@@ -1,5 +1,15 @@
 ---
 import Layout from "@layouts/Layout.astro";
+import { logErrorEvent } from "@lib/analytics";
+
+try {
+  logErrorEvent({
+    source: "server",
+    type: "page_500",
+    path: Astro.url.pathname,
+    userId: Astro.locals.user?.id,
+  });
+} catch {}
 ---
 
 <Layout className="flex h-screen justify-center items-center flex-col">
