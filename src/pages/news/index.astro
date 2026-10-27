@@ -25,7 +25,7 @@ if (Astro.locals.user){
     <h1>Новини</h1>
     <a href="/">На головну</a>
     {news.length === 0 && <p class="mt-5">Новин поки що немає.</p>}
-    <ul class="mt-5">
+    <ul class="mt-5 list-colors">
         {news.map(item => (
              <li>
                 <a href={`/news/${item.id}`}>

@@ -10,7 +10,7 @@ const profiles = await db.query.profiles.findMany()
 <Layout title="Профілі">
     <h1>Профілі</h1>
     <a href="/admin/profiles/editor">+ Створити профіль</a>
-    <ul>
+    <ul class="list-colors">
         {profiles.map(profile => (
             <ProfileDisplay profile={profile} className="mb-5" href={`/admin/profiles/editor?profile=${profile.id}`} client:load />
         ))}

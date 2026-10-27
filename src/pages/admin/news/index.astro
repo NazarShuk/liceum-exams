@@ -16,7 +16,7 @@ const news = await db.query.news.findMany({
     <h1>Новини</h1>
     <a href="/admin/news/editor">+ Створити новину</a>
     {news.length === 0 && <p class="mt-5">Новин поки що немає.</p>}
-    <ul class="mt-5">
+    <ul class="mt-5 list-colors">
         {news.map(item => (
             <li>
                 <a href={`/admin/news/editor?news=${item.id}`}>

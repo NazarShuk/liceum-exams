@@ -26,7 +26,7 @@ const { availableCampaigns, selectedCampaign } = Astro.props;
   {selectedCampaign ? (
     <>
       <h1>Оберіть профіль</h1>
-      <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-3 list-colors">
         {selectedCampaign.profiles.map((profile: ProfileWithForm) => (
           <ProfileDisplay
             profile={profile}
@@ -40,7 +40,7 @@ const { availableCampaigns, selectedCampaign } = Astro.props;
   ) : (
     <>
       <h1>Оберіть вступну кампанію</h1>
-      <ul class="flex flex-col gap-3">
+      <ul class="flex flex-col gap-3 list-colors">
         {availableCampaigns.map((campaign: CampaignWithProfiles) => (
           <li>
             <a href={`/cabinet/application?campaignId=${campaign.id}`}>

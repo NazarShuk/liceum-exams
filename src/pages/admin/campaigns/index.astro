@@ -23,7 +23,7 @@ const campaigns = await db.query.campaigns.findMany({
 <Layout title="Кампанії">
     <h1>Кампанії</h1>
     <a href="campaigns/editor">+ Створити кампанію</a>
-    <ul>
+    <ul class="list-colors">
         {campaigns.map(async campaign => (
             <a href={`campaigns/editor?campaign=${campaign.id}`}>
                 <li class={`card mb-5 ${campaign.endsAt && !isBefore(new Date(), campaign.beginsAt || new Date(0)) && !isBefore(new Date(), campaign.endsAt || new Date(0)) ? "opacity-75" : ""}`}>

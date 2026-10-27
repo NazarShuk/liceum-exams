@@ -89,7 +89,21 @@ select option:checked {
 }
 
 .card {
-    @apply border-2 py-7 px-6 border-liceum-blue rounded;
+    @apply border-2 py-7 px-6 rounded;
+    border-color: var(--card-accent, var(--color-liceum-blue));
+}
+
+.list-colors > :nth-child(3n + 1) {
+    --card-accent: var(--color-liceum-blue);
+}
+.list-colors > :nth-child(3n + 2) {
+    --card-accent: var(--color-liceum-green);
+}
+.list-colors > :nth-child(3n + 3) {
+    --card-accent: var(--color-liceum-orange);
+}
+.list-colors .card {
+    background-color: color-mix(in srgb, var(--card-accent) 5%, white);
 }
 
 .is-navigating {
