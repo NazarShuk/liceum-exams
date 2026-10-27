@@ -21,7 +21,6 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
     <h1 class="mb-5">Мої заяви</h1>
     
     <ul class="mt-5 list-colors">
-        {results.length === 0 && <p>У Вас поки що немає заяв</p>}
         <a href="/cabinet/application">
             <li class="mb-5 border-dashed border-2 border-diia-grey py-7 px-6 flex flex-row justify-center items-center gap-1 rounded">
                 <span class="material-symbols-outlined">
@@ -30,6 +29,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
                 <h4>Створити заяву</h4>
             </li>
         </a>
+        {results.length === 0 && <p class="text-center opacity-75">У Вас поки що немає заяв! Натисніть на кнопку вище щоб створити Вашу першу заяву.</p>}
         {results.map(result => (
             <li class="card mb-5">
                 <a href={`/cabinet/application?preview=${result.id}`}>
@@ -68,7 +68,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
                         </span>
                         Копіювати
                     </button>
-                    <button class="btn-default flex flex-row items-center gap-1" onclick={`navigator.share({url:"${`${Astro.url.origin}/applicant/${linkResult.data.id}`}"})`}>
+                    <button class="btn-default flex flex-row items-center gap-1" onclick={`navigator.share({text:"${`${Astro.url.origin}/applicant/${linkResult.data.id}`}"})`}>
                         <span class="material-symbols-outlined">
                             share
                         </span>

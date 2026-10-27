@@ -27,21 +27,26 @@ const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null
     {field.type === "file" && preview && fileHref ? (
         <a target="_blank" href={fileHref}>Переглянути файл</a>
     ) : field.type === "select" || field.type === "multiselect" ? (
-        <select
-            name={name}
-            class="lg:w-3/4 w-full"
-            required={required}
-            multiple={field.type === "multiselect"}
-            disabled={preview}
-        >
-            {field.type === "select" && !required && (
-                <option value="">-</option>
-            )}
-            {options.map((option) => (
-                <option value={option} selected={preview && selectedValues.includes(option)}>{option}</option>
-            ))}
-        </select>
-    ) : (
+        <fieldset class="flex flex-col gap-2 lg:w-3/4 w-full" disabled={preview}>
+            {options.map((option) => {
+                const checked = preview && selectedValues.includes(option);
+                const inputName = field.type === "multiselect" ? name : name;
+                return (
+                    <label class="flex items-center gap-2">
+                        <input
+                            type={field.type === "multiselect" ? "checkbox" : "radio"}
+                            name={inputName}
+                            value={option}
+                            required={required && field.type === "select"}
+                            checked={checked}
+                            disabled={preview}
+                        />
+                        <span>{option}</span>
+                    </label>
+                );
+            })}
+        </fieldset>
+        ) : (
         <input
             readonly={preview}
             required={required}
@@ -57,5 +62,6 @@ const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null
             pattern={field.type === "text" && field.regex ? field.regex : undefined}
         >
     )}
-
+    
+    {!field.required && <p class="opacity-75 mt-5">*Не обов'язкове</p>}
 </div>

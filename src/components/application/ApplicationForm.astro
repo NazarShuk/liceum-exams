@@ -61,15 +61,15 @@ const { selectedForm, selectedCampaign, selectedProfile, user, children = [] } =
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <label class="flex flex-col gap-1">
           Ім'я
-          <input name="studentfirstName" id="studentfirstName" required />
+          <input name="studentfirstName" id="studentfirstName" required placeholder="..." />
         </label>
         <label class="flex flex-col gap-1">
           Прізвище
-          <input name="studentlastName" id="studentlastName" required />
+          <input name="studentlastName" id="studentlastName" required placeholder="..." />
         </label>
         <label class="flex flex-col gap-1">
           По батькові
-          <input name="studentmiddleName" id="studentmiddleName" />
+          <input name="studentmiddleName" id="studentmiddleName" placeholder="..." />
         </label>
       </div>
       <label class="flex flex-col gap-1">
@@ -78,7 +78,7 @@ const { selectedForm, selectedCampaign, selectedProfile, user, children = [] } =
       </label>
       <label class="flex flex-col gap-1">
         Телефон
-        <input name="studentTelephone" id="studentTelephone" type="tel" pattern="380\d{9}" required />
+        <input name="studentTelephone" id="studentTelephone" type="tel" pattern="380\d{9}" required placeholder="380XXXXXXXXX" />
       </label>
     </div>
 
@@ -87,15 +87,15 @@ const { selectedForm, selectedCampaign, selectedProfile, user, children = [] } =
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <label class="flex flex-col gap-1">
           Ім'я
-          <input name="parentfirstName" required value={user.firstName} />
+          <input name="parentfirstName" required value={user.firstName} placeholder="..." />
         </label>
         <label class="flex flex-col gap-1">
           Прізвище
-          <input name="parentlastName" required value={user.lastName} />
+          <input name="parentlastName" required value={user.lastName} placeholder="..." />
         </label>
         <label class="flex flex-col gap-1">
           По батькові
-          <input name="parentmiddleName" value={user.middleName} />
+          <input name="parentmiddleName" value={user.middleName} placeholder="..." />
         </label>
       </div>
       <label class="flex flex-col gap-1">
@@ -109,7 +109,7 @@ const { selectedForm, selectedCampaign, selectedProfile, user, children = [] } =
       </label>
       <label class="flex flex-col gap-1">
         Телефон
-        <input name="parentTelephone" type="tel" required value={user.phone} pattern="380\d{9}"  />
+        <input name="parentTelephone" type="tel" required value={user.phone} pattern="380\d{9}" placeholder="380XXXXXXXXX" />
       </label>
     </div>
 
