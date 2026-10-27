@@ -15,6 +15,7 @@ export const users = sqliteTable("users", {
 
     parentId: integer("parent_id"),
 
+    lastNewsRead: text("last_news_read").default(sql`(CURRENT_TIMESTAMP)`),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 })
 

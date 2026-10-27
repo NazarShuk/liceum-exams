@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `last_news_read` text DEFAULT (CURRENT_TIMESTAMP);

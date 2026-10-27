@@ -128,12 +128,12 @@ const news = await db.query.news.findMany({
                   {contact.href ? (
                     <a
                       href={contact.href}
-                      class="mt-1 block break-words transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
+                      class="mt-1 block wrap-break-word transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
                     >
                       {contact.value}
                     </a>
                   ) : (
-                    <p class="mt-1 break-words">{contact.value}</p>
+                    <p class="mt-1 wrap-break-word">{contact.value}</p>
                   )}
                 </div>
               </li>

@@ -4,6 +4,8 @@ import { getDrizzle } from "@db/drizzle";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import { renderMarkdown } from "../../lib/markdown";
+import { users } from "@db/schema";
+import { eq } from "drizzle-orm";
 
 const db = getDrizzle();
 const item = await db.query.news.findFirst({
@@ -15,6 +17,12 @@ if (!item) {
 }
 
 const html = renderMarkdown(item.content);
+if (Astro.locals.user){
+    const now = new Date().toISOString().replace('T', ' ').replace('Z', '').split('.')[0];
+    await db.update(users).set({
+        lastNewsRead: now
+    }).where(eq(users.id, Astro.locals.user.id))
+}
 ---
 
 <Layout title={item.title}>

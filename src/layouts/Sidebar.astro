@@ -1,4 +1,10 @@
 ---
+import { getDrizzle } from "@db/drizzle";
+import { news } from "@db/schema";
+import { count, gt } from "drizzle-orm";
+
+const db = getDrizzle()
+
 const links = [
     {
         name: "Мої заяви",
@@ -11,12 +17,6 @@ const links = [
         href: "/cabinet/application",
         visible: true,
         icon: "add_circle"
-    },
-    {
-        name: "Новини",
-        href: "/news",
-        visible: true,
-        icon: "campaign"
     },
     {
         name: "Адміністрування",
@@ -55,6 +55,12 @@ const links = [
 ]
 
 const visibleLinks = links.filter(link => link.visible)
+
+let unreadNews = 0
+if (!Astro.url.pathname.startsWith("/news")){
+    unreadNews = await db.$count(news, gt(news.createdAt, Astro.locals.user.lastNewsRead!))
+    console.log(unreadNews)
+}
 ---
 
 <button
@@ -66,6 +72,7 @@ const visibleLinks = links.filter(link => link.visible)
     class="fixed left-2 top-2 z-60 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-diia-bright-grey focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black lg:hidden"
 >
     <span class="material-symbols-outlined" data-sidebar-icon="open">menu</span>
+    {unreadNews > 0 && <div id="sidebar-pinger" class="absolute top-1/2 left-1/2 w-4 h-4 bg-liceum-red rounded-full animate-ping -translate-y-1/2 -translate-x-1/2"></div>}
 </button>
 
 <div
@@ -81,19 +88,27 @@ const visibleLinks = links.filter(link => link.visible)
     <nav class="overflow-hidden flex flex-col justify-between h-full">
         <ul class="h-full overflow-auto">
             {visibleLinks.map(link => (
-                <li class={`flex flex-row items-center p-2.5 gap-1 ${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl`}>
-                    {link.icon && (
-                        <span class="material-symbols-outlined">
-                            {link.icon}
-                        </span>
-                    )}
-                    {link.href && <a href={link.href} aria-current={Astro.url.pathname === link.href ? "page" : undefined}>{link.name}</a>}
-                    {!link.href && <p class="mt-2.5 min-w-0 break-words">{link.name}</p>}
+                <li class={`${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl`}>
+                    <a class="flex flex-row items-center p-2.5 gap-1" href={link.href} aria-current={Astro.url.pathname === link.href ? "page" : undefined}>
+                        {link.icon && (
+                            <span class="material-symbols-outlined">
+                                {link.icon}
+                            </span>
+                        )}
+                        {link.name}
+                    </a>
                 </li>
             ))}
         </ul>
 
         <div class="flex flex-col justify-end h-fit gap-5 w-full p-1 border-t border-diia-bright-grey min-h-24">
+            <a class="relative flex flex-row items-center gap-1" href={"/news"} aria-current={Astro.url.pathname === "/news" ? "page" : undefined}>
+                <span class="material-symbols-outlined">
+                    campaign
+                </span>
+                Новини
+                {unreadNews > 0 && <div class="absolute top-1/2 left-0 w-4 h-4 bg-liceum-red rounded-full animate-ping -translate-y-1/2 translate-x-1/2"></div>}
+            </a>
             <a href="/cabinet/account" class="flex flex-row items-center gap-1">
                 <span class="material-symbols-outlined">
                     account_circle
@@ -128,6 +143,17 @@ const visibleLinks = links.filter(link => link.visible)
         toggle.setAttribute("aria-label", open ? "Закрити меню" : "Відкрити меню");
         toggle.querySelector('[data-sidebar-icon="open"]')?.classList.toggle("hidden", open);
         toggle.querySelector('[data-sidebar-icon="close"]')?.classList.toggle("hidden", !open);
+
+        const pinger = document.getElementById("sidebar-pinger")
+        if (!pinger)
+            return
+        
+        if (open){
+            pinger.style.display = "none"
+        }
+        else{
+            pinger.style.display = "block"
+        }
     }
 
     function initSidebar() {

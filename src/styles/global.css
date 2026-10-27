@@ -61,23 +61,17 @@ h7 {
     @apply text-[16px]/[24px]; /*text-[16px]/[20px]*/
     @apply text-black;
 }
-
 .btn-default {
-    @apply px-6.25 py-3.75 text-white rounded-[40px] bg-black w-fit transition-colors;
+    @apply px-6.25 py-3.75 text-white rounded-[40px] bg-liceum-blue w-fit transition-colors;
     @apply hover:cursor-pointer brightness-110;
 }
 input, textarea {
-    @apply px-[5px] py-[4px] border-b-2 outline-none border-b-black;
+    @apply px-1.25 py-1 border-b-2 outline-none border-b-liceum-blue rounded;
 }
 
 select {
-    @apply appearance-auto box-border w-full min-h-[50px] pt-0 pr-6 pb-[7px] pl-0 border-0 border-b-2 border-black rounded-none bg-transparent text-black font-[inherit] text-[16px] font-light leading-6 tracking-[-0.32px] outline-none cursor-pointer;
+    @apply appearance-auto box-border w-full min-h-12.5 pt-0 pr-6 pb-1.75 pl-0 border-0 border-b-2 border-liceum-blue rounded bg-transparent text-black font-[inherit] text-[16px] font-light leading-6 tracking-[-0.32px] outline-none cursor-pointer;
 }
-
-select:focus-visible {
-    @apply border-b-[#C3AAB2];
-}
-
 select:disabled {
     @apply border-b-diia-grey text-diia-grey cursor-not-allowed;
 }
@@ -95,19 +89,7 @@ select option:checked {
 }
 
 .card {
-    @apply border-2 py-[28px] px-[24px] border-transparent;
-    border-image: radial-gradient(
-      ellipse 96% 195% at 3.33% -13.12%,
-      #a6c7bb 0%,
-      #c1beb3 8.33%,
-      #e4b4a9 23.96%,
-      #e7b2a9 40.90%,
-      #e9b2bc 58.38%,
-      #9086b7 71.65%,
-      #7271bd 82.77%,
-      #4a54c6 90.28%,
-      #2833d0 100%
-    ) 1;
+    @apply border-2 py-7 px-6 border-liceum-blue rounded;
 }
 
 .is-navigating {
