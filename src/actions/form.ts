@@ -10,6 +10,9 @@ type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
 type Field = Schema[number]
 const birthDate = z.string().min(1, "Вкажіть дату народження").pipe(z.coerce.date());
 
+const dayOf = (value: Date | null | undefined) =>
+    value ? new Date(value).toISOString().slice(0, 10) : "";
+
 function validateAnswer(field: Field, value: unknown): string | null {
     const required = field.required !== false
     const label = field.title || field.slug
@@ -79,19 +82,19 @@ export const submitForm = defineAction({
             (v) => (v === "" || v == null ? undefined : v),
             z.coerce.number().int().positive().optional()
         ),
-        studentfirstName: z.string(),
-        studentlastName: z.string(),
+        studentfirstName: z.string().min(1, "Вкажіть ім'я учня"),
+        studentlastName: z.string().min(1, "Вкажіть прізвище учня"),
         studentmiddleName: z.string().optional(),
 
-        studentBirthDate: z.string(),
-        studentTelephone: z.string().regex(/^380\d{9}$/),
+        studentBirthDate: birthDate,
+        studentTelephone: z.string().regex(/^380\d{9}$/, "Введіть номер у форматі 380XXXXXXXXX"),
 
-        parentfirstName: z.string().nonempty(),
-        parentlastName: z.string().nonempty(),
+        parentfirstName: z.string().min(1, "Вкажіть ім'я"),
+        parentlastName: z.string().min(1, "Вкажіть прізвище"),
         parentmiddleName: z.string().optional(),
 
         parentBirthDate: birthDate,
-        parentTelephone: z.string().regex(/^380\d{9}$/),
+        parentTelephone: z.string().regex(/^380\d{9}$/, "Введіть номер у форматі 380XXXXXXXXX"),
     }),
     handler: async (input, context) => {
         try{
@@ -122,6 +125,7 @@ export const submitForm = defineAction({
 
             const formFields: Record<string, unknown> = {}
             const errors: string[] = []
+            const fieldErrors: Record<string, string> = {}
             for (const field of form.schema) {
                 const key = "form-" + field.slug
                 const value = field.type === "multiselect"
@@ -136,6 +140,7 @@ export const submitForm = defineAction({
                 const error = validateAnswer(field, value)
                 if (error) {
                     errors.push(error)
+                    fieldErrors[key] = error
                     logErrorEvent({
                         source: "user",
                         type: "form_validation_error",
@@ -147,7 +152,7 @@ export const submitForm = defineAction({
                 }
             }
             if (errors.length > 0)
-                throw new ActionError({code: "BAD_REQUEST", message: errors.join("; ")})
+                return {success: false, message: errors.join("; "), fieldErrors}
 
             await db.update(users).set({
                 firstName: input.parentfirstName,
@@ -165,17 +170,29 @@ export const submitForm = defineAction({
                     throw new ActionError({code: "BAD_REQUEST", message: "Заповніть інформацію про учня"})
                 }
 
-                const created = await db.insert(users).values({
-                    firstName: input.studentfirstName,
-                    lastName: input.studentlastName,
-                    middleName: input.studentmiddleName || null,
-                    phone: input.studentTelephone,
-                    birthDate: new Date(input.studentBirthDate),
-                    role: "applicant",
-                    parentId: context.locals.user.id
-                }).returning({id: users.id})
+                // Reuse an existing child with the same identity instead of creating a duplicate
+                const siblings = await db.query.users.findMany({ where: { parentId: context.locals.user.id } })
+                const duplicate = siblings.find((sibling) =>
+                    sibling.firstName.trim().toLowerCase() === input.studentfirstName.trim().toLowerCase() &&
+                    sibling.lastName.trim().toLowerCase() === input.studentlastName.trim().toLowerCase() &&
+                    dayOf(sibling.birthDate) === dayOf(input.studentBirthDate)
+                )
 
-                studentId = created[0].id
+                if (duplicate) {
+                    studentId = duplicate.id
+                } else {
+                    const created = await db.insert(users).values({
+                        firstName: input.studentfirstName,
+                        lastName: input.studentlastName,
+                        middleName: input.studentmiddleName || null,
+                        phone: input.studentTelephone,
+                        birthDate: new Date(input.studentBirthDate),
+                        role: "applicant",
+                        parentId: context.locals.user.id
+                    }).returning({id: users.id})
+
+                    studentId = created[0].id
+                }
             } else {
                 const student = await db.query.users.findFirst({where: {id: studentId}})
                 if (!student || student.role !== "applicant" || student.parentId !== context.locals.user.id) {

@@ -3,7 +3,7 @@ import { actions } from "astro:actions";
 import { getDrizzle } from "@db/drizzle";
 import Layout from "@layouts/Layout.astro";
 import ApplicationPreview from "@components/application/ApplicationPreview.astro";
-import ApplicationForm from "@components/application/ApplicationForm.astro";
+import ApplicationForm from "@components/application/ApplicationForm.svelte";
 import CampaignSelector from "@components/application/CampaignSelector.astro";
 import type { campaigns, profiles, forms, applications, users } from "@db/schema";
 
@@ -85,18 +85,30 @@ const applicationAnswers = (previewApplication?.answers ?? {}) as Record<
 >;
 
 const result = Astro.getActionResult(actions.submitForm);
+const submitError = result
+  ? result.error
+    ? result.error.message
+    : result.data.success ? undefined : result.data.message
+  : undefined;
 
-if (result && !result.error) {
+// Progressive enhancement: submits the action without JS, re-rendered by the page below.
+const submitAction = (() => {
+  const params = new URLSearchParams(Astro.url.searchParams);
+  params.set("_action", "submitForm");
+  return `?${params}`;
+})();
+
+if (result && !result.error && result.data.success) {
   return Astro.redirect("/cabinet/application?success=true&preview=" + Number(result.data.id));
 }
 ---
 
 <Layout title="Заява">
-  {(Astro.url.searchParams.has("success") && !result?.error) && (
+  {(Astro.url.searchParams.has("success") && !submitError) && (
   	<h4 class="text-diia-green">Заяву відправлено!</h4>
   )}
-  {result?.error && (
-    <p class="text-diia-red" role="alert">{result.error.message}</p>
+  {submitError && (
+    <p class="text-diia-red" role="alert">{submitError}</p>
   )}
 
   {
@@ -107,11 +119,13 @@ if (result && !result.error) {
       />
     ) : selectedProfile && selectedForm ? (
       <ApplicationForm
+        client:load
         selectedForm={selectedForm}
         selectedCampaign={selectedCampaign}
         selectedProfile={selectedProfile}
         user={Astro.locals.user}
-        children={userChildren}
+        userChildren={userChildren}
+        actionUrl={submitAction}
       />
     ) : (
       <CampaignSelector

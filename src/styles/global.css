@@ -69,6 +69,10 @@ input, textarea {
     @apply px-1.25 py-1 border-b-2 outline-none border-b-liceum-blue rounded;
 }
 
+input[aria-invalid="true"] {
+    @apply border-b-diia-scarlet text-diia-scarlet;
+}
+
 select {
     @apply appearance-auto box-border w-full min-h-12.5 pt-0 pr-6 pb-1.75 pl-0 border-0 border-b-2 border-liceum-blue rounded bg-transparent text-black font-[inherit] text-[16px] font-light leading-6 tracking-[-0.32px] outline-none cursor-pointer;
 }
