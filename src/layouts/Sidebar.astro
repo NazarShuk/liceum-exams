@@ -15,7 +15,7 @@ const links = [
     {
         name: "Створити заяву",
         href: "/cabinet/application",
-        visible: true,
+        visible: Astro.locals.user.role !== "applicant",
         icon: "add_circle"
     },
     {

@@ -66,9 +66,11 @@ const icons = [
         <main class={`w-full flex-1 ${!noPadding ? "p-1" : ""} ${className}`}>
           <slot />
         </main>
-        <footer class="h-32">
-          <slot name="footer" />
-        </footer>
+        {Astro.slots.has("footer") && (
+          <footer class="h-32">
+            <slot name="footer" />
+          </footer>
+        )}
       </div>
     </div>
   </body>

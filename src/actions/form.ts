@@ -107,6 +107,10 @@ export const submitForm = defineAction({
                 logErrorEvent({ source: "user", type: "form_unauthorized", path: context.url?.pathname || "/" });
                 throw new ActionError({code: "UNAUTHORIZED"})
             }
+            if (context.locals.user.role === "applicant") {
+                logErrorEvent({ source: "user", type: "form_forbidden_role", path: context.url?.pathname || "/", userId: context.locals.user.id });
+                throw new ActionError({ code: "FORBIDDEN", message: "Абітурієнти не можуть створювати заяви" })
+            }
 
             const form = await db.query.forms.findFirst({where: {id:input.formId}})
             if (!form) {
@@ -313,6 +317,10 @@ export const saveDraft = defineAction({
             if (!context.locals.user) {
                 logErrorEvent({ source: "user", type: "form_draft_unauthorized", path: context.url?.pathname || "/" });
                 throw new ActionError({code: "UNAUTHORIZED"})
+            }
+            if (context.locals.user.role === "applicant") {
+                logErrorEvent({ source: "user", type: "form_draft_forbidden_role", path: context.url?.pathname || "/", userId: context.locals.user.id });
+                throw new ActionError({ code: "FORBIDDEN", message: "Абітурієнти не можуть створювати заяви" })
             }
 
             const form = await db.query.forms.findFirst({where: {id: input.formId}})

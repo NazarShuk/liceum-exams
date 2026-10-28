@@ -143,6 +143,11 @@ if (Number.isInteger(previewId) && previewId > 0) {
   previewApplication = app;
 }
 
+// Applicants may only view their applications, never create new ones
+if (Astro.locals.user.role === "applicant" && !previewApplication) {
+  return Astro.redirect("/cabinet");
+}
+
 const applicationAnswers = (previewApplication?.answers ?? {}) as Record<
   string,
   unknown

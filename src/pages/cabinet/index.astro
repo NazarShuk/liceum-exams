@@ -21,15 +21,23 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
     <h1 class="mb-5">Мої заяви</h1>
     
     <ul class="mt-5 list-colors">
-        <a href="/cabinet/application">
-            <li class="mb-5 border-dashed border-2 border-diia-grey py-7 px-6 flex flex-row justify-center items-center gap-1 rounded">
-                <span class="material-symbols-outlined">
-                    add_circle
-                </span>
-                <h4>Створити заяву</h4>
-            </li>
-        </a>
-        {results.length === 0 && <p class="text-center opacity-75">У Вас поки що немає заяв! Натисніть на кнопку вище щоб створити Вашу першу заяву.</p>}
+        {Astro.locals.user.role !== "applicant" && (
+            <a href="/cabinet/application">
+                <li class="mb-5 border-dashed border-2 border-diia-grey py-7 px-6 flex flex-row justify-center items-center gap-1 rounded">
+                    <span class="material-symbols-outlined">
+                        add_circle
+                    </span>
+                    <h4>Створити заяву</h4>
+                </li>
+            </a>
+        )}
+        {results.length === 0 && (
+            <p class="text-center opacity-75">
+                {Astro.locals.user.role === "applicant"
+                    ? "У Вас поки що немає заяв."
+                    : "У Вас поки що немає заяв! Натисніть на кнопку вище щоб створити Вашу першу заяву."}
+            </p>
+        )}
         {results.map(result => {
             const isDraft = result.state === "draft";
             const draftStudent = (result.answers?.__student ?? {}) as { firstName?: string; lastName?: string };

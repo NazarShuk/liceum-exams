@@ -1,0 +1,173 @@
+<div class="hero-aurora" aria-hidden="true">
+  <span class="hero-blob hero-blob--orange"></span>
+  <span class="hero-blob hero-blob--green"></span>
+  <span class="hero-blob hero-blob--red"></span>
+  <span class="hero-blob hero-blob--blue"></span>
+  <span class="hero-blob hero-blob--grey"></span>
+</div>
+<div class="hero-fade" aria-hidden="true"></div>
+
+<style>
+  .hero-aurora {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background:
+      radial-gradient(80% 70% at 8% 12%, rgba(239, 95, 1, 0.2), transparent 62%),
+      radial-gradient(70% 65% at 92% 8%, rgba(85, 171, 3, 0.18), transparent 58%),
+      radial-gradient(70% 70% at 82% 92%, rgba(222, 36, 5, 0.13), transparent 62%),
+      radial-gradient(75% 70% at 4% 88%, rgba(35, 74, 153, 0.17), transparent 62%),
+      linear-gradient(120deg, #fbfaf5 0%, #f5f7f3 45%, #f4f4f5 100%);
+    background-size: 150% 150%;
+    animation: aurora-drift 26s ease-in-out infinite alternate;
+  }
+
+  .hero-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.45;
+    will-change: transform;
+  }
+
+  .hero-blob--orange {
+    top: -12rem;
+    left: -8rem;
+    width: 30rem;
+    height: 30rem;
+    background: radial-gradient(circle, rgba(239, 95, 1, 0.55) 0%, rgba(239, 95, 1, 0) 70%);
+    animation: hero-drift-a 22s ease-in-out infinite;
+  }
+
+  .hero-blob--green {
+    top: 6%;
+    right: -9rem;
+    width: 26rem;
+    height: 26rem;
+    background: radial-gradient(circle, rgba(85, 171, 3, 0.5) 0%, rgba(85, 171, 3, 0) 70%);
+    animation: hero-drift-b 28s ease-in-out infinite;
+  }
+
+  .hero-blob--red {
+    bottom: -10rem;
+    left: 38%;
+    width: 24rem;
+    height: 24rem;
+    background: radial-gradient(circle, rgba(222, 36, 5, 0.4) 0%, rgba(222, 36, 5, 0) 70%);
+    animation: hero-drift-c 24s ease-in-out infinite;
+  }
+
+  .hero-blob--blue {
+    bottom: -8rem;
+    left: -6rem;
+    width: 28rem;
+    height: 28rem;
+    background: radial-gradient(circle, rgba(35, 74, 153, 0.45) 0%, rgba(35, 74, 153, 0) 70%);
+    animation: hero-drift-d 30s ease-in-out infinite;
+  }
+
+  .hero-blob--grey {
+    top: 35%;
+    left: 45%;
+    width: 34rem;
+    height: 34rem;
+    opacity: 0.3;
+    background: radial-gradient(circle, rgba(169, 173, 182, 0.5) 0%, rgba(169, 173, 182, 0) 70%);
+    animation: hero-drift-e 34s ease-in-out infinite;
+  }
+
+  .hero-fade {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 9rem;
+    background: linear-gradient(to bottom, rgba(244, 244, 245, 0), #f4f4f5);
+    pointer-events: none;
+  }
+
+  @media (max-width: 40rem) {
+    .hero-blob {
+      filter: blur(50px);
+    }
+
+    .hero-blob--grey {
+      display: none;
+    }
+  }
+
+  @keyframes aurora-drift {
+    0% {
+      background-position: 0% 0%;
+    }
+    50% {
+      background-position: 80% 60%;
+    }
+    100% {
+      background-position: 20% 100%;
+    }
+  }
+
+  @keyframes hero-drift-a {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    33% {
+      transform: translate3d(12%, 6%, 0) scale(1.12);
+    }
+    66% {
+      transform: translate3d(4%, 18%, 0) scale(0.94);
+    }
+  }
+
+  @keyframes hero-drift-b {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    40% {
+      transform: translate3d(-10%, 14%, 0) scale(1.08);
+    }
+    75% {
+      transform: translate3d(-2%, -8%, 0) scale(0.92);
+    }
+  }
+
+  @keyframes hero-drift-c {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    35% {
+      transform: translate3d(-8%, -12%, 0) scale(1.1);
+    }
+    70% {
+      transform: translate3d(10%, -4%, 0) scale(0.96);
+    }
+  }
+
+  @keyframes hero-drift-d {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    45% {
+      transform: translate3d(14%, -10%, 0) scale(1.14);
+    }
+    80% {
+      transform: translate3d(4%, 6%, 0) scale(0.95);
+    }
+  }
+
+  @keyframes hero-drift-e {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(-12%, 10%, 0) scale(1.06);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-aurora,
+    .hero-blob {
+      animation: none !important;
+    }
+  }
+</style>
