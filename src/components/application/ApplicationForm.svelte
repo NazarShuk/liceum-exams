@@ -23,6 +23,7 @@
         user,
         userChildren = [],
         actionUrl,
+        draft,
     }: {
         selectedForm: Form;
         selectedCampaign: CampaignWithProfiles | undefined;
@@ -30,25 +31,75 @@
         user: User;
         userChildren?: User[];
         actionUrl: string;
+        draft?: {
+            id: number;
+            studentId: number | null;
+            student: User | null;
+            answers: Record<string, unknown>;
+        };
     } = $props();
 
     const toDateInput = (value: unknown) =>
         value ? new Date(value as string | number | Date).toISOString().slice(0, 10) : "";
 
-    let selectedChildId = $state("");
-    let studentId = $state("");
+    const draftStudent = (draft?.answers?.__student ?? {}) as Record<string, string | undefined>;
+    const answerOf = (slug: string) => draft?.answers?.[slug];
+
+    let draftId = $state(draft?.id ?? 0);
+    let selectedChildId = $state(draft?.studentId ? String(draft.studentId) : "");
+    let studentId = $state(draft?.studentId ? String(draft.studentId) : "");
     let student = $state({
-        firstName: "",
-        lastName: "",
-        middleName: "",
-        birthDate: "",
-        telephone: "",
+        firstName: draft?.student?.firstName ?? draftStudent.firstName ?? "",
+        lastName: draft?.student?.lastName ?? draftStudent.lastName ?? "",
+        middleName: draft?.student?.middleName ?? draftStudent.middleName ?? "",
+        birthDate: draft?.student?.birthDate ? toDateInput(draft.student.birthDate) : (draftStudent.birthDate ?? ""),
+        telephone: draft?.student?.phone ?? draftStudent.telephone ?? "",
     });
 
     let fieldErrors = $state<Record<string, string>>({});
     let message = $state("");
     let sending = $state(false);
     let formElement = $state<HTMLFormElement>();
+
+    let saveStatus = $state<"idle" | "saving" | "saved">("idle");
+    let saveTimer: ReturnType<typeof setTimeout> | undefined;
+    let saving = false;
+    let dirty = false;
+
+    function scheduleSave() {
+        if (sending) return;
+        dirty = true;
+        saveStatus = "idle";
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveDraft, 800);
+    }
+
+    async function saveDraft() {
+        if (saving || sending || !formElement) return;
+
+        saving = true;
+        dirty = false;
+        saveStatus = "saving";
+        try {
+            const result = await actions.saveDraft(new FormData(formElement));
+            if (result.error || !result.data.id) {
+                saveStatus = "idle";
+                return;
+            }
+            if (result.data.id !== draftId) {
+                draftId = result.data.id;
+                const url = new URL(window.location.href);
+                url.searchParams.set("draft", String(draftId));
+                window.history.replaceState(null, "", url);
+            }
+            saveStatus = dirty ? "idle" : "saved";
+        } catch {
+            saveStatus = "idle";
+        } finally {
+            saving = false;
+            if (dirty) scheduleSave();
+        }
+    }
 
     function selectChild(event: Event) {
         if (!(event.currentTarget instanceof HTMLSelectElement)) return;
@@ -74,6 +125,8 @@
         event.preventDefault();
         if (sending || !formElement) return;
 
+        clearTimeout(saveTimer);
+        dirty = false;
         sending = true;
         message = "";
         fieldErrors = {};
@@ -121,7 +174,16 @@
         {/if}
     </div>
 
-    <form class="flex flex-col" bind:this={formElement} action={actionUrl} method="POST" onsubmit={submit}>
+    <form
+        class="flex flex-col"
+        bind:this={formElement}
+        action={actionUrl}
+        method="POST"
+        onsubmit={submit}
+        oninput={scheduleSave}
+        onchange={scheduleSave}
+    >
+        <input type="hidden" name="draftId" value={draftId || ""} />
         <div class="card flex flex-col gap-5 mb-5">
             <h3>Інформація учня</h3>
             {#if userChildren.length > 0}
@@ -296,6 +358,9 @@
                                     type={field.type === "multiselect" ? "checkbox" : "radio"}
                                     name={name}
                                     value={option}
+                                    checked={field.type === "multiselect"
+                                        ? (answerOf(field.slug) as string[] | undefined)?.includes(option)
+                                        : answerOf(field.slug) === option}
                                     required={field.type === "select" && field.required !== false}
                                     aria-invalid={error ? "true" : undefined}
                                 />
@@ -309,6 +374,7 @@
                         name={name}
                         placeholder="Ваша відповідь..."
                         type={field.type}
+                        value={field.type === "file" ? undefined : (answerOf(field.slug) as string | undefined) ?? ""}
                         required={field.required !== false}
                         minlength={field.type === "text" && field.min > 0 ? field.min : undefined}
                         maxlength={field.type === "text" && field.max > 0 ? field.max : undefined}
@@ -333,6 +399,11 @@
             <p class="text-diia-red" role="alert">Перевірте виділені поля</p>
         {:else if message}
             <p class="text-diia-red" role="alert">{message}</p>
+        {/if}
+        {#if saveStatus !== "idle"}
+            <p class="opacity-75 mb-2" role="status">
+                {saveStatus === "saving" ? "Збереження чернетки..." : "Чернетку збережено"}
+            </p>
         {/if}
         <button class="btn-default" disabled={sending}>
             {sending ? "Надсилання..." : "Надіслати"}

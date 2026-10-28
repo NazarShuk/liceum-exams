@@ -23,7 +23,7 @@ export const applications = sqliteTable("applications", {
     id: integer("id").primaryKey({autoIncrement: true}),
 
     userId: integer("user_id").notNull().references(()=> users.id, {onDelete: "cascade"}),
-    studentId: integer("student_id").notNull().references(()=> users.id, {onDelete: "cascade"}),
+    studentId: integer("student_id").references(()=> users.id, {onDelete: "cascade"}),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
     updatedAt: text("updated_at")
      .notNull()

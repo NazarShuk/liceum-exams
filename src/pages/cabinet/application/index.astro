@@ -1,6 +1,7 @@
 ---
 import { actions } from "astro:actions";
 import { getDrizzle } from "@db/drizzle";
+import { logErrorEvent } from "@lib/analytics";
 import Layout from "@layouts/Layout.astro";
 import ApplicationPreview from "@components/application/ApplicationPreview.astro";
 import ApplicationForm from "@components/application/ApplicationForm.svelte";
@@ -51,12 +52,50 @@ const availableCampaigns = (await db.query.campaigns.findMany({
 const requestedCampaignId = Number(Astro.url.searchParams.get("campaignId"));
 const requestedProfileId = Number(Astro.url.searchParams.get("profileId"));
 
+type DraftApplication = {
+  id: number;
+  studentId: number | null;
+  student: User | null;
+  answers: Record<string, unknown>;
+};
+
+const requestedDraftId = Number(Astro.url.searchParams.get("draft"));
+const draftApplication = Number.isInteger(requestedDraftId) && requestedDraftId > 0
+  ? await db.query.applications.findFirst({
+      where: {
+        id: requestedDraftId,
+        userId: Astro.locals.user.id,
+        state: "draft",
+      },
+      with: { student: true },
+    })
+  : undefined;
+
+if (Number.isInteger(requestedDraftId) && requestedDraftId > 0 && !draftApplication) {
+  logErrorEvent({
+    source: "user",
+    type: "draft_resume_not_found",
+    path: Astro.url.pathname,
+    userId: Astro.locals.user?.id,
+    message: `draftId:${requestedDraftId}`,
+  });
+  return new Response(null, { status: 404 });
+}
+
+const draftCampaign = draftApplication
+  ? availableCampaigns.find((campaign) =>
+      campaign.profiles.some((profile) => profile.id === draftApplication.profileId),
+    )
+  : undefined;
+
 const selectedCampaign =
+  draftCampaign ??
   availableCampaigns.find((campaign) => campaign.id === requestedCampaignId) ??
   (availableCampaigns.length === 1 ? availableCampaigns[0] : undefined);
-const selectedProfile = selectedCampaign?.profiles.find(
-  (profile) => profile.id === requestedProfileId
-);
+const selectedProfile = draftApplication && draftCampaign
+  ? draftCampaign.profiles.find((profile) => profile.id === draftApplication.profileId)
+  : selectedCampaign?.profiles.find((profile) => profile.id === requestedProfileId);
+
 let userChildren: User[] = []
 if (Astro.locals.user) {
   userChildren = await db.query.users.findMany({
@@ -64,6 +103,16 @@ if (Astro.locals.user) {
   })
 }
 const selectedForm = selectedProfile?.form ?? null;
+
+const draft: DraftApplication | undefined =
+  draftApplication && draftApplication.profileId === selectedProfile?.id
+    ? {
+        id: draftApplication.id,
+        studentId: draftApplication.studentId,
+        student: draftApplication.student ?? null,
+        answers: draftApplication.answers,
+      }
+    : undefined;
 
 const previewId = Number(Astro.url.searchParams.get("preview"));
 let previewApplication: PreviewApplication | undefined;
@@ -126,6 +175,7 @@ if (result && !result.error && result.data.success) {
         user={Astro.locals.user}
         userChildren={userChildren}
         actionUrl={submitAction}
+        draft={draft}
       />
     ) : (
       <CampaignSelector

@@ -30,23 +30,38 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
             </li>
         </a>
         {results.length === 0 && <p class="text-center opacity-75">У Вас поки що немає заяв! Натисніть на кнопку вище щоб створити Вашу першу заяву.</p>}
-        {results.map(result => (
-            <li class="card mb-5">
-                <a href={`/cabinet/application?preview=${result.id}`}>
-                    <h4>{result.student?.firstName} {result.student?.lastName}</h4>
-                    <p>{result.campaign?.title} - {result.profile?.title}</p>
-                    <p class="opacity-50">Подано {result.createdAt ? format(new Date(result.createdAt), "PPP", {locale: uk}) : ''}</p>
-                </a>
-                
-                {Astro.locals.user.role !== "applicant" && (
-                    <form method="POST" action={actions.applicantLink}>
-                        <input hidden name="applicationId" value={result.id}>
-                        <button class="cursor-pointer">Посилання для абітурієнта</button>
-                    </form>
-                )}
-                
-            </li>
-        ))}
+        {results.map(result => {
+            const isDraft = result.state === "draft";
+            const draftStudent = (result.answers?.__student ?? {}) as { firstName?: string; lastName?: string };
+            const studentName = result.student
+                ? `${result.student.firstName} ${result.student.lastName}`
+                : [draftStudent.firstName, draftStudent.lastName].filter(Boolean).join(" ");
+            return (
+                <li class={`card mb-5 ${isDraft ? "opacity-75 border-dotted" : ""}`}>
+                    <a href={isDraft ? `/cabinet/application?draft=${result.id}` : `/cabinet/application?preview=${result.id}`}>
+                        <h4>{studentName || "Заява"}</h4>
+                        <p>{result.campaign?.title} - {result.profile?.title}</p>
+                        <p class="opacity-50">
+                            {isDraft ? "Чернетка" : "Подано"} {result.createdAt ? format(new Date(result.createdAt), "PPP", {locale: uk}) : ''}
+                        </p>
+                    </a>
+
+                    {isDraft && (
+                        <form method="POST" action={actions.deleteDraft} onsubmit="return confirm('Видалити чернетку?')">
+                            <input hidden name="applicationId" value={result.id}>
+                            <button class="cursor-pointer">Видалити чернетку</button>
+                        </form>
+                    )}
+
+                    {!isDraft && Astro.locals.user.role !== "applicant" && (
+                        <form method="POST" action={actions.applicantLink}>
+                            <input hidden name="applicationId" value={result.id}>
+                            <button class="cursor-pointer">Посилання для абітурієнта</button>
+                        </form>
+                    )}
+                </li>
+            );
+        })}
     </ul>
 
     {linkResult && linkResult.data?.id && (

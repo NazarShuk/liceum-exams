@@ -1,6 +1,6 @@
 import { ActionError, defineAction } from "astro:actions";
 import {z} from "astro/zod";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDrizzle } from "../db/drizzle";
 import { applications, forms, profiles, users, applicantInvites} from "@db/schema";
 import { env } from "cloudflare:workers";
@@ -9,6 +9,11 @@ import { logErrorEvent } from "../lib/analytics";
 type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
 type Field = Schema[number]
 const birthDate = z.string().min(1, "Вкажіть дату народження").pipe(z.coerce.date());
+
+const optionalId = z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.coerce.number().int().positive().optional()
+);
 
 const dayOf = (value: Date | null | undefined) =>
     value ? new Date(value).toISOString().slice(0, 10) : "";
@@ -77,11 +82,9 @@ export const submitForm = defineAction({
     input: z.looseObject({
         formId: z.number(),
         profileId: z.number().int().positive(),
+        draftId: optionalId,
 
-        studentId: z.preprocess(
-            (v) => (v === "" || v == null ? undefined : v),
-            z.coerce.number().int().positive().optional()
-        ),
+        studentId: optionalId,
         studentfirstName: z.string().min(1, "Вкажіть ім'я учня"),
         studentlastName: z.string().min(1, "Вкажіть прізвище учня"),
         studentmiddleName: z.string().optional(),
@@ -227,7 +230,8 @@ export const submitForm = defineAction({
             const existingApplication = await db.query.applications.findFirst({
                 where: {
                     studentId: studentId,
-                    campaignId: campaignId
+                    campaignId: campaignId,
+                    state: "submitted"
                 }
             })
             if (existingApplication && (!campaign.allowMultipleProfiles || existingApplication.profileId === input.profileId)) {
@@ -251,15 +255,29 @@ export const submitForm = defineAction({
                 }
             }
 
-            const result = await db.insert(applications).values({
+            const draft = input.draftId == null ? undefined : await db.query.applications.findFirst({
+                where: {id: input.draftId, userId: context.locals.user.id, state: "draft"}
+            })
+            if (input.draftId != null && !draft) {
+                logErrorEvent({ source: "user", type: "form_draft_missing", path: context.url?.pathname || "/", userId: context.locals.user.id, message: `draftId:${input.draftId}` });
+            }
+
+            const values = {
                 studentId: studentId,
                 userId: context.locals.user.id,
-                state: "submitted",
+                state: "submitted" as const,
                 answers: formFields,
                 formId: input.formId,
                 profileId: input.profileId,
                 campaignId: campaignId
-            }).returning({id: applications.id})
+            }
+
+            if (draft) {
+                await db.update(applications).set(values).where(eq(applications.id, draft.id))
+                return {success: true, id: draft.id}
+            }
+
+            const result = await db.insert(applications).values(values).returning({id: applications.id})
 
             return {success: true, id: result[0].id}
         }
@@ -273,6 +291,153 @@ export const submitForm = defineAction({
         }
     }
 })
+
+export const saveDraft = defineAction({
+    accept: "form",
+    input: z.looseObject({
+        formId: z.number(),
+        profileId: z.number().int().positive(),
+        draftId: optionalId,
+        studentId: optionalId,
+
+        studentfirstName: z.string().optional(),
+        studentlastName: z.string().optional(),
+        studentmiddleName: z.string().optional(),
+        studentBirthDate: z.string().optional(),
+        studentTelephone: z.string().optional(),
+    }),
+    handler: async (input, context) => {
+        try {
+            const db = getDrizzle()
+            if (!context.locals.user) {
+                logErrorEvent({ source: "user", type: "form_draft_unauthorized", path: context.url?.pathname || "/" });
+                throw new ActionError({code: "UNAUTHORIZED"})
+            }
+
+            const form = await db.query.forms.findFirst({where: {id: input.formId}})
+            const profile = await db.query.profiles.findFirst({where: {id: input.profileId}})
+            if (!form || !profile || profile.formId !== form.id) {
+                logErrorEvent({ source: "user", type: "form_draft_not_found", path: context.url?.pathname || "/", userId: context.locals.user.id, message: `formId:${input.formId},profileId:${input.profileId}` });
+                throw new ActionError({code: "BAD_REQUEST"})
+            }
+
+            let rawForm: FormData | null = null
+            try {
+                rawForm = await context.request.formData()
+            } catch {
+                rawForm = null
+            }
+
+            const answers: Record<string, unknown> = {}
+            for (const field of form.schema) {
+                const key = "form-" + field.slug
+                answers[field.slug] = field.type === "file"
+                    ? ""
+                    : field.type === "multiselect"
+                        ? rawForm
+                            ? rawForm.getAll(key).map(String).filter((v) => v !== "")
+                            : []
+                        : rawForm
+                            ? rawForm.get(key) ?? ""
+                            : (input as Record<string, unknown>)[key] ?? ""
+            }
+            answers.__student = {
+                firstName: (input.studentfirstName ?? "").trim(),
+                lastName: (input.studentlastName ?? "").trim(),
+                middleName: (input.studentmiddleName ?? "").trim(),
+                birthDate: input.studentBirthDate ?? "",
+                telephone: (input.studentTelephone ?? "").trim(),
+            }
+
+            let studentId: number | null = null
+            if (input.studentId != null) {
+                const student = await db.query.users.findFirst({where: {id: input.studentId}})
+                if (!student || student.role !== "applicant" || student.parentId !== context.locals.user.id) {
+                    logErrorEvent({ source: "user", type: "form_draft_student_invalid", path: context.url?.pathname || "/", userId: context.locals.user.id, message: `studentId:${input.studentId}` });
+                    throw new ActionError({code: "BAD_REQUEST", message: "Учня не знайдено серед ваших дітей"})
+                }
+                studentId = student.id
+            }
+
+            const campaignAssignment = await db.query.campaignsToProfiles.findFirst({
+                where: {profileId: input.profileId}
+            })
+            if (!campaignAssignment) {
+                logErrorEvent({ source: "user", type: "form_draft_campaign_assignment_missing", path: context.url?.pathname || "/", userId: context.locals.user.id, message: `profileId:${input.profileId}` });
+            }
+
+            const values = {
+                userId: context.locals.user.id,
+                studentId,
+                formId: form.id,
+                profileId: profile.id,
+                campaignId: campaignAssignment?.campaignId ?? null,
+                answers,
+                state: "draft" as const,
+            }
+
+            // Fall back to the user's existing draft for this profile so a fresh page does not create a second one
+            const requestedDraft = input.draftId == null ? undefined : await db.query.applications.findFirst({
+                where: {id: input.draftId, userId: context.locals.user.id, state: "draft"}
+            })
+            if (input.draftId != null && !requestedDraft) {
+                logErrorEvent({ source: "user", type: "form_draft_missing", path: context.url?.pathname || "/", userId: context.locals.user.id, message: `draftId:${input.draftId}` });
+            }
+            const draft = requestedDraft ?? await db.query.applications.findFirst({
+                where: {userId: context.locals.user.id, profileId: profile.id, state: "draft"}
+            })
+            if (draft) {
+                await db.update(applications)
+                    .set(values)
+                    .where(and(eq(applications.id, draft.id), eq(applications.state, "draft")))
+                return {id: draft.id}
+            }
+
+            const created = await db.insert(applications).values(values).returning({id: applications.id})
+            return {id: created[0].id}
+        }
+        catch(e){
+            if (e instanceof ActionError) throw e
+            console.error(e)
+            try {
+                logErrorEvent({ source: "server", type: "form_draft_exception", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: e instanceof Error ? e.message : String(e) });
+            } catch {}
+            throw new ActionError({code: "INTERNAL_SERVER_ERROR"})
+        }
+    }
+})
+
+export const deleteDraft = defineAction({
+    accept: "form",
+    input: z.object({
+        applicationId: z.number().int().positive(),
+    }),
+    handler: async (input, context) => {
+        try {
+            if (!context.locals.user) {
+                logErrorEvent({ source: "user", type: "draft_delete_unauthorized", path: context.url?.pathname || "/" });
+                throw new ActionError({ code: "UNAUTHORIZED" });
+            }
+
+            const db = getDrizzle();
+            const draft = await db.query.applications.findFirst({
+                where: { id: input.applicationId, userId: context.locals.user.id, state: "draft" },
+            });
+            if (!draft) {
+                logErrorEvent({ source: "user", type: "draft_delete_not_found", path: context.url?.pathname || "/", userId: context.locals.user.id, message: `applicationId:${input.applicationId}` });
+                throw new ActionError({ code: "NOT_FOUND", message: "Чернетку не знайдено" });
+            }
+
+            await db.delete(applications).where(eq(applications.id, draft.id));
+            return { success: true };
+        } catch (error) {
+            if (error instanceof ActionError) throw error;
+            console.error(error);
+            try { logErrorEvent({ source: "server", type: "draft_delete_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
+            throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
+        }
+    },
+});
 
 export const submitFormEdit = defineAction({
     accept: "json",
