@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { getDrizzle } from "@db/drizzle";
 import { campaignsToProfiles, profiles } from "@db/schema";
 import { deleteFormIfUnused } from "@lib/forms";
+import { logEvent } from "@lib/analytics";
 
 export const submitProfileEdit = defineAction({
     accept: "json",
@@ -76,6 +77,13 @@ export const submitProfileEdit = defineAction({
                 await deleteFormIfUnused(db, previousFormId);
             }
 
+            logEvent({
+                type: input.profileId ? "profile_update" : "profile_create",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "profiles",
+                targetId: profileId,
+            });
             return { success: true, profileId };
         } catch (error) {
             if (error instanceof ActionError) throw error;
@@ -108,6 +116,13 @@ export const deleteProfile = defineAction({
             if (existingProfile.formId) {
                 await deleteFormIfUnused(db, existingProfile.formId);
             }
+            logEvent({
+                type: "profile_delete",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "profiles",
+                targetId: input.profileId,
+            });
             return { success: true };
         } catch (error) {
             if (error instanceof ActionError) throw error;

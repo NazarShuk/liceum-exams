@@ -8,15 +8,13 @@ interface Props {
 
 const { error } = Astro.props;
 
-try {
-  logErrorEvent({
-    source: "server",
-    type: "page_error",
-    path: Astro.url.pathname,
-    message: error instanceof Error ? error.message : String(error),
-    userId: Astro.locals.user?.id,
-  });
-} catch {}
+logErrorEvent({
+  source: "server",
+  type: "page_error",
+  path: Astro.url.pathname,
+  message: error instanceof Error ? error.message : String(error),
+  userId: Astro.locals.user?.id,
+});
 
 ---
 

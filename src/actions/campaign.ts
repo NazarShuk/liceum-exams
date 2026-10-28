@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getDrizzle } from "@db/drizzle";
 import { campaigns, campaignsToProfiles, applications, profiles } from "@db/schema";
 import { deleteFormIfUnused } from "@lib/forms";
+import { logEvent } from "@lib/analytics";
 
 const dateInput = z.string().refine((value) => {
     if (value === "") return true;
@@ -97,6 +98,13 @@ export const submitCampaignEdit = defineAction({
                 }
             }
 
+            logEvent({
+                type: input.campaignId ? "campaign_update" : "campaign_create",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "campaigns",
+                targetId: campaignId,
+            });
             return { success: true, campaignId };
         } catch (error) {
             if (error instanceof ActionError) throw error;
@@ -126,6 +134,13 @@ export const deleteCampaign = defineAction({
             }
 
             await db.delete(campaigns).where(eq(campaigns.id, input.campaignId));
+            logEvent({
+                type: "campaign_delete",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "campaigns",
+                targetId: input.campaignId,
+            });
             return { success: true };
         } catch (error) {
             if (error instanceof ActionError) throw error;

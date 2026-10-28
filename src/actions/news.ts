@@ -3,6 +3,7 @@ import { z } from "astro/zod";
 import { eq } from "drizzle-orm";
 import { getDrizzle } from "@db/drizzle";
 import { news } from "@db/schema";
+import { logEvent } from "@lib/analytics";
 
 export const submitNewsEdit = defineAction({
     accept: "json",
@@ -39,6 +40,13 @@ export const submitNewsEdit = defineAction({
                 newsId = createdNews.id;
             }
 
+            logEvent({
+                type: input.newsId ? "news_update" : "news_create",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "news",
+                targetId: newsId,
+            });
             return { success: true, newsId };
         } catch (error) {
             if (error instanceof ActionError) throw error;
@@ -68,6 +76,13 @@ export const deleteNews = defineAction({
             }
 
             await db.delete(news).where(eq(news.id, input.newsId));
+            logEvent({
+                type: "news_delete",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "news",
+                targetId: input.newsId,
+            });
             return { success: true };
         } catch (error) {
             if (error instanceof ActionError) throw error;

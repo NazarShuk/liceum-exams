@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getDrizzle } from "../db/drizzle";
 import { applications, forms, profiles, users, applicantInvites} from "@db/schema";
 import { env } from "cloudflare:workers";
-import { logErrorEvent } from "../lib/analytics";
+import { logErrorEvent, logEvent } from "../lib/analytics";
 import { deleteFormIfUnused } from "../lib/forms";
 
 type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
@@ -279,19 +279,32 @@ export const submitForm = defineAction({
 
             if (draft) {
                 await db.update(applications).set(values).where(eq(applications.id, draft.id))
+                logEvent({
+                    type: "draft_save",
+                    user: context.locals.user,
+                    path: context.url?.pathname,
+                    target: "applications",
+                    targetId: draft.id,
+                })
                 return {success: true, id: draft.id}
             }
 
             const result = await db.insert(applications).values(values).returning({id: applications.id})
 
+            logEvent({
+                type: "application_submit",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "applications",
+                targetId: result[0].id,
+                detail: `profileId:${input.profileId},campaignId:${campaignId}`,
+            })
             return {success: true, id: result[0].id}
         }
         catch(e){
             if (e instanceof ActionError) throw e
             console.error(e)
-            try {
-                logErrorEvent({ source: "server", type: "form_submit_exception", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: e instanceof Error ? e.message : String(e) });
-            } catch {}
+            logErrorEvent({ source: "server", type: "form_submit_exception", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: e instanceof Error ? e.message : String(e) });
             throw new ActionError({code: "INTERNAL_SERVER_ERROR"})
         }
     }
@@ -403,14 +416,19 @@ export const saveDraft = defineAction({
             }
 
             const created = await db.insert(applications).values(values).returning({id: applications.id})
+            logEvent({
+                type: "draft_save",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "applications",
+                targetId: created[0].id,
+            })
             return {id: created[0].id}
         }
         catch(e){
             if (e instanceof ActionError) throw e
             console.error(e)
-            try {
-                logErrorEvent({ source: "server", type: "form_draft_exception", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: e instanceof Error ? e.message : String(e) });
-            } catch {}
+            logErrorEvent({ source: "server", type: "form_draft_exception", path: context.url?.pathname || "/", userId: context.locals.user?.id, message: e instanceof Error ? e.message : String(e) });
             throw new ActionError({code: "INTERNAL_SERVER_ERROR"})
         }
     }
@@ -438,11 +456,18 @@ export const deleteDraft = defineAction({
             }
 
             await db.delete(applications).where(eq(applications.id, draft.id));
+            logEvent({
+                type: "draft_delete",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "applications",
+                targetId: draft.id,
+            });
             return { success: true };
         } catch (error) {
             if (error instanceof ActionError) throw error;
             console.error(error);
-            try { logErrorEvent({ source: "server", type: "draft_delete_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
+            logErrorEvent({ source: "server", type: "draft_delete_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) });
             throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
         }
     },
@@ -509,12 +534,19 @@ export const submitFormEdit = defineAction({
                 if (previousFormId) await deleteFormIfUnused(db, previousFormId)
             }
 
+            logEvent({
+                type: input.formId ? "form_update" : "form_create",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "forms",
+                targetId: formId,
+            })
             return {success: true, formId}
         }
         catch(e){
             if (e instanceof ActionError) throw e
             console.error(e)
-            try { logErrorEvent({ source: "server", type: "form_edit_exception", userId: context.locals.user?.id, message: e instanceof Error ? e.message : String(e) }); } catch {}
+            logErrorEvent({ source: "server", type: "form_edit_exception", userId: context.locals.user?.id, message: e instanceof Error ? e.message : String(e) });
             throw new ActionError({code: "INTERNAL_SERVER_ERROR"})
         }
     }
@@ -541,11 +573,18 @@ export const deleteForm = defineAction({
 
             await db.update(profiles).set({ formId: null }).where(eq(profiles.formId, input.formId));
             await db.delete(forms).where(eq(forms.id, input.formId));
+            logEvent({
+                type: "form_delete",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "forms",
+                targetId: input.formId,
+            });
             return { success: true };
         } catch (error) {
             if (error instanceof ActionError) throw error;
             console.error(error);
-            try { logErrorEvent({ source: "server", type: "form_delete_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
+            logErrorEvent({ source: "server", type: "form_delete_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) });
             throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
         }
     },
@@ -585,11 +624,19 @@ export const deleteApplications = defineAction({
             }
 
             await db.delete(applications).where(inArray(applications.id, input.applicationIds));
+            logEvent({
+                type: "applications_delete",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "applications",
+                targetId: input.applicationIds.join(","),
+                detail: `deleted:${records.length}`,
+            });
             return { success: true, deletedCount: records.length };
         } catch (error) {
             if (error instanceof ActionError) throw error;
             console.error(error);
-            try { logErrorEvent({ source: "server", type: "applications_delete_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
+            logErrorEvent({ source: "server", type: "applications_delete_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) });
             throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
         }
     },
@@ -619,11 +666,19 @@ export const applicantLink = defineAction({
                 applicationId: application.id
             }).returning({id: applicantInvites.id})
 
+            logEvent({
+                type: "applicant_link",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "applicantInvites",
+                targetId: newInvite[0].id,
+                detail: `applicationId:${application.id}`,
+            })
             return { success: true, id: newInvite[0].id};
         } catch (error) {
             if (error instanceof ActionError) throw error;
             console.error(error);
-            try { logErrorEvent({ source: "server", type: "applicant_link_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
+            logErrorEvent({ source: "server", type: "applicant_link_exception", userId: context.locals.user?.id, message: error instanceof Error ? error.message : String(error) });
             throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
         }
     }
