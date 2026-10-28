@@ -1,12 +1,14 @@
 ---
 import { actions } from "astro:actions";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { getDrizzle } from "@db/drizzle";
 import { logErrorEvent } from "@lib/analytics";
 import Layout from "@layouts/Layout.astro";
 import ApplicationPreview from "@components/application/ApplicationPreview.astro";
 import ApplicationForm from "@components/application/ApplicationForm.svelte";
 import CampaignSelector from "@components/application/CampaignSelector.astro";
-import type { campaigns, profiles, forms, applications, users } from "@db/schema";
+import { applications } from "@db/schema";
+import type { campaigns, profiles, forms, users } from "@db/schema";
 
 type Campaign = typeof campaigns.$inferSelect;
 type Profile = typeof profiles.$inferSelect;
@@ -48,6 +50,19 @@ const availableCampaigns = (await db.query.campaigns.findMany({
     },
   },
 })) as CampaignWithProfiles[];
+
+const profileIds = availableCampaigns.flatMap((campaign) =>
+  campaign.profiles.map((profile) => profile.id),
+);
+const applicationCounts: Record<number, number> = {};
+if (profileIds.length > 0) {
+  const rows = await db
+    .select({ profileId: applications.profileId, total: count() })
+    .from(applications)
+    .where(and(inArray(applications.profileId, profileIds), eq(applications.state, "submitted")))
+    .groupBy(applications.profileId);
+  for (const row of rows) applicationCounts[row.profileId] = row.total;
+}
 
 const requestedCampaignId = Number(Astro.url.searchParams.get("campaignId"));
 const requestedProfileId = Number(Astro.url.searchParams.get("profileId"));
@@ -150,18 +165,27 @@ const submitAction = (() => {
 if (result && !result.error && result.data.success) {
   return Astro.redirect("/cabinet/application?success=true&preview=" + Number(result.data.id));
 }
+
+const justSubmitted = !submitError && Astro.url.searchParams.has("success") ? previewApplication : undefined;
 ---
 
 <Layout title="Заява">
-  {(Astro.url.searchParams.has("success") && !submitError) && (
-  	<h4 class="text-diia-green">Заяву відправлено!</h4>
-  )}
   {submitError && (
     <p class="text-diia-red" role="alert">{submitError}</p>
   )}
 
   {
-    previewApplication ? (
+    justSubmitted ? (
+      <section class="card mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
+        <span class="material-symbols-outlined text-6xl! text-diia-green" aria-hidden="true">check_circle</span>
+        <h2>Заяву відправлено!</h2>
+        <p>Вашу заяву прийнято. Ви можете переглянути дані, які ввели.</p>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <a class="btn-default" href={`/cabinet/application?preview=${justSubmitted.id}`}>Переглянути заяву</a>
+          <a class="rounded-[40px] border-2 border-liceum-blue px-6 py-3 text-liceum-blue transition-colors hover:bg-liceum-blue/5" href="/cabinet">До моїх заяв</a>
+        </div>
+      </section>
+    ) : previewApplication ? (
       <ApplicationPreview
         previewApplication={previewApplication}
         applicationAnswers={applicationAnswers}
@@ -181,6 +205,7 @@ if (result && !result.error && result.data.success) {
       <CampaignSelector
         availableCampaigns={availableCampaigns}
         selectedCampaign={selectedCampaign}
+        applicationCounts={applicationCounts}
       />
     )
   }

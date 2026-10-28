@@ -17,9 +17,10 @@ interface CampaignWithProfiles extends Campaign {
 interface Props {
   availableCampaigns: CampaignWithProfiles[];
   selectedCampaign?: CampaignWithProfiles;
+  applicationCounts?: Record<number, number>;
 }
 
-const { availableCampaigns, selectedCampaign } = Astro.props;
+const { availableCampaigns, selectedCampaign, applicationCounts = {} } = Astro.props;
 ---
 
 <section class="flex flex-col gap-5">
@@ -32,6 +33,7 @@ const { availableCampaigns, selectedCampaign } = Astro.props;
             profile={profile}
             selectable
             href={`/cabinet/application?campaignId=${selectedCampaign.id}&profileId=${profile.id}`}
+            count={applicationCounts[profile.id] ?? 0}
             client:load
           />
         ))}
