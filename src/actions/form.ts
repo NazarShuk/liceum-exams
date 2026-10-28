@@ -5,6 +5,7 @@ import { getDrizzle } from "../db/drizzle";
 import { applications, forms, profiles, users, applicantInvites} from "@db/schema";
 import { env } from "cloudflare:workers";
 import { logErrorEvent } from "../lib/analytics";
+import { deleteFormIfUnused } from "../lib/forms";
 
 type Schema = NonNullable<typeof forms.$inferSelect["schema"]>;
 type Field = Schema[number]
@@ -455,6 +456,7 @@ export const submitFormEdit = defineAction({
             options: z.array(z.string()).optional(),
         })).nonempty(),
         formId: z.number().optional(),
+        profileId: z.number().int().positive().optional(),
     }),
     handler: async(input, context)=> {
         try{
@@ -463,6 +465,14 @@ export const submitFormEdit = defineAction({
                 throw new ActionError({code: "UNAUTHORIZED"})
             if (context.locals.user.role !== "admin")
                 throw new ActionError({code: "UNAUTHORIZED"})
+
+            const profile = input.profileId
+                ? await db.query.profiles.findFirst({where: {id: input.profileId}})
+                : undefined
+            if (input.profileId && !profile)
+                throw new ActionError({code: "BAD_REQUEST", message: "Профіль не знайдено"})
+            if (!input.formId && !profile)
+                throw new ActionError({code: "BAD_REQUEST", message: "Спочатку збережіть профіль"})
 
             let formId: number
             if (!input.formId){
@@ -475,22 +485,20 @@ export const submitFormEdit = defineAction({
             }
             else{
                 const form = await db.query.forms.findFirst({where: {id: input.formId}})
-                if (!form){
-                    const [createdForm] = await db.insert(forms).values({
-                        title: input.title,
-                        description: input.description,
-                        schema: input.schema,
-                    }).returning({ id: forms.id })
-                    formId = createdForm.id
-                }
-                else{
-                    await db.update(forms).set({
-                        title: input.title,
-                        description: input.description,
-                        schema: input.schema,
-                    }).where(eq(forms.id, input.formId))
-                    formId = form.id
-                }
+                if (!form)
+                    throw new ActionError({code: "BAD_REQUEST", message: "Форму не знайдено"})
+                await db.update(forms).set({
+                    title: input.title,
+                    description: input.description,
+                    schema: input.schema,
+                }).where(eq(forms.id, input.formId))
+                formId = form.id
+            }
+
+            if (profile && profile.formId !== formId) {
+                const previousFormId = profile.formId
+                await db.update(profiles).set({formId}).where(eq(profiles.id, profile.id))
+                if (previousFormId) await deleteFormIfUnused(db, previousFormId)
             }
 
             return {success: true, formId}

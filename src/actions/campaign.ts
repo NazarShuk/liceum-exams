@@ -2,7 +2,8 @@ import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro/zod";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDrizzle } from "@db/drizzle";
-import { campaigns, campaignsToProfiles, profiles } from "@db/schema";
+import { campaigns, campaignsToProfiles, applications, profiles } from "@db/schema";
+import { deleteFormIfUnused } from "@lib/forms";
 
 const dateInput = z.string().refine((value) => {
     if (value === "") return true;
@@ -71,6 +72,18 @@ export const submitCampaignEdit = defineAction({
                     eq(campaignsToProfiles.campaignId, campaignId),
                     inArray(campaignsToProfiles.profileId, removedProfileIds),
                 ));
+
+                for (const profileId of removedProfileIds) {
+                    // Keep profiles that have applications as history; drop the rest so they do not float around.
+                    const applicationCount = await db.$count(applications, eq(applications.profileId, profileId));
+                    if (applicationCount > 0) continue;
+
+                    const removedProfile = await db.query.profiles.findFirst({ where: { id: profileId } });
+                    await db.delete(profiles).where(eq(profiles.id, profileId));
+                    if (removedProfile?.formId) {
+                        await deleteFormIfUnused(db, removedProfile.formId);
+                    }
+                }
             }
             if (addedProfileIds.length) {
                 for (const profileId of addedProfileIds) {

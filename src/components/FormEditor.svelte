@@ -4,11 +4,11 @@
     import { onMount } from "svelte";
     type Form = typeof forms.$inferSelect;
 
-    const { loadedForm, onSaved, onDeleted, standalone = true }: {
+    const { loadedForm, profileId, onSaved, onDeleted }: {
         loadedForm: Form | undefined;
+        profileId?: number;
         onSaved?: (form: Form) => void;
         onDeleted?: (formId: number) => void;
-        standalone?: boolean;
     } = $props()
     let form : Form = $state({
         id: 0,
@@ -58,7 +58,6 @@
     function addNewField(){
         if (loading)
             return
-        console.log("hello")
         form.schema.push({
             slug: "new-field",
             title: "Нове поле",
@@ -71,7 +70,7 @@
         })
     }
 
-    async function saveForm(duplicate = false) {
+    async function saveForm(duplicate = false, ownerProfileId = profileId) {
         if (loading) return
         loading = true
 
@@ -89,6 +88,7 @@
                 description: form.description || "",
                 schema: form.schema,
                 formId: duplicate ? undefined : form.id > 0 ? form.id : undefined,
+                profileId: ownerProfileId,
             })
 
             if (result.error) return undefined
@@ -103,11 +103,6 @@
             form.id = savedId
             savedSnapshot = currentSnapshot()
             onSaved?.({ ...form })
-            if (standalone) {
-                const url = new URL(window.location.href)
-                url.searchParams.set("form", String(form.id))
-                window.history.replaceState(null, "", url)
-            }
             return savedId
         } catch (error) {
             result = { error: { message: error instanceof Error ? error.message : "Не вдалося зберегти форму" } }
@@ -128,8 +123,6 @@
             const deletion = await actions.deleteForm({ formId: form.id })
             if (deletion.error) {
                 deleteError = deletion.error.message
-            } else if (standalone) {
-                window.location.assign("/admin/forms")
             } else {
                 onDeleted?.(form.id)
             }
@@ -141,10 +134,19 @@
     }
 
     async function duplicateForm(){
-   		await saveForm()
-      	const newId = await saveForm(true)
-       	loading = true
-       	window.location.assign(`/admin/forms/editor?form=${newId}`)
+        if (loading) return
+        const originalId = await saveForm()
+        if (originalId === undefined) return
+        await saveForm(true)
+    }
+
+    export async function save(ownerProfileId?: number): Promise<boolean> {
+        if (!isDirty()) return true
+        return (await saveForm(false, ownerProfileId ?? profileId)) !== undefined
+    }
+
+    export function isDirty(): boolean {
+        return currentSnapshot() !== savedSnapshot
     }
 </script>
 
@@ -227,10 +229,11 @@
 </ul>
 
 
-<button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={() => saveForm()}>{loading ? "Збереження..." : "Зберегти"}</button>
 <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={addNewField}>+ Додати поле</button>
 {#if form.id > 0}
-    <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={duplicateForm}>Зробити копію</button>
+    {#if profileId}
+        <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={duplicateForm}>Зробити копію</button>
+    {/if}
     <button type="button" disabled={loading} class="btn-default text-diia-red {loading ? 'opacity-50' : ''}" onclick={deleteForm}>
         <span class="text-diia-red">
             Видалити форму

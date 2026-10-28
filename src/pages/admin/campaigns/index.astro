@@ -42,7 +42,7 @@ const campaigns = await db.query.campaigns.findMany({
                     <ul>
                         {campaign.profiles.map((profile => (
                             <li>
-                                <a href={`/admin/profiles/editor?profile=${profile.id}`}>{profile.title}</a>
+                                <a href={`/admin/campaigns/editor?campaign=${campaign.id}&profile=${profile.id}`}>{profile.title}</a>
                             </li>
                         )))}
                     </ul>

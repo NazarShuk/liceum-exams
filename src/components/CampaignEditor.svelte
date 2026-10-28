@@ -1,18 +1,18 @@
 <script lang="ts">
     import { actions } from "astro:actions";
     import { onMount } from "svelte";
-    import type { campaigns, forms, profiles } from "@db/schema";
+    import type { campaigns, forms as formsType, profiles } from "@db/schema";
     import ProfileDisplay from "./ProfileDisplay.svelte";
     import ProfileEditor from "./ProfileEditor.svelte";
 
     type Profile = typeof profiles.$inferSelect;
-    type Form = typeof forms.$inferSelect;
+    type Form = typeof formsType.$inferSelect;
     type Campaign = typeof campaigns.$inferSelect & { profiles: Profile[] };
 
-    const { loadedCampaign, availableProfiles, availableForms }: {
+    const { loadedCampaign, availableForms, initialProfileId }: {
         loadedCampaign: Campaign | undefined;
-        availableProfiles: Profile[];
         availableForms: Form[];
+        initialProfileId?: number;
     } = $props();
 
     function dateInputValue(date: Date | null): string {
@@ -37,21 +37,26 @@
     let errorMessage = $state("");
     let saved = $state(false);
     let savedSnapshot = $state("");
-    let editingProfileId = $state<number | "new" | null>(null);
+    // svelte-ignore state_referenced_locally
+    let forms = $state<Form[]>([...availableForms]);
+    let editingProfileId = $state<number | "new" | null>(
+        // svelte-ignore state_referenced_locally
+        initialProfileId && campaign.profiles.some(({ id }) => id === initialProfileId)
+            ? initialProfileId
+            : null,
+    );
     let editingProfile = $derived(
         typeof editingProfileId === "number"
             ? campaign.profiles.find(({ id }) => id === editingProfileId)
             : undefined,
     );
+    let profileEditor = $state<{ hasUnsavedChanges: () => boolean } | undefined>();
     const currentSnapshot = () => JSON.stringify({
         title: campaign.title,
         beginsAt: campaign.beginsAt,
         endsAt: campaign.endsAt,
         profiles: campaign.profiles.map(({ id }) => id),
     });
-    let profilesToAdd = $derived(
-        availableProfiles.filter((profile) => !campaign.profiles.some(({ id }) => id === profile.id)),
-    );
 
     savedSnapshot = currentSnapshot();
 
@@ -67,26 +72,14 @@
         return () => window.removeEventListener("beforeunload", preventLeavingWithUnsavedChanges);
     });
 
-    function addProfile(event: Event) {
-        if (!(event.currentTarget instanceof HTMLSelectElement)) return;
-
-        const select = event.currentTarget;
-        const selectedId = select.value;
-        if (selectedId === "__new__") {
-            select.value = "";
-            openNewProfile();
-            return;
+    async function openNewProfile() {
+        if (campaign.id <= 0) {
+            if (!campaign.title.trim()) {
+                errorMessage = "Спочатку введіть назву кампанії";
+                return;
+            }
+            if (!(await saveCampaign())) return;
         }
-        const profile = profilesToAdd.find(({ id }) => String(id) === selectedId);
-        if (!profile) return;
-
-        campaign.profiles = [...campaign.profiles, profile];
-        select.value = "";
-        saved = false;
-        errorMessage = "";
-    }
-
-    function openNewProfile() {
         editingProfileId = "new";
     }
 
@@ -101,6 +94,8 @@
     }
 
     function closeProfileEditor() {
+        if (profileEditor?.hasUnsavedChanges() &&
+            !window.confirm("Є незбережені зміни. Закрити без збереження?")) return;
         editingProfileId = null;
     }
 
@@ -111,16 +106,33 @@
                 profile.id === updated.id ? { ...profile, ...updated } : profile,
             )
             : [...campaign.profiles, updated];
-        closeProfileEditor();
+        if (!exists) {
+            saved = false;
+            errorMessage = "";
+        }
+        editingProfileId = null;
     }
 
     function handleProfileDeleted(profileId: number) {
         campaign.profiles = campaign.profiles.filter(({ id }) => id !== profileId);
-        closeProfileEditor();
+        saved = false;
+        errorMessage = "";
+        editingProfileId = null;
+    }
+
+    // Forms created inside the modal must survive reopening the profile.
+    function handleFormSaved(updated: Form) {
+        forms = forms.some(({ id }) => id === updated.id)
+            ? forms.map((form) => (form.id === updated.id ? updated : form))
+            : [...forms, updated];
+    }
+
+    function handleFormDeleted(formId: number) {
+        forms = forms.filter((form) => form.id !== formId);
     }
 
     async function saveCampaign() {
-        if (loading) return;
+        if (loading) return false;
 
         loading = true;
         errorMessage = "";
@@ -138,18 +150,21 @@
 
             if (result.error) {
                 errorMessage = result.error.message;
-            } else {
-                campaign.id = result.data.campaignId;
-                saved = true;
-                savedSnapshot = currentSnapshot();
-                if (typeof window !== "undefined") {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set("campaign", String(campaign.id));
-                    window.history.replaceState(null, "", url);
-                }
+                return false;
             }
+
+            campaign.id = result.data.campaignId;
+            saved = true;
+            savedSnapshot = currentSnapshot();
+            if (typeof window !== "undefined") {
+                const url = new URL(window.location.href);
+                url.searchParams.set("campaign", String(campaign.id));
+                window.history.replaceState(null, "", url);
+            }
+            return true;
         } catch (error) {
             errorMessage = error instanceof Error ? error.message : "Не вдалося зберегти кампанію";
+            return false;
         } finally {
             loading = false;
         }
@@ -201,20 +216,17 @@
             </li>
         {/each}
     </ul>
+    <button
+        type="button"
+        class="border-dashed border-2 border-diia-grey py-7 px-6 flex flex-row justify-center items-center gap-1 rounded cursor-pointer"
+        onclick={openNewProfile}
+    >
+        <span class="material-symbols-outlined">
+            add_circle
+        </span>
+        <h4>Створити новий профіль</h4>
+    </button>
 
-    <label class="flex flex-col gap-2">
-        Додати профіль
-        <select
-            class="w-full"
-            onchange={addProfile}
-        >
-            <option value="">Оберіть профіль</option>
-            <option value="__new__">+ Створити новий профіль</option>
-            {#each profilesToAdd as profile (profile.id)}
-                <option value={profile.id}>{profile.title}</option>
-            {/each}
-        </select>
-    </label>
     <label class="flex flex-row items-center gap-1">
         <input type="checkbox" bind:checked={campaign.allowMultipleProfiles}>
         Дозволити подачу заяв на декілька профілів
@@ -252,37 +264,45 @@
 
     {#if editingProfileId !== null}
         <div
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
+            class="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-2 sm:p-4"
             role="presentation"
+            onclick={closeProfileEditor}
         >
-            <!-- svelte-ignore a11y_interactive_supports_focus -->
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <div
-                class="card flex w-full max-w-2xl flex-col gap-5 bg-white max-h-screen overflow-auto"
+                class="flex h-[calc(100svh-1rem)] w-full max-w-[95%] flex-col overflow-hidden rounded border-2 border-liceum-blue bg-white sm:h-[calc(100svh-2rem)]"
                 role="dialog"
                 aria-modal="true"
+                aria-labelledby="profile-editor-title"
                 onclick={(event) => event.stopPropagation()}
+                tabindex={0}
             >
-                <div class="flex flex-row items-center justify-between">
-                    <h3>{editingProfile ? "Редагувати профіль" : "Новий профіль"}</h3>
+                <header class="flex shrink-0 flex-row items-center justify-between gap-5 border-b border-diia-bright-grey px-4 py-3 sm:px-6">
+                    <h3 id="profile-editor-title">
+                        {editingProfile ? "Редагувати профіль" : "Новий профіль"}
+                    </h3>
                     <button
                         type="button"
                         class="cursor-pointer"
                         aria-label="Закрити"
                         onclick={closeProfileEditor}
                     >X</button>
+                </header>
+                <div class="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+                    {#key editingProfileId}
+                        <ProfileEditor
+                            bind:this={profileEditor}
+                            loadedProfile={editingProfile}
+                            availableForms={forms}
+                            campaignId={campaign.id > 0 ? campaign.id : undefined}
+                            onSaved={handleProfileSaved}
+                            onDeleted={handleProfileDeleted}
+                            onFormSaved={handleFormSaved}
+                            onFormDeleted={handleFormDeleted}
+                        />
+                    {/key}
                 </div>
-                {#key editingProfileId}
-                    <ProfileEditor
-                        loadedProfile={editingProfile}
-                        {availableForms}
-                        standalone={false}
-                        onSaved={handleProfileSaved}
-                        onDeleted={handleProfileDeleted}
-                    />
-                {/key}
             </div>
         </div>
     {/if}
-
 </div>
