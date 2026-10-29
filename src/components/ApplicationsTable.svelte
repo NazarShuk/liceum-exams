@@ -21,7 +21,10 @@
     type ProfileWithForm = Profile & { form: Form | null };
     type CampaignWithProfiles = Campaign & { profiles: ProfileWithForm[] };
 
-    const { applications: allApplications, campaigns }: {
+    const {
+        applications: allApplications,
+        campaigns,
+    }: {
         applications: Application[];
         campaigns: CampaignWithProfiles[];
     } = $props();
@@ -33,32 +36,26 @@
     let deleting = $state(false);
     let deleteError = $state("");
 
-    const selectedCampaign = $derived(
-        campaigns.find((campaign) => campaign.id === selectedCampaignId),
-    );
-    const selectedProfile = $derived(
-        selectedCampaign?.profiles.find((profile) => profile.id === selectedProfileId),
-    );
+    const selectedCampaign = $derived(campaigns.find((campaign) => campaign.id === selectedCampaignId));
+    const selectedProfile = $derived(selectedCampaign?.profiles.find((profile) => profile.id === selectedProfileId));
     const form = $derived(selectedProfile?.form ?? null);
     const applications = $derived(
-        applicationRecords.filter(
-            (application) => application.profileId === selectedProfileId,
-        ),
+        applicationRecords.filter((application) => application.profileId === selectedProfileId),
     );
     const keyedColumns = $derived([
-        { key: "student.name", title: "Учень", type: "text"},
-        { key: "student.birthDate", title: "Дата народження учня", type: "date"},
-        { key: "student.phone", title: "Телефон учня", type: "text"},
-        { key: "user.name", title: "Опікун", type: "text"},
-        { key: "user.birthDate", title: "Дата народження опікуна", type: "date"},
-        { key: "user.phone", title: "Телефон опікуна", type: "text"},
+        { key: "student.name", title: "Учень", type: "text" },
+        { key: "student.birthDate", title: "Дата народження учня", type: "date" },
+        { key: "student.phone", title: "Телефон учня", type: "text" },
+        { key: "user.name", title: "Опікун", type: "text" },
+        { key: "user.birthDate", title: "Дата народження опікуна", type: "date" },
+        { key: "user.phone", title: "Телефон опікуна", type: "text" },
         ...(form?.schema.map((field) => ({
             key: `answer:${field.slug}`,
             title: field.title,
-            type: field.type
+            type: field.type,
         })) ?? []),
     ]);
-    const columns = $derived(keyedColumns.filter(column=> !hiddenColumns.includes(column.key)))
+    const columns = $derived(keyedColumns.filter((column) => !hiddenColumns.includes(column.key)));
 
     function fullName(user: User | null): string {
         if (!user) return "";
@@ -80,9 +77,7 @@
             case "user.phone":
                 return application.user?.phone;
             default:
-                return key.startsWith("answer:")
-                    ? application.answers[key.slice("answer:".length)]
-                    : "";
+                return key.startsWith("answer:") ? application.answers[key.slice("answer:".length)] : "";
         }
     }
 
@@ -145,21 +140,21 @@
             : [...hiddenColumns, key];
     }
 
-    let filters = $state<{[key:string]: string}>({})
+    let filters = $state<{ [key: string]: string }>({});
     let filteredApplications = $derived(
-      applications.filter((application) => {
-        for (const column of columns) {
-          const filterValue = filters[column.key]
-          if (!filterValue) continue
+        applications.filter((application) => {
+            for (const column of columns) {
+                const filterValue = filters[column.key];
+                if (!filterValue) continue;
 
-          const value = formatCellValue(cellValue(application, column.key))
-          if (!value.toLowerCase().includes(filterValue.toLowerCase())) {
-            return false
-          }
-        }
-        return true
-      })
-    )
+                const value = formatCellValue(cellValue(application, column.key));
+                if (!value.toLowerCase().includes(filterValue.toLowerCase())) {
+                    return false;
+                }
+            }
+            return true;
+        }),
+    );
 
     const allVisibleSelected = $derived(
         filteredApplications.length > 0 &&
@@ -186,9 +181,8 @@
 
     async function deleteApplications(applicationIds: number[]) {
         if (deleting || applicationIds.length === 0) return;
-        const message = applicationIds.length === 1
-            ? "Видалити цю заяву?"
-            : `Видалити вибрані заяви (${applicationIds.length})?`;
+        const message =
+            applicationIds.length === 1 ? "Видалити цю заяву?" : `Видалити вибрані заяви (${applicationIds.length})?`;
         if (!window.confirm(message)) return;
 
         deleting = true;
@@ -214,19 +208,19 @@
         return deleteApplications(selectedApplicationIds);
     }
 
-    let hiddenColumns = $state<string[]>([])
+    let hiddenColumns = $state<string[]>([]);
 
-    onMount(()=>{
-    	const url = new URL(location.toString())
-     	if (url.searchParams.has("campaign")){
-      		const campaignId = Number(url.searchParams.get("campaign"))
-        	const foundCampaign = campaigns.find((campaign) => campaign.id === campaignId)
-     		if (foundCampaign){
-       			selectedCampaignId = campaignId
-          		selectedProfileId = foundCampaign.profiles[0].id
-       		}
-      	}
-    })
+    onMount(() => {
+        const url = new URL(location.toString());
+        if (url.searchParams.has("campaign")) {
+            const campaignId = Number(url.searchParams.get("campaign"));
+            const foundCampaign = campaigns.find((campaign) => campaign.id === campaignId);
+            if (foundCampaign) {
+                selectedCampaignId = campaignId;
+                selectedProfileId = foundCampaign.profiles[0].id;
+            }
+        }
+    });
 </script>
 
 <div class="flex flex-row gap-5">
@@ -238,9 +232,8 @@
                     {campaign.title}
                 </option>
             {/each}
-            </select>
+        </select>
     </label>
-
 
     {#if selectedCampaign && selectedCampaign.profiles.length > 0}
         <label>
@@ -270,7 +263,9 @@
                 >
                     <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
                 </summary>
-                <div class="absolute right-0 z-10 mt-2 max-h-80 min-w-64 overflow-y-auto rounded border border-diia-bright-grey bg-white p-3 shadow-lg">
+                <div
+                    class="absolute right-0 z-10 mt-2 max-h-80 min-w-64 overflow-y-auto rounded border border-diia-bright-grey bg-white p-3 shadow-lg"
+                >
                     {#each keyedColumns as column (column.key)}
                         <label class="flex min-h-10 cursor-pointer items-center gap-2 py-2">
                             <input
@@ -283,9 +278,7 @@
                     {/each}
                 </div>
             </details>
-            <div class="mb-3 flex items-center gap-3 pr-12">
-                
-            </div>
+            <div class="mb-3 flex items-center gap-3 pr-12"></div>
             <div class="overflow-x-auto">
                 <table class="table-fixed" style="width: {(columns.length + 1) * 12}rem; min-width: 100%">
                     <thead class="bg-diia-bright-grey">
@@ -310,9 +303,7 @@
                                         aria-label="Видалити"
                                         title="Видалити"
                                     >
-                                        <span class="material-symbols-outlined">
-                                            delete
-                                        </span>
+                                        <span class="material-symbols-outlined"> delete </span>
                                         {#if deleteError}
                                             <p class="text-diia-red" role="alert">{deleteError}</p>
                                         {/if}
@@ -326,9 +317,7 @@
                                         disabled={filteredApplications.length === 0 || columns.length === 0}
                                         onclick={exportApplicationsToCsv}
                                     >
-                                        <span class="material-symbols-outlined">
-                                            export_notes
-                                        </span>
+                                        <span class="material-symbols-outlined"> export_notes </span>
                                     </button>
                                 </div>
                             </th>
@@ -336,7 +325,11 @@
                                 <th class="px-4 py-5">
                                     <div class="flex min-h-24 flex-col justify-between relative">
                                         <p>{column.title}</p>
-                                        <input class="mt-auto w-full" bind:value={filters[column.key]} placeholder="Фільтр..." />
+                                        <input
+                                            class="mt-auto w-full"
+                                            bind:value={filters[column.key]}
+                                            placeholder="Фільтр..."
+                                        />
                                     </div>
                                 </th>
                             {/each}
@@ -360,7 +353,9 @@
                                         {#if column.type === "file"}
                                             {@const key = getFileKey(cellValue(application, column.key))}
                                             {#if key}
-                                                <a target="_blank" href="/file?key={encodeURIComponent(key)}">Переглянути файл</a>
+                                                <a target="_blank" href="/file?key={encodeURIComponent(key)}"
+                                                    >Переглянути файл</a
+                                                >
                                             {/if}
                                         {:else if cellValue(application, column.key)}
                                             {formatCellValue(cellValue(application, column.key))}

@@ -1,4 +1,12 @@
-import { applicantLink, deleteApplications, deleteDraft, deleteForm, saveDraft, submitForm, submitFormEdit } from "./form";
+import {
+    applicantLink,
+    deleteApplications,
+    deleteDraft,
+    deleteForm,
+    saveDraft,
+    submitForm,
+    submitFormEdit,
+} from "./form";
 import { logout } from "./auth";
 import { deleteCampaign, submitCampaignEdit } from "./campaign";
 import { deleteProfile, submitProfileEdit } from "./profile";
@@ -18,5 +26,5 @@ export const server = {
     deleteCampaign: deleteCampaign,
     deleteProfile: deleteProfile,
     deleteNews: deleteNews,
-    logout: logout
+    logout: logout,
 };

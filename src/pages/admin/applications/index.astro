@@ -1,25 +1,27 @@
 ---
 import { getDrizzle } from "@db/drizzle";
-import Layout from "@layouts/Layout.astro"
+import Layout from "@layouts/Layout.astro";
 import ApplicationsTable from "@components/ApplicationsTable.svelte";
 
-const db = getDrizzle()
+const db = getDrizzle();
 const applications = await db.query.applications.findMany({
-    where: {state: "submitted"},
-    with: {student: true, user: true}
-})
+    where: { state: "submitted" },
+    with: { student: true, user: true },
+});
 const campaigns = await db.query.campaigns.findMany({
     with: {
         profiles: {
-            with: {form: true}
-        }
-    }
-})
+            with: { form: true },
+        },
+    },
+});
 ---
 
 <Layout title="Заяви">
     <h1>Заяви</h1>
-    {campaigns.length > 0
-        ? <ApplicationsTable applications={applications} campaigns={campaigns} client:load></ApplicationsTable>
-        : <p>Кампаній ще немає.</p>}
+    {campaigns.length > 0 ? (
+        <ApplicationsTable applications={applications} campaigns={campaigns} client:load />
+    ) : (
+        <p>Кампаній ще немає.</p>
+    )}
 </Layout>

@@ -3,84 +3,87 @@ import { ClientRouter } from "astro:transitions";
 import { Font } from "astro:assets";
 import "../styles/global.css";
 import Sidebar from "./Sidebar.astro";
-import LiceumLogoVstup from "../assets/LiceumLogoVstup.svg"
+import LiceumLogoVstup from "../assets/LiceumLogoVstup.svg";
 
-interface Props{
-	className?: string,
-	title?: string,
-  noPadding?: boolean
+interface Props {
+    className?: string;
+    title?: string;
+    noPadding?: boolean;
 }
 
-const {className, title, noPadding} = Astro.props;
+const { className, title, noPadding } = Astro.props;
 const icons = [
-  "visibility_off",
-  "more_vert",
-  "draft",
-  "add_circle",
-  "edit",
-  "table",
-  "campaign",
-  "event",
-  "ballot",
-  "conversion_path",
-  "account_circle",
-  "menu",
-  "close",
-  "call",
-  "mail",
-  "location_on",
-  "share",
-  "content_copy",
-  "delete",
-  "export_notes",
-  "check_circle"
-]
+    "visibility_off",
+    "more_vert",
+    "draft",
+    "add_circle",
+    "edit",
+    "table",
+    "campaign",
+    "event",
+    "ballot",
+    "conversion_path",
+    "account_circle",
+    "menu",
+    "close",
+    "call",
+    "mail",
+    "location_on",
+    "share",
+    "content_copy",
+    "delete",
+    "export_notes",
+    "check_circle",
+];
 ---
 
 <!doctype html>
-<html lang="ua" transition:animate="none">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <link rel="icon" href="/favicon.svg" />
-    <Font cssVariable="--font-e-ukraine" />
-    <meta name="generator" content={Astro.generator} />
-    <link href={`https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=${icons.join(',')}&display=block`} rel="stylesheet" />
-    <ClientRouter />
-    <title>{title ? title + " - " : ""} Вступ до ліцею</title>
-  </head>
-  <body class="flex min-h-screen flex-col">
-    {Astro.locals.user && (
-      <header class="sticky top-0 z-40 w-full bg-white">
-        <nav class="flex h-16 w-full items-center gap-4 border-b border-diia-bright-grey px-4 py-1 max-lg:pl-16">
-          <slot name="navbar">
-            <LiceumLogoVstup class={"h-full"} />
-          </slot>
-        </nav>
-      </header>
-    )}
-    <div class="flex w-full flex-1">
-      {Astro.locals.user && <Sidebar />}
-        
-      <div class="flex min-w-0 flex-1 flex-col">
-        <main class={`w-full flex-1 ${!noPadding ? "p-1" : ""} ${className}`}>
-          <slot />
-        </main>
-        {Astro.slots.has("footer") && (
-          <footer class="h-32">
-            <slot name="footer" />
-          </footer>
+<html lang="uk" transition:animate="none">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.svg" />
+        <Font cssVariable="--font-e-ukraine" />
+        <meta name="generator" content={Astro.generator} />
+        <link
+            href={`https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=${icons.join(",")}&display=block`}
+            rel="stylesheet"
+        />
+        <ClientRouter />
+        <title>{title ? title + " - " : ""} Вступ до ліцею</title>
+    </head>
+    <body class="flex min-h-screen flex-col">
+        {Astro.locals.user && (
+            <header class="sticky top-0 z-40 w-full bg-white">
+                <nav class="flex h-16 w-full items-center gap-4 border-b border-diia-bright-grey px-4 py-1 max-lg:pl-16">
+                    <slot name="navbar">
+                        <LiceumLogoVstup class={"h-full"} />
+                    </slot>
+                </nav>
+            </header>
         )}
-      </div>
-    </div>
-  </body>
+        <div class="flex w-full flex-1">
+            {Astro.locals.user && <Sidebar />}
+
+            <div class="flex min-w-0 flex-1 flex-col">
+                <main class={`w-full flex-1 ${!noPadding ? "p-1" : ""} ${className}`}>
+                    <slot />
+                </main>
+                {Astro.slots.has("footer") && (
+                    <footer class="h-32">
+                        <slot name="footer" />
+                    </footer>
+                )}
+            </div>
+        </div>
+    </body>
 </html>
 
 <script>
-  document.addEventListener('astro:before-preparation', () => {
-    document.documentElement.classList.add('is-navigating');
-  });
-  document.addEventListener('astro:after-swap', () => {
-    document.documentElement.classList.remove('is-navigating');
-  });
+    document.addEventListener("astro:before-preparation", () => {
+        document.documentElement.classList.add("is-navigating");
+    });
+    document.addEventListener("astro:after-swap", () => {
+        document.documentElement.classList.remove("is-navigating");
+    });
 </script>

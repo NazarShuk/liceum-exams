@@ -21,7 +21,7 @@ export const submitCampaignEdit = defineAction({
         beginsAt: dateInput,
         endsAt: dateInput,
         profileIds: z.array(z.number().int().positive()),
-        allowMultipleProfiles: z.boolean()
+        allowMultipleProfiles: z.boolean(),
     }),
     handler: async (input, context) => {
         try {
@@ -41,10 +41,32 @@ export const submitCampaignEdit = defineAction({
 
             const values = {
                 title: input.title,
+                // Calendar days are stored as UTC; the end date covers its whole day.
+                // shortcut: dates are UTC, not Kyiv time, add a timezone once campaigns run by the hour
                 beginsAt: input.beginsAt ? new Date(`${input.beginsAt}T00:00:00.000Z`) : null,
-                endsAt: input.endsAt ? new Date(`${input.endsAt}T00:00:00.000Z`) : null,
-                allowMultipleProfiles: input.allowMultipleProfiles
+                endsAt: input.endsAt ? new Date(`${input.endsAt}T23:59:59.999Z`) : null,
+                allowMultipleProfiles: input.allowMultipleProfiles,
             };
+
+            const currentAssignments = input.campaignId
+                ? await db
+                      .select({ profileId: campaignsToProfiles.profileId })
+                      .from(campaignsToProfiles)
+                      .where(eq(campaignsToProfiles.campaignId, input.campaignId))
+                : [];
+            const currentProfileIds = currentAssignments.map(({ profileId }) => profileId);
+            const removedProfileIds = currentProfileIds.filter((id) => !profileIds.includes(id));
+            const addedProfileIds = profileIds.filter((id) => !currentProfileIds.includes(id));
+
+            // Validate everything before writing so a bad profile cannot leave a half-saved campaign.
+            for (const profileId of addedProfileIds) {
+                const existingAssignment = await db.query.campaignsToProfiles.findFirst({
+                    where: { profileId: profileId },
+                });
+                if (existingAssignment) {
+                    throw new ActionError({ code: "BAD_REQUEST", message: "Профіль уже належить до іншої кампанії" });
+                }
+            }
 
             let campaignId = input.campaignId;
             if (campaignId) {
@@ -60,19 +82,15 @@ export const submitCampaignEdit = defineAction({
                 campaignId = createdCampaign.id;
             }
 
-            const currentAssignments = await db
-                .select({ profileId: campaignsToProfiles.profileId })
-                .from(campaignsToProfiles)
-                .where(eq(campaignsToProfiles.campaignId, campaignId));
-            const currentProfileIds = currentAssignments.map(({ profileId }) => profileId);
-            const removedProfileIds = currentProfileIds.filter((id) => !profileIds.includes(id));
-            const addedProfileIds = profileIds.filter((id) => !currentProfileIds.includes(id));
-
             if (removedProfileIds.length) {
-                await db.delete(campaignsToProfiles).where(and(
-                    eq(campaignsToProfiles.campaignId, campaignId),
-                    inArray(campaignsToProfiles.profileId, removedProfileIds),
-                ));
+                await db
+                    .delete(campaignsToProfiles)
+                    .where(
+                        and(
+                            eq(campaignsToProfiles.campaignId, campaignId),
+                            inArray(campaignsToProfiles.profileId, removedProfileIds),
+                        ),
+                    );
 
                 for (const profileId of removedProfileIds) {
                     // Keep profiles that have applications as history; drop the rest so they do not float around.
@@ -86,16 +104,8 @@ export const submitCampaignEdit = defineAction({
                     }
                 }
             }
-            if (addedProfileIds.length) {
-                for (const profileId of addedProfileIds) {
-                    const existingAssignment = await db.query.campaignsToProfiles.findFirst({
-                        where: { profileId: profileId }
-                    })
-                    if (existingAssignment) {
-                        throw new ActionError({ code: "BAD_REQUEST", message: "Профіль уже належить до іншої кампанії" })
-                    }
-                    await db.insert(campaignsToProfiles).values({ campaignId, profileId })
-                }
+            for (const profileId of addedProfileIds) {
+                await db.insert(campaignsToProfiles).values({ campaignId, profileId });
             }
 
             logEvent({

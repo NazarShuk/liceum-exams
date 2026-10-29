@@ -2,11 +2,11 @@
 import type { users } from "./db/schema";
 
 declare global {
-  namespace App {
-    interface Locals {
-      user: typeof users.$inferSelect;
+    namespace App {
+        interface Locals {
+            user: typeof users.$inferSelect;
+        }
     }
-  }
 }
 
 export {};

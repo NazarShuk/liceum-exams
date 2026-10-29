@@ -17,201 +17,209 @@ type Application = typeof applications.$inferSelect;
 type User = typeof users.$inferSelect;
 
 interface ProfileWithForm extends Profile {
-  form: Form | null;
+    form: Form | null;
 }
 
 interface CampaignWithProfiles extends Campaign {
-  profiles: ProfileWithForm[];
+    profiles: ProfileWithForm[];
 }
 
 interface PreviewApplication extends Application {
-  form: Form | null;
-  user: User | null;
-  student: User | null;
+    form: Form | null;
+    user: User | null;
+    student: User | null;
 }
 
 const db = getDrizzle();
-const now = new Date()
+const now = new Date();
 const availableCampaigns = (await db.query.campaigns.findMany({
-  where: {
-    beginsAt: { lt: now },
-    endsAt: { gt: now },
-  },
-  with: {
-    profiles: {
-      with: {
-        form: true,
-      },
-      where: {
-        formId: {
-          isNotNull: true,
-        },
-      },
+    where: {
+        // An empty date means "no bound", so nulls must pass the filter.
+        AND: [
+            { OR: [{ beginsAt: { isNull: true } }, { beginsAt: { lt: now } }] },
+            { OR: [{ endsAt: { isNull: true } }, { endsAt: { gt: now } }] },
+        ],
     },
-  },
+    with: {
+        profiles: {
+            with: {
+                form: true,
+            },
+            where: {
+                formId: {
+                    isNotNull: true,
+                },
+            },
+        },
+    },
 })) as CampaignWithProfiles[];
 
-const profileIds = availableCampaigns.flatMap((campaign) =>
-  campaign.profiles.map((profile) => profile.id),
-);
+const profileIds = availableCampaigns.flatMap((campaign) => campaign.profiles.map((profile) => profile.id));
 const applicationCounts: Record<number, number> = {};
 if (profileIds.length > 0) {
-  const rows = await db
-    .select({ profileId: applications.profileId, total: count() })
-    .from(applications)
-    .where(and(inArray(applications.profileId, profileIds), eq(applications.state, "submitted")))
-    .groupBy(applications.profileId);
-  for (const row of rows) applicationCounts[row.profileId] = row.total;
+    const rows = await db
+        .select({ profileId: applications.profileId, total: count() })
+        .from(applications)
+        .where(and(inArray(applications.profileId, profileIds), eq(applications.state, "submitted")))
+        .groupBy(applications.profileId);
+    for (const row of rows) applicationCounts[row.profileId] = row.total;
 }
 
 const requestedCampaignId = Number(Astro.url.searchParams.get("campaignId"));
 const requestedProfileId = Number(Astro.url.searchParams.get("profileId"));
 
 type DraftApplication = {
-  id: number;
-  studentId: number | null;
-  student: User | null;
-  answers: Record<string, unknown>;
+    id: number;
+    studentId: number | null;
+    student: User | null;
+    answers: Record<string, unknown>;
 };
 
 const requestedDraftId = Number(Astro.url.searchParams.get("draft"));
-const draftApplication = Number.isInteger(requestedDraftId) && requestedDraftId > 0
-  ? await db.query.applications.findFirst({
-      where: {
-        id: requestedDraftId,
-        userId: Astro.locals.user.id,
-        state: "draft",
-      },
-      with: { student: true },
-    })
-  : undefined;
+const draftApplication =
+    Number.isInteger(requestedDraftId) && requestedDraftId > 0
+        ? await db.query.applications.findFirst({
+              where: {
+                  id: requestedDraftId,
+                  userId: Astro.locals.user.id,
+                  state: "draft",
+              },
+              with: { student: true },
+          })
+        : undefined;
 
 if (Number.isInteger(requestedDraftId) && requestedDraftId > 0 && !draftApplication) {
-  logErrorEvent({
-    source: "user",
-    type: "draft_resume_not_found",
-    path: Astro.url.pathname,
-    userId: Astro.locals.user?.id,
-    message: `draftId:${requestedDraftId}`,
-  });
-  return new Response(null, { status: 404 });
+    logErrorEvent({
+        source: "user",
+        type: "draft_resume_not_found",
+        path: Astro.url.pathname,
+        userId: Astro.locals.user?.id,
+        message: `draftId:${requestedDraftId}`,
+    });
+    return new Response(null, { status: 404 });
 }
 
 const draftCampaign = draftApplication
-  ? availableCampaigns.find((campaign) =>
-      campaign.profiles.some((profile) => profile.id === draftApplication.profileId),
-    )
-  : undefined;
+    ? availableCampaigns.find((campaign) =>
+          campaign.profiles.some((profile) => profile.id === draftApplication.profileId),
+      )
+    : undefined;
 
 const selectedCampaign =
-  draftCampaign ??
-  availableCampaigns.find((campaign) => campaign.id === requestedCampaignId) ??
-  (availableCampaigns.length === 1 ? availableCampaigns[0] : undefined);
-const selectedProfile = draftApplication && draftCampaign
-  ? draftCampaign.profiles.find((profile) => profile.id === draftApplication.profileId)
-  : selectedCampaign?.profiles.find((profile) => profile.id === requestedProfileId);
+    draftCampaign ??
+    availableCampaigns.find((campaign) => campaign.id === requestedCampaignId) ??
+    (availableCampaigns.length === 1 ? availableCampaigns[0] : undefined);
+const selectedProfile =
+    draftApplication && draftCampaign
+        ? draftCampaign.profiles.find((profile) => profile.id === draftApplication.profileId)
+        : selectedCampaign?.profiles.find((profile) => profile.id === requestedProfileId);
 
-let userChildren: User[] = []
+let userChildren: User[] = [];
 if (Astro.locals.user) {
-  userChildren = await db.query.users.findMany({
-    where: { parentId: Astro.locals.user.id }
-  })
+    userChildren = await db.query.users.findMany({
+        where: { parentId: Astro.locals.user.id },
+    });
 }
 const selectedForm = selectedProfile?.form ?? null;
 
 const draft: DraftApplication | undefined =
-  draftApplication && draftApplication.profileId === selectedProfile?.id
-    ? {
-        id: draftApplication.id,
-        studentId: draftApplication.studentId,
-        student: draftApplication.student ?? null,
-        answers: draftApplication.answers,
-      }
-    : undefined;
+    draftApplication && draftApplication.profileId === selectedProfile?.id
+        ? {
+              id: draftApplication.id,
+              studentId: draftApplication.studentId,
+              student: draftApplication.student ?? null,
+              answers: draftApplication.answers,
+          }
+        : undefined;
 
 const previewId = Number(Astro.url.searchParams.get("preview"));
 let previewApplication: PreviewApplication | undefined;
 
 if (Number.isInteger(previewId) && previewId > 0) {
-  const app = (await db.query.applications.findFirst({
-    where: { id: previewId },
-    with: { user: true, student: true, form: true },
-  })) as PreviewApplication | undefined;
-  if (!app || (app.userId !== Astro.locals.user.id && app.userId !== Astro.locals.user.parentId)) {
-    return new Response(null, { status: 404 });
-  }
-  previewApplication = app;
+    const app = (await db.query.applications.findFirst({
+        where: { id: previewId },
+        with: { user: true, student: true, form: true },
+    })) as PreviewApplication | undefined;
+    if (!app || (app.userId !== Astro.locals.user.id && app.studentId !== Astro.locals.user.id)) {
+        return new Response(null, { status: 404 });
+    }
+    previewApplication = app;
 }
 
 // Applicants may only view their applications, never create new ones
 if (Astro.locals.user.role === "applicant" && !previewApplication) {
-  return Astro.redirect("/cabinet");
+    return Astro.redirect("/cabinet");
 }
 
-const applicationAnswers = (previewApplication?.answers ?? {}) as Record<
-  string,
-  unknown
->;
+const applicationAnswers = (previewApplication?.answers ?? {}) as Record<string, unknown>;
 
 const result = Astro.getActionResult(actions.submitForm);
 const submitError = result
-  ? result.error
-    ? result.error.message
-    : result.data.success ? undefined : result.data.message
-  : undefined;
+    ? result.error
+        ? result.error.message
+        : result.data.success
+          ? undefined
+          : result.data.message
+    : undefined;
 
 // Progressive enhancement: submits the action without JS, re-rendered by the page below.
 const submitAction = (() => {
-  const params = new URLSearchParams(Astro.url.searchParams);
-  params.set("_action", "submitForm");
-  return `?${params}`;
+    const params = new URLSearchParams(Astro.url.searchParams);
+    params.set("_action", "submitForm");
+    return `?${params}`;
 })();
 
 if (result && !result.error && result.data.success) {
-  return Astro.redirect("/cabinet/application?success=true&preview=" + Number(result.data.id));
+    return Astro.redirect("/cabinet/application?success=true&preview=" + Number(result.data.id));
 }
 
 const justSubmitted = !submitError && Astro.url.searchParams.has("success") ? previewApplication : undefined;
 ---
 
 <Layout title="Заява">
-  {submitError && (
-    <p class="text-diia-red" role="alert">{submitError}</p>
-  )}
+    {submitError && (
+        <p class="text-diia-red" role="alert">
+            {submitError}
+        </p>
+    )}
 
-  {
-    justSubmitted ? (
-      <section class="card mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
-        <span class="material-symbols-outlined text-6xl! text-diia-green" aria-hidden="true">check_circle</span>
-        <h2>Заяву відправлено!</h2>
-        <p>Вашу заяву прийнято. Ви можете переглянути дані, які ввели.</p>
-        <div class="flex flex-wrap items-center justify-center gap-3">
-          <a class="btn-default" href={`/cabinet/application?preview=${justSubmitted.id}`}>Переглянути заяву</a>
-          <a class="rounded-[40px] border-2 border-liceum-blue px-6 py-3 text-liceum-blue transition-colors hover:bg-liceum-blue/5" href="/cabinet">До моїх заяв</a>
-        </div>
-      </section>
+    {justSubmitted ? (
+        <section class="card mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
+            <span class="material-symbols-outlined text-6xl! text-diia-green" aria-hidden="true">
+                check_circle
+            </span>
+            <h2>Заяву відправлено!</h2>
+            <p>Вашу заяву прийнято. Ви можете переглянути дані, які ввели.</p>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+                <a class="btn-default" href={`/cabinet/application?preview=${justSubmitted.id}`}>
+                    Переглянути заяву
+                </a>
+                <a
+                    class="rounded-[40px] border-2 border-liceum-blue px-6 py-3 text-liceum-blue transition-colors hover:bg-liceum-blue/5"
+                    href="/cabinet"
+                >
+                    До моїх заяв
+                </a>
+            </div>
+        </section>
     ) : previewApplication ? (
-      <ApplicationPreview
-        previewApplication={previewApplication}
-        applicationAnswers={applicationAnswers}
-      />
+        <ApplicationPreview previewApplication={previewApplication} applicationAnswers={applicationAnswers} />
     ) : selectedProfile && selectedForm ? (
-      <ApplicationForm
-        client:load
-        selectedForm={selectedForm}
-        selectedCampaign={selectedCampaign}
-        selectedProfile={selectedProfile}
-        user={Astro.locals.user}
-        userChildren={userChildren}
-        actionUrl={submitAction}
-        draft={draft}
-      />
+        <ApplicationForm
+            client:load
+            selectedForm={selectedForm}
+            selectedCampaign={selectedCampaign}
+            selectedProfile={selectedProfile}
+            user={Astro.locals.user}
+            userChildren={userChildren}
+            actionUrl={submitAction}
+            draft={draft}
+        />
     ) : (
-      <CampaignSelector
-        availableCampaigns={availableCampaigns}
-        selectedCampaign={selectedCampaign}
-        applicationCounts={applicationCounts}
-      />
-    )
-  }
+        <CampaignSelector
+            availableCampaigns={availableCampaigns}
+            selectedCampaign={selectedCampaign}
+            applicationCounts={applicationCounts}
+        />
+    )}
 </Layout>

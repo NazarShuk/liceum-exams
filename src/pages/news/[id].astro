@@ -4,12 +4,13 @@ import { getDrizzle } from "@db/drizzle";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import { renderMarkdown } from "../../lib/markdown";
+import { dbTimestamp, parseDbDate } from "@lib/dates";
 import { users } from "@db/schema";
 import { eq } from "drizzle-orm";
 
 const db = getDrizzle();
 const item = await db.query.news.findFirst({
-    where: { id: Number.parseInt(Astro.params.id || "-1") }
+    where: { id: Number.parseInt(Astro.params.id || "-1") },
 });
 
 if (!item) {
@@ -17,11 +18,13 @@ if (!item) {
 }
 
 const html = renderMarkdown(item.content);
-if (Astro.locals.user){
-    const now = new Date().toISOString().replace('T', ' ').replace('Z', '').split('.')[0];
-    await db.update(users).set({
-        lastNewsRead: now
-    }).where(eq(users.id, Astro.locals.user.id))
+if (Astro.locals.user) {
+    await db
+        .update(users)
+        .set({
+            lastNewsRead: dbTimestamp(),
+        })
+        .where(eq(users.id, Astro.locals.user.id));
 }
 ---
 
@@ -31,11 +34,11 @@ if (Astro.locals.user){
             <a href="/news">{"<-"} Усі новини</a>
             <h1 class="mt-3 text-balance">{item.title}</h1>
             <p class="pt-2 text-sm opacity-70">
-                {item.tag} | {format(new Date(item.createdAt), "d MMMM yyyy", { locale: uk })}
+                {item.tag} | {format(parseDbDate(item.createdAt), "d MMMM yyyy", { locale: uk })}
             </p>
         </div>
 
-        <div class="markdown" set:html={html}></div>
+        <div class="markdown" set:html={html} />
     </section>
 </Layout>
 

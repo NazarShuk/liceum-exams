@@ -1,16 +1,23 @@
 ---
-import {env} from "cloudflare:workers"
+import { env } from "cloudflare:workers";
 
 interface Props {
-    state?: string
+    state?: string;
 }
 
-const googleURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${env.GOOGLE_CLIENT_ID}&redirect_uri=${Astro.url.origin}/api/google&response_type=code&scope=openid%20email%20profile${Astro.props.state ? `&state=${Astro.props.state}` : ""}`
+// Random state checked on the callback; the invite id rides along in the cookie, not the URL.
+const nonce = crypto.randomUUID();
+Astro.cookies.set("oauth_state", `${nonce}|${Astro.props.state ?? ""}`, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 10,
+});
+
+const googleURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${env.GOOGLE_CLIENT_ID}&redirect_uri=${Astro.url.origin}/api/google&response_type=code&scope=openid%20email%20profile&state=${nonce}`;
 ---
 
-<a
-  href={googleURL}
-  class="btn-default"
->
-  <span>Увійти з Google {"->"}</span>
+<a href={googleURL} class="btn-default">
+    <span>Увійти з Google {"->"}</span>
 </a>

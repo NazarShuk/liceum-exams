@@ -11,7 +11,7 @@ let loadedNews: News | undefined;
 
 if (Astro.url.searchParams.has("news")) {
     const item = await db.query.news.findFirst({
-        where: { id: Number.parseInt(Astro.url.searchParams.get("news") || "-1") }
+        where: { id: Number.parseInt(Astro.url.searchParams.get("news") || "-1") },
     });
 
     if (item) {

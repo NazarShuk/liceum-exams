@@ -3,15 +3,17 @@ import Layout from "@layouts/Layout.astro";
 import { logErrorEvent } from "@lib/analytics";
 
 logErrorEvent({
-  source: "server",
-  type: "page_500",
-  path: Astro.url.pathname,
-  userId: Astro.locals.user?.id,
+    source: "server",
+    type: "page_500",
+    path: Astro.url.pathname,
+    userId: Astro.locals.user?.id,
 });
 ---
 
 <Layout className="flex h-screen justify-center items-center flex-col">
     <h1>Помилка сервера D:</h1>
 
-    <a class="btn-default" href="/">Повернутися на головну</a>
+    <a class="btn-default" href="/">
+        Повернутися на головну
+    </a>
 </Layout>

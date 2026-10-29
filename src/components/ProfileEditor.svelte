@@ -7,7 +7,15 @@
     type Profile = typeof profiles.$inferSelect;
     type Form = typeof formsType.$inferSelect;
 
-    const { loadedProfile, availableForms, campaignId, onSaved, onDeleted, onFormSaved, onFormDeleted }: {
+    const {
+        loadedProfile,
+        availableForms,
+        campaignId,
+        onSaved,
+        onDeleted,
+        onFormSaved,
+        onFormDeleted,
+    }: {
         loadedProfile: Profile | undefined;
         availableForms: Form[];
         campaignId?: number;
@@ -21,15 +29,18 @@
     let forms = $state<Form[]>([...availableForms]);
     // A form id that is not in the list points at a deleted form; treat it as "no form" instead of a blank editor.
     // svelte-ignore state_referenced_locally
-    const initialFormId = loadedProfile?.formId && availableForms.some(({ id }) => id === loadedProfile.formId)
-        ? loadedProfile.formId
-        : null;
+    const initialFormId =
+        loadedProfile?.formId && availableForms.some(({ id }) => id === loadedProfile.formId)
+            ? loadedProfile.formId
+            : null;
     // svelte-ignore state_referenced_locally
     let editingFormId = $state<number | "new" | null>(initialFormId);
     let editingForm = $derived(
         typeof editingFormId === "number" ? forms.find(({ id }) => id === editingFormId) : undefined,
     );
-    let formEditor = $state<{ save: (ownerProfileId?: number) => Promise<boolean>; isDirty: () => boolean } | undefined>();
+    let formEditor = $state<
+        { save: (ownerProfileId?: number) => Promise<boolean>; isDirty: () => boolean } | undefined
+    >();
 
     let profile = $state({
         // svelte-ignore state_referenced_locally
@@ -71,11 +82,12 @@
     let errorMessage = $state("");
     let saved = $state(false);
     let savedSnapshot = $state("");
-    const currentSnapshot = () => JSON.stringify({
-        title: profile.title,
-        description: profile.description,
-        formId: profile.formId,
-    });
+    const currentSnapshot = () =>
+        JSON.stringify({
+            title: profile.title,
+            description: profile.description,
+            formId: profile.formId,
+        });
 
     savedSnapshot = currentSnapshot();
 
@@ -93,9 +105,7 @@
 
     function handleFormSaved(updated: Form) {
         const exists = forms.some(({ id }) => id === updated.id);
-        forms = exists
-            ? forms.map((form) => (form.id === updated.id ? updated : form))
-            : [...forms, updated];
+        forms = exists ? forms.map((form) => (form.id === updated.id ? updated : form)) : [...forms, updated];
         profile.formId = updated.id;
         editingFormId = updated.id;
         onFormSaved?.(updated);
@@ -175,7 +185,7 @@
 
     async function deleteProfile() {
         if (loading || profile.id <= 0) return;
-        if (!window.confirm("Видалити профіль? Разом із ним буде видалено його заяви.")) return;
+        if (!window.confirm("Видалити профіль? Це можливо лише якщо за ним немає поданих заяв.")) return;
 
         loading = true;
         errorMessage = "";
@@ -196,16 +206,12 @@
 
 <div class="grid gap-6 lg:grid-cols-5 lg:items-start">
     <div class="flex flex-col gap-5 lg:col-span-2">
-        <input class="w-full" placeholder="Назва профілю" bind:value={profile.title}>
+        <input class="w-full" placeholder="Назва профілю" bind:value={profile.title} />
         <textarea class="w-full" placeholder="Опис" bind:value={profile.description}></textarea>
 
         <label class="flex flex-col gap-2">
             Форма для профілю
-            <select
-                class="w-full"
-                bind:this={formSelect}
-                onchange={handleFormSelect}
-            >
+            <select class="w-full" bind:this={formSelect} onchange={handleFormSelect}>
                 <option value="">Без форми</option>
                 {#each forms as form (form.id)}
                     <option value={form.id}>
@@ -239,9 +245,7 @@
                     disabled={loading}
                     onclick={deleteProfile}
                 >
-                    <span class="text-diia-red ">
-                        Видалити профіль
-                    </span>
+                    <span class="text-diia-red"> Видалити профіль </span>
                 </button>
             {/if}
         </div>
@@ -264,13 +268,7 @@
         <section class="card flex flex-col items-start gap-5 bg-white lg:col-span-3">
             <h3>Форма профілю</h3>
             <p class="opacity-75">Для цього профілю ще не обрано форму.</p>
-            <button
-                type="button"
-                class="btn-default"
-                onclick={() => editingFormId = "new"}
-            >
-                Створити форму
-            </button>
+            <button type="button" class="btn-default" onclick={() => (editingFormId = "new")}> Створити форму </button>
         </section>
     {/if}
 </div>

@@ -6,60 +6,63 @@ import HeroBackground from "@components/HeroBackground.astro";
 import GoogleSignIn from "@components/GoogleSignIn.astro";
 import { getDrizzle } from "@db/drizzle";
 
-if (Astro.locals.user){
-  return Astro.redirect("/cabinet")
+if (Astro.locals.user) {
+    return Astro.redirect("/cabinet");
 }
 
-const db = getDrizzle()
+const db = getDrizzle();
 const applicantInvite = await db.query.applicantInvites.findFirst({
-  where: {id: Astro.params.id},
-  with: {
-    application: {
-      with: {
-        student: true,
-        campaign: {columns: {title: true}},
-        profile: {columns: {title: true}},
-      },
+    where: { id: Astro.params.id },
+    with: {
+        application: {
+            with: {
+                student: true,
+                campaign: { columns: { title: true } },
+                profile: { columns: { title: true } },
+            },
+        },
     },
-  },
-})
-const application = applicantInvite?.application
-if (!applicantInvite || !application){
-    return new Response(null, { status: 404 })
+});
+const application = applicantInvite?.application;
+if (!applicantInvite || !application) {
+    return new Response(null, { status: 404 });
 }
 
-const studentName = application.student
-  ? `${application.student.firstName} ${application.student.lastName}`
-  : "";
+const studentName = application.student ? `${application.student.firstName} ${application.student.lastName}` : "";
 ---
 
 <Layout noPadding title="Ваша заява">
-  <section class="relative isolate min-h-[calc(100svh-0.5rem)] overflow-hidden px-5 py-16 sm:px-8 lg:px-12">
-    <HeroBackground />
+    <section class="relative isolate min-h-[calc(100svh-0.5rem)] overflow-hidden px-5 py-16 sm:px-8 lg:px-12">
+        <HeroBackground />
 
-    <div class="relative mx-auto flex w-full max-w-2xl flex-col gap-10">
-      <div>
-        <h1>{studentName ? `Привіт, ${application.student?.firstName}!` : "Вітаємо!"}</h1>
-        <p class="mt-6 text-[17px]/[26px] text-black/65 sm:text-[19px]/[30px]">
-          Вам надано доступ до заяви «{application.profile?.title}». Створіть акаунт, щоб слідкувати за статусом і бачити оцінки з екзаменів.
-        </p>
-        <div class="mt-8">
-          <GoogleSignIn state={`inviteId=${applicantInvite.id}`} />
-        </div>
-      </div>
+        <div class="relative mx-auto flex w-full max-w-2xl flex-col gap-10">
+            <div>
+                <h1>{studentName ? `Привіт, ${application.student?.firstName}!` : "Вітаємо!"}</h1>
+                <p class="mt-6 text-[17px]/[26px] text-black/65 sm:text-[19px]/[30px]">
+                    Вам надано доступ до заяви «{application.profile?.title}». Створіть акаунт, щоб слідкувати за
+                    статусом і бачити оцінки з екзаменів.
+                </p>
+                <div class="mt-8">
+                    <GoogleSignIn state={`inviteId=${applicantInvite.id}`} />
+                </div>
+            </div>
 
-      <div class="card flex flex-row items-start gap-4 bg-[#FFFFFF]">
-        <div class="flex-1">
-          <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <h4>{studentName || "Заява"}</h4>
-            <span class="rounded-full bg-liceum-green/15 px-3 py-0.5 text-sm text-liceum-green">На розгляді</span>
-          </div>
-          <p class="mt-1">{application.campaign?.title} - {application.profile?.title}</p>
-          <p class="mt-1 text-sm text-black/55">
-            {application.createdAt ? format(new Date(application.createdAt), "PPP", {locale: uk}) : ''}
-          </p>
+            <div class="card flex flex-row items-start gap-4 bg-[#FFFFFF]">
+                <div class="flex-1">
+                    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                        <h4>{studentName || "Заява"}</h4>
+                        <span class="rounded-full bg-liceum-green/15 px-3 py-0.5 text-sm text-liceum-green">
+                            На розгляді
+                        </span>
+                    </div>
+                    <p class="mt-1">
+                        {application.campaign?.title} - {application.profile?.title}
+                    </p>
+                    <p class="mt-1 text-sm text-black/55">
+                        {application.createdAt ? format(new Date(application.createdAt), "PPP", { locale: uk }) : ""}
+                    </p>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </section>
+    </section>
 </Layout>

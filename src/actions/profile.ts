@@ -1,8 +1,8 @@
 import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro/zod";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDrizzle } from "@db/drizzle";
-import { campaignsToProfiles, profiles } from "@db/schema";
+import { applications, campaignsToProfiles, profiles } from "@db/schema";
 import { deleteFormIfUnused } from "@lib/forms";
 import { logEvent } from "@lib/analytics";
 
@@ -110,6 +110,15 @@ export const deleteProfile = defineAction({
             });
             if (!existingProfile) {
                 throw new ActionError({ code: "BAD_REQUEST", message: "Профіль не знайдено" });
+            }
+
+            // applications.profile_id cascades, so a submitted application would be erased with it.
+            const submittedCount = await db.$count(
+                applications,
+                and(eq(applications.profileId, input.profileId), eq(applications.state, "submitted")),
+            );
+            if (submittedCount > 0) {
+                throw new ActionError({ code: "BAD_REQUEST", message: "За цим профілем уже є подані заяви" });
             }
 
             await db.delete(profiles).where(eq(profiles.id, input.profileId));

@@ -1,32 +1,37 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import { getDrizzle } from "@db/drizzle";
-import {format} from "date-fns"
+import { format } from "date-fns";
 import { uk } from "date-fns/locale";
+import { parseDbDate } from "@lib/dates";
 import { actions } from "astro:actions";
 
-const db = getDrizzle()
+const db = getDrizzle();
 const results = await db.query.applications.findMany({
     where: {
         userId: Astro.locals.user.role !== "applicant" ? Astro.locals.user.id : undefined,
-        studentId: Astro.locals.user.role === "applicant" ? Astro.locals.user.id : undefined
+        studentId: Astro.locals.user.role === "applicant" ? Astro.locals.user.id : undefined,
     },
-    with: {student: true, profile: {columns: {title: true}}, campaign: {columns: {title: true}}},
-})
+    with: { student: true, profile: { columns: { title: true } }, campaign: { columns: { title: true } } },
+});
 
-const linkResult = Astro.getActionResult(actions.applicantLink)
+const linkResult = Astro.getActionResult(actions.applicantLink);
 ---
 
 <Layout title="Мої заяви">
     <h1 class="mb-5">Мої заяви</h1>
-    
+
+    {linkResult?.error && (
+        <p class="mt-2 text-diia-red" role="alert">
+            {linkResult.error.message}
+        </p>
+    )}
+
     <ul class="mt-5 list-colors">
         {Astro.locals.user.role !== "applicant" && (
             <a href="/cabinet/application">
                 <li class="mb-5 border-dashed border-2 border-diia-grey py-7 px-6 flex flex-row justify-center items-center gap-1 rounded">
-                    <span class="material-symbols-outlined">
-                        add_circle
-                    </span>
+                    <span class="material-symbols-outlined">add_circle</span>
                     <h4>Створити заяву</h4>
                 </li>
             </a>
@@ -38,7 +43,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
                     : "У Вас поки що немає заяв! Натисніть на кнопку вище щоб створити Вашу першу заяву."}
             </p>
         )}
-        {results.map(result => {
+        {results.map((result) => {
             const isDraft = result.state === "draft";
             const draftStudent = (result.answers?.__student ?? {}) as { firstName?: string; lastName?: string };
             const studentName = result.student
@@ -51,17 +56,29 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
                         <div class="flex flex-row gap-1">
                             {!isDraft && (
                                 <form method="POST" action={actions.applicantLink}>
-                                    <input hidden name="applicationId" value={result.id}>
-                                    <button class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-black/50 transition-colors hover:bg-black/5 hover:text-black" title="Посилання для абітурієнта" aria-label="Посилання для абітурієнта">
+                                    <input hidden name="applicationId" value={result.id} />
+                                    <button
+                                        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-black/50 transition-colors hover:bg-black/5 hover:text-black"
+                                        title="Посилання для абітурієнта"
+                                        aria-label="Посилання для абітурієнта"
+                                    >
                                         <span class="material-symbols-outlined text-[20px]">share</span>
                                     </button>
                                 </form>
                             )}
 
                             {isDraft && (
-                                <form method="POST" action={actions.deleteDraft} onsubmit="return confirm('Видалити чернетку?')">
-                                    <input hidden name="applicationId" value={result.id}>
-                                    <button class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-black/50 transition-colors hover:bg-liceum-red/10 hover:text-liceum-red" title="Видалити чернетку" aria-label="Видалити чернетку">
+                                <form
+                                    method="POST"
+                                    action={actions.deleteDraft}
+                                    onsubmit="return confirm('Видалити чернетку?')"
+                                >
+                                    <input hidden name="applicationId" value={result.id} />
+                                    <button
+                                        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-black/50 transition-colors hover:bg-liceum-red/10 hover:text-liceum-red"
+                                        title="Видалити чернетку"
+                                        aria-label="Видалити чернетку"
+                                    >
                                         <span class="material-symbols-outlined text-[20px]">delete</span>
                                     </button>
                                 </form>
@@ -69,16 +86,27 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
                         </div>
                     )}
 
-                    <a class="flex-1" href={isDraft ? `/cabinet/application?draft=${result.id}` : `/cabinet/application?preview=${result.id}`}>
+                    <a
+                        class="flex-1"
+                        href={
+                            isDraft
+                                ? `/cabinet/application?draft=${result.id}`
+                                : `/cabinet/application?preview=${result.id}`
+                        }
+                    >
                         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                             <h4>{studentName || "Заява"}</h4>
-                            <span class={`rounded-full px-3 py-0.5 text-sm ${isDraft ? "bg-diia-grey/15 text-black/55" : "bg-liceum-green/15 text-liceum-green"}`}>
+                            <span
+                                class={`rounded-full px-3 py-0.5 text-sm ${isDraft ? "bg-diia-grey/15 text-black/55" : "bg-liceum-green/15 text-liceum-green"}`}
+                            >
                                 {statusText}
                             </span>
                         </div>
-                        <p class="mt-1">{result.campaign?.title} - {result.profile?.title}</p>
+                        <p class="mt-1">
+                            {result.campaign?.title} - {result.profile?.title}
+                        </p>
                         <p class="mt-1 text-sm text-black/55">
-                            {result.createdAt ? format(new Date(result.createdAt), "PPP", {locale: uk}) : ''}
+                            {result.createdAt ? format(parseDbDate(result.createdAt), "PPP", { locale: uk }) : ""}
                         </p>
                     </a>
                 </li>
@@ -87,10 +115,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
     </ul>
 
     {linkResult && linkResult.data?.id && (
-        <div
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
-            role="presentation"
-        >
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5" role="presentation">
             <div
                 class="card flex w-full max-w-2xl flex-col gap-5 bg-white max-h-screen overflow-auto text-center"
                 role="dialog"
@@ -99,21 +124,28 @@ const linkResult = Astro.getActionResult(actions.applicantLink)
                 <h4>Посилання для абітурієнта</h4>
                 <p class="text-center text-diia-blue wrap-break-word">{`${Astro.url.origin}/applicant/${linkResult.data.id}`}</p>
                 <div class="flex flex-row gap-5 items-center justify-center flex-wrap">
-                    <button class="btn-default flex flex-row items-center gap-1" onclick={`navigator.clipboard.writeText("${`${Astro.url.origin}/applicant/${linkResult.data.id}`}")`}>
-                        <span class="material-symbols-outlined">
-                            content_copy
-                        </span>
+                    <button
+                        class="btn-default flex flex-row items-center gap-1"
+                        onclick={`navigator.clipboard.writeText("${`${Astro.url.origin}/applicant/${linkResult.data.id}`}")`}
+                    >
+                        <span class="material-symbols-outlined">content_copy</span>
                         Копіювати
                     </button>
-                    <button class="btn-default flex flex-row items-center gap-1" onclick={`navigator.share({text:"${`${Astro.url.origin}/applicant/${linkResult.data.id}`}"})`}>
-                        <span class="material-symbols-outlined">
-                            share
-                        </span>
+                    <button
+                        class="btn-default flex flex-row items-center gap-1"
+                        onclick={`navigator.share({text:"${`${Astro.url.origin}/applicant/${linkResult.data.id}`}"})`}
+                    >
+                        <span class="material-symbols-outlined">share</span>
                         Поділитися
                     </button>
                 </div>
-                <p>Надішліть це посилання абітурієнту. Абітурієнт зможе зареєструватися та слідкувати за заявою самостійно.</p>
-                <button class="cursor-pointer" onclick="window.location.reload()">Закрити</button>
+                <p>
+                    Надішліть це посилання абітурієнту. Абітурієнт зможе зареєструватися та слідкувати за заявою
+                    самостійно.
+                </p>
+                <button class="cursor-pointer" onclick="window.location.reload()">
+                    Закрити
+                </button>
             </div>
         </div>
     )}

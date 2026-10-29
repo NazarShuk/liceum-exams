@@ -21,11 +21,12 @@
     let errorMessage = $state("");
     let saved = $state(false);
     let savedSnapshot = $state("");
-    const currentSnapshot = () => JSON.stringify({
-        title: item.title,
-        tag: item.tag,
-        content: item.content,
-    });
+    const currentSnapshot = () =>
+        JSON.stringify({
+            title: item.title,
+            tag: item.tag,
+            content: item.content,
+        });
 
     savedSnapshot = currentSnapshot();
 
@@ -97,8 +98,8 @@
 </script>
 
 <div class="flex flex-col gap-5">
-    <input class="w-full" placeholder="Заголовок новини" bind:value={item.title}>
-    <input class="w-full" placeholder="Тег" bind:value={item.tag}>
+    <input class="w-full" placeholder="Заголовок новини" bind:value={item.title} />
+    <input class="w-full" placeholder="Тег" bind:value={item.tag} />
 
     <label class="flex flex-col gap-2">
         Текст новини (Markdown)
@@ -128,9 +129,7 @@
                 disabled={loading}
                 onclick={deleteNews}
             >
-                <span class="text-diia-red">
-                    Видалити новину
-                </span>
+                <span class="text-diia-red"> Видалити новину </span>
             </button>
         {/if}
     </div>

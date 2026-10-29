@@ -3,12 +3,13 @@ import Layout from "@layouts/Layout.astro";
 import { getDrizzle } from "@db/drizzle";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
+import { parseDbDate } from "@lib/dates";
 
 const db = getDrizzle();
 const news = await db.query.news.findMany({
     orderBy: {
-        createdAt: "desc"
-    }
+        createdAt: "desc",
+    },
 });
 ---
 
@@ -17,7 +18,7 @@ const news = await db.query.news.findMany({
     <a href="/admin/news/editor">+ Створити новину</a>
     {news.length === 0 && <p class="mt-5">Новин поки що немає.</p>}
     <ul class="mt-5 list-colors">
-        {news.map(item => (
+        {news.map((item) => (
             <li>
                 <a href={`/admin/news/editor?news=${item.id}`}>
                     <div class="card mb-5">
@@ -25,8 +26,8 @@ const news = await db.query.news.findMany({
                             <span class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue">
                                 {item.tag}
                             </span>
-                            <time datetime={new Date(item.createdAt).toISOString()} class="text-sm text-black/60">
-                                {format(new Date(item.createdAt), "d MMMM yyyy", { locale: uk })}
+                            <time datetime={parseDbDate(item.createdAt).toISOString()} class="text-sm text-black/60">
+                                {format(parseDbDate(item.createdAt), "d MMMM yyyy", { locale: uk })}
                             </time>
                         </div>
                         <h4 class="mt-2">{item.title}</h4>

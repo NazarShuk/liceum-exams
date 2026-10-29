@@ -9,7 +9,11 @@
     type Form = typeof formsType.$inferSelect;
     type Campaign = typeof campaigns.$inferSelect & { profiles: Profile[] };
 
-    const { loadedCampaign, availableForms, initialProfileId }: {
+    const {
+        loadedCampaign,
+        availableForms,
+        initialProfileId,
+    }: {
         loadedCampaign: Campaign | undefined;
         availableForms: Form[];
         initialProfileId?: number;
@@ -31,7 +35,7 @@
         // svelte-ignore state_referenced_locally
         profiles: loadedCampaign?.profiles ?? [],
         // svelte-ignore state_referenced_locally
-        allowMultipleProfiles: loadedCampaign?.allowMultipleProfiles
+        allowMultipleProfiles: loadedCampaign?.allowMultipleProfiles,
     });
     let loading = $state(false);
     let errorMessage = $state("");
@@ -41,22 +45,19 @@
     let forms = $state<Form[]>([...availableForms]);
     let editingProfileId = $state<number | "new" | null>(
         // svelte-ignore state_referenced_locally
-        initialProfileId && campaign.profiles.some(({ id }) => id === initialProfileId)
-            ? initialProfileId
-            : null,
+        initialProfileId && campaign.profiles.some(({ id }) => id === initialProfileId) ? initialProfileId : null,
     );
     let editingProfile = $derived(
-        typeof editingProfileId === "number"
-            ? campaign.profiles.find(({ id }) => id === editingProfileId)
-            : undefined,
+        typeof editingProfileId === "number" ? campaign.profiles.find(({ id }) => id === editingProfileId) : undefined,
     );
     let profileEditor = $state<{ hasUnsavedChanges: () => boolean } | undefined>();
-    const currentSnapshot = () => JSON.stringify({
-        title: campaign.title,
-        beginsAt: campaign.beginsAt,
-        endsAt: campaign.endsAt,
-        profiles: campaign.profiles.map(({ id }) => id),
-    });
+    const currentSnapshot = () =>
+        JSON.stringify({
+            title: campaign.title,
+            beginsAt: campaign.beginsAt,
+            endsAt: campaign.endsAt,
+            profiles: campaign.profiles.map(({ id }) => id),
+        });
 
     savedSnapshot = currentSnapshot();
 
@@ -94,17 +95,15 @@
     }
 
     function closeProfileEditor() {
-        if (profileEditor?.hasUnsavedChanges() &&
-            !window.confirm("Є незбережені зміни. Закрити без збереження?")) return;
+        if (profileEditor?.hasUnsavedChanges() && !window.confirm("Є незбережені зміни. Закрити без збереження?"))
+            return;
         editingProfileId = null;
     }
 
     function handleProfileSaved(updated: Profile) {
         const exists = campaign.profiles.some(({ id }) => id === updated.id);
         campaign.profiles = exists
-            ? campaign.profiles.map((profile) =>
-                profile.id === updated.id ? { ...profile, ...updated } : profile,
-            )
+            ? campaign.profiles.map((profile) => (profile.id === updated.id ? { ...profile, ...updated } : profile))
             : [...campaign.profiles, updated];
         if (!exists) {
             saved = false;
@@ -145,7 +144,7 @@
                 beginsAt: campaign.beginsAt,
                 endsAt: campaign.endsAt,
                 profileIds: campaign.profiles.map(({ id }) => id),
-                allowMultipleProfiles: campaign.allowMultipleProfiles || false
+                allowMultipleProfiles: campaign.allowMultipleProfiles || false,
             });
 
             if (result.error) {
@@ -192,15 +191,15 @@
 </script>
 
 <div class="flex flex-col gap-5">
-    <input placeholder="Назва кампанії" bind:value={campaign.title}>
+    <input placeholder="Назва кампанії" bind:value={campaign.title} />
     <div class="flex flex-row w-full gap-5">
         <label class="w-full">
             Починається
-            <input class="w-full" type="date" bind:value={campaign.beginsAt}>
+            <input class="w-full" type="date" bind:value={campaign.beginsAt} />
         </label>
         <label class="w-full">
             Закінчується
-            <input class="w-full" type="date" bind:value={campaign.endsAt}>
+            <input class="w-full" type="date" bind:value={campaign.endsAt} />
         </label>
     </div>
 
@@ -221,14 +220,12 @@
         class="border-dashed border-2 border-diia-grey py-7 px-6 flex flex-row justify-center items-center gap-1 rounded cursor-pointer"
         onclick={openNewProfile}
     >
-        <span class="material-symbols-outlined">
-            add_circle
-        </span>
+        <span class="material-symbols-outlined"> add_circle </span>
         <h4>Створити новий профіль</h4>
     </button>
 
     <label class="flex flex-row items-center gap-1">
-        <input type="checkbox" bind:checked={campaign.allowMultipleProfiles}>
+        <input type="checkbox" bind:checked={campaign.allowMultipleProfiles} />
         Дозволити подачу заяв на декілька профілів
     </label>
 
@@ -255,9 +252,7 @@
                 disabled={loading}
                 onclick={deleteCampaign}
             >
-                <span class="text-diia-red ">
-                    Видалити кампанію
-                </span>
+                <span class="text-diia-red"> Видалити кампанію </span>
             </button>
         {/if}
     </div>
@@ -277,16 +272,15 @@
                 onclick={(event) => event.stopPropagation()}
                 tabindex={0}
             >
-                <header class="flex shrink-0 flex-row items-center justify-between gap-5 border-b border-diia-bright-grey px-4 py-3 sm:px-6">
+                <header
+                    class="flex shrink-0 flex-row items-center justify-between gap-5 border-b border-diia-bright-grey px-4 py-3 sm:px-6"
+                >
                     <h3 id="profile-editor-title">
                         {editingProfile ? "Редагувати профіль" : "Новий профіль"}
                     </h3>
-                    <button
-                        type="button"
-                        class="cursor-pointer"
-                        aria-label="Закрити"
-                        onclick={closeProfileEditor}
-                    >X</button>
+                    <button type="button" class="cursor-pointer" aria-label="Закрити" onclick={closeProfileEditor}
+                        >X</button
+                    >
                 </header>
                 <div class="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
                     {#key editingProfileId}

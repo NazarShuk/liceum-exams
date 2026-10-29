@@ -1,28 +1,42 @@
 ---
 import { env } from "cloudflare:workers";
+import { eq, or } from "drizzle-orm";
+import { getDrizzle } from "@db/drizzle";
+import { applications } from "@db/schema";
 
-const key = Astro.url.searchParams.get("key") || ""
-const keyPattern = /^applications\/\d+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[^/]+$/
+const key = Astro.url.searchParams.get("key") || "";
+const keyPattern = /^applications\/\d+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[^/]+$/;
 
-if (!keyPattern.test(key))
-    return new Response(null, {status: 404})
-if (!Astro.locals.user)
-    return new Response(null, {status: 401})
+if (!keyPattern.test(key)) return new Response(null, { status: 404 });
+const user = Astro.locals.user;
+if (!user) return new Response(null, { status: 401 });
 
-const file = await env.FILE_BUCKET.get(key)
-if (!file)
-    return new Response(null, {status: 404})
-if (!file.customMetadata || !file.customMetadata.owner)
-    return new Response(null, {status: 500})
-if (Astro.locals.user.role !== "admin" && (file.customMetadata.owner !== Astro.locals.user.id.toString() && file.customMetadata.owner !== Astro.locals.user.parentId?.toString()))
-    return new Response(null, {status: 403})
+// Only the parent who submitted the application or the student it belongs to may read its files.
+if (user.role !== "admin") {
+    const owned = await getDrizzle()
+        .select({ answers: applications.answers })
+        .from(applications)
+        .where(or(eq(applications.userId, user.id), eq(applications.studentId, user.id)));
+    const canRead = owned.some(({ answers }) =>
+        Object.values(answers).some(
+            (answer) => typeof answer === "object" && answer !== null && "key" in answer && answer.key === key,
+        ),
+    );
+    if (!canRead) return new Response(null, { status: 403 });
+}
 
-const fileName = file.customMetadata.fileName || key.split("/").pop() || "download"
-const encodedFileName = encodeURIComponent(fileName).replace(/[!'()*]/g, char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
+const file = await env.FILE_BUCKET.get(key);
+if (!file) return new Response(null, { status: 404 });
+
+const fileName = file.customMetadata?.fileName || key.split("/").pop() || "download";
+const encodedFileName = encodeURIComponent(fileName).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+);
 return new Response(await file.arrayBuffer(), {
     headers: {
         "Content-Disposition": `attachment; filename*=UTF-8''${encodedFileName}`,
-        "Content-Type": file.customMetadata.fileType || "application/octet-stream"
-    }
-})
+        "Content-Type": file.customMetadata?.fileType || "application/octet-stream",
+    },
+});
 ---

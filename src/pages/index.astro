@@ -9,164 +9,165 @@ import { getDrizzle } from "@db/drizzle";
 import { markdownExcerpt } from "../lib/markdown";
 
 if (Astro.locals.user) {
-  return Astro.redirect("/cabinet");
+    return Astro.redirect("/cabinet");
 }
 
 const contacts = [
-  {
-    icon: "location_on",
-    label: "Адреса",
-    value: "вул. Чуднівська, 103, м. Житомир 10005",
-    href: null
-  },
-  {
-    icon: "call",
-    label: "Телефон",
-    value: "+380509856415",
-    href: "tel:+380509856415"
-  },
-  {
-    icon: "mail",
-    label: "Електронна пошта",
-    value: "liceum@ztu.edu.ua",
-    href: "mailto:liceum@ztu.edu.ua"
-  }
+    {
+        icon: "location_on",
+        label: "Адреса",
+        value: "вул. Чуднівська, 103, м. Житомир 10005",
+        href: null,
+    },
+    {
+        icon: "call",
+        label: "Телефон",
+        value: "+380509856415",
+        href: "tel:+380509856415",
+    },
+    {
+        icon: "mail",
+        label: "Електронна пошта",
+        value: "liceum@ztu.edu.ua",
+        href: "mailto:liceum@ztu.edu.ua",
+    },
 ];
 
-const db = getDrizzle()
+const db = getDrizzle();
 const news = await db.query.news.findMany({
-  limit: 3,
-  orderBy: {
-    createdAt: "desc"
-  }
-})
+    limit: 3,
+    orderBy: {
+        createdAt: "desc",
+    },
+});
 ---
 
 <Layout noPadding={true}>
     <section
-      class="relative isolate flex min-h-[calc(100svh-0.5rem)] items-center overflow-hidden px-5 py-16 sm:px-8 lg:px-12"
-      aria-labelledby="hero-heading"
+        class="relative isolate flex min-h-[calc(100svh-0.5rem)] items-center overflow-hidden px-5 py-16 sm:px-8 lg:px-12"
+        aria-labelledby="hero-heading"
     >
-      <HeroBackground />
+        <HeroBackground />
 
-      <div class="relative mx-auto w-full max-w-6xl">
-        <div class="max-w-2xl min-w-0">
-          <LiceumLogo width={256} class="mb-6" />
-          <h1 id="hero-heading" class="hero-title text-balance">
-            Єдиний портал вступу до ліцею
-          </h1>
+        <div class="relative mx-auto w-full max-w-6xl">
+            <div class="max-w-2xl min-w-0">
+                <LiceumLogo width={256} class="mb-6" />
+                <h1 id="hero-heading" class="hero-title text-balance">
+                    Єдиний портал вступу до ліцею
+                </h1>
 
-          <p class="mt-6 max-w-xl text-[17px]/[26px] text-black/65 sm:text-[19px]/[30px]">
-            Подайте заяву, слідкуйте за статусом і отримуйте результати вступних випробувань в одному кабінеті.
-          </p>
+                <p class="mt-6 max-w-xl text-[17px]/[26px] text-black/65 sm:text-[19px]/[30px]">
+                    Подайте заяву, слідкуйте за статусом і отримуйте результати вступних випробувань в одному кабінеті.
+                </p>
 
-          <div class="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
-            <GoogleSignIn />
-            <a
-              href="#news"
-              class="inline-flex items-center transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
-            >
-              Новини
-            </a>
-            <a
-              href="#contacts"
-              class="inline-flex items-center transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
-            >
-              Контакти
-            </a>
-          </div>
+                <div class="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
+                    <GoogleSignIn />
+                    <a
+                        href="#news"
+                        class="inline-flex items-center transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
+                    >
+                        Новини
+                    </a>
+                    <a
+                        href="#contacts"
+                        class="inline-flex items-center transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
+                    >
+                        Контакти
+                    </a>
+                </div>
+            </div>
         </div>
-      </div>
     </section>
 
     <section id="news" class="px-5 py-20 sm:px-8 lg:px-12" aria-labelledby="news-heading">
-      <div class="mx-auto max-w-6xl">
-        <div class="mb-10 flex flex-wrap items-end justify-between gap-5 border-b border-diia-bright-grey pb-8">
-          <h2 id="news-heading">Новини</h2>
-          <a
-            href="/news"
-            class="inline-flex items-center transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
-          >
-            Усі новини {"->"}
-          </a>
-        </div>
+        <div class="mx-auto max-w-6xl">
+            <div class="mb-10 flex flex-wrap items-end justify-between gap-5 border-b border-diia-bright-grey pb-8">
+                <h2 id="news-heading">Новини</h2>
+                <a
+                    href="/news"
+                    class="inline-flex items-center transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
+                >
+                    Усі новини {"->"}
+                </a>
+            </div>
 
-        <div class="grid gap-5 md:grid-cols-3">
-          {news.map((item) => (
-            <article class="card bg-[#FFFFFF]">
-              <a class="flex flex-col gap-4" href={`/news/${item.id}`}>
-                <div class="flex items-center justify-between gap-3">
-                  <span class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue">
-                    {item.tag}
-                  </span>
-                  <time datetime={new Date(item.createdAt).toISOString()} class="text-sm text-black/60">
-                    {format(new Date(item.createdAt), "d MMMM yyyy", { locale: uk })}
-                  </time>
-                </div>
-                <h3 class="news-card-title">{item.title}</h3>
-                <p class="text-black/65">{markdownExcerpt(item.content, 120)}</p>
-              </a>
-            </article>
-          ))}
+            <div class="grid gap-5 md:grid-cols-3">
+                {news.map((item) => (
+                    <article class="card bg-[#FFFFFF]">
+                        <a class="flex flex-col gap-4" href={`/news/${item.id}`}>
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue">
+                                    {item.tag}
+                                </span>
+                                <time datetime={new Date(item.createdAt).toISOString()} class="text-sm text-black/60">
+                                    {format(new Date(item.createdAt), "d MMMM yyyy", { locale: uk })}
+                                </time>
+                            </div>
+                            <h3 class="news-card-title">{item.title}</h3>
+                            <p class="text-black/65">{markdownExcerpt(item.content, 120)}</p>
+                        </a>
+                    </article>
+                ))}
+            </div>
         </div>
-      </div>
     </section>
 
     <section id="contacts" class="px-5 pb-24 pt-4 sm:px-8 lg:px-12" aria-labelledby="contacts-heading">
-      <div class="mx-auto max-w-6xl">
-        <div class="card grid gap-10 bg-[#FFFFFF] lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <h2 id="contacts-heading">Контакти</h2>
+        <div class="mx-auto max-w-6xl">
+            <div class="card grid gap-10 bg-[#FFFFFF] lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+                <h2 id="contacts-heading">Контакти</h2>
 
-          <ul class="grid gap-6 sm:grid-cols-2">
-            {contacts.map((contact) => (
-              <li class="flex gap-4">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-diia-bright-grey text-liceum-blue">
-                  <span class="material-symbols-outlined text-[22px]" aria-hidden="true">{contact.icon}</span>
-                </span>
-                <div class="min-w-0">
-                  <p class="text-sm text-black/60">{contact.label}</p>
-                  {contact.href ? (
-                    <a
-                      href={contact.href}
-                      class="mt-1 block wrap-break-word transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
-                    >
-                      {contact.value}
-                    </a>
-                  ) : (
-                    <p class="mt-1 wrap-break-word">{contact.value}</p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+                <ul class="grid gap-6 sm:grid-cols-2">
+                    {contacts.map((contact) => (
+                        <li class="flex gap-4">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-diia-bright-grey text-liceum-blue">
+                                <span class="material-symbols-outlined text-[22px]" aria-hidden="true">
+                                    {contact.icon}
+                                </span>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm text-black/60">{contact.label}</p>
+                                {contact.href ? (
+                                    <a
+                                        href={contact.href}
+                                        class="mt-1 block wrap-break-word transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
+                                    >
+                                        {contact.value}
+                                    </a>
+                                ) : (
+                                    <p class="mt-1 wrap-break-word">{contact.value}</p>
+                                )}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
-      </div>
     </section>
 </Layout>
 
 <style>
-  .hero-title {
-    font-size: 2.5rem;
-    line-height: 2.75rem;
-  }
-
-  .news-card-title {
-    font-size: 1.375rem;
-    line-height: 1.75rem;
-  }
-
-  @media (min-width: 40rem) {
     .hero-title {
-      font-size: 3.25rem;
-      line-height: 3.625rem;
+        font-size: 2.5rem;
+        line-height: 2.75rem;
     }
-  }
 
-  @media (min-width: 64rem) {
-    .hero-title {
-      font-size: 4rem;
-      line-height: 4.25rem;
+    .news-card-title {
+        font-size: 1.375rem;
+        line-height: 1.75rem;
     }
-  }
 
+    @media (min-width: 40rem) {
+        .hero-title {
+            font-size: 3.25rem;
+            line-height: 3.625rem;
+        }
+    }
+
+    @media (min-width: 64rem) {
+        .hero-title {
+            font-size: 4rem;
+            line-height: 4.25rem;
+        }
+    }
 </style>

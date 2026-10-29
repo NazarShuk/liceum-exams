@@ -1,31 +1,39 @@
 ---
-import {forms} from "@db/schema"
-type Schema = typeof forms.$inferSelect["schema"][0];
+import { forms } from "@db/schema";
+type Schema = (typeof forms.$inferSelect)["schema"][0];
 
 interface Props {
-    field: Schema,
-    preview: boolean,
-    previewValue: unknown|undefined
+    field: Schema;
+    preview: boolean;
+    previewValue: unknown | undefined;
 }
 
-const {field, preview, previewValue} = Astro.props
+const { field, preview, previewValue } = Astro.props;
 
-const name = "form-" + field.slug
-const options = field.options ?? []
-const required = !preview && field.required !== false
+const name = "form-" + field.slug;
+const options = field.options ?? [];
+const required = !preview && field.required !== false;
 
-const selectedValues = (Array.isArray(previewValue) ? previewValue : previewValue == null ? [] : [previewValue]).map(String)
-const textValue = Array.isArray(previewValue) ? previewValue.join(", ") : String(previewValue ?? "")
-const fileKey = typeof previewValue === "object" && previewValue !== null && "key" in previewValue && typeof previewValue.key === "string"
-    ? previewValue.key
-    : null
-const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null
+const selectedValues = (Array.isArray(previewValue) ? previewValue : previewValue == null ? [] : [previewValue]).map(
+    String,
+);
+const textValue = Array.isArray(previewValue) ? previewValue.join(", ") : String(previewValue ?? "");
+const fileKey =
+    typeof previewValue === "object" &&
+    previewValue !== null &&
+    "key" in previewValue &&
+    typeof previewValue.key === "string"
+        ? previewValue.key
+        : null;
+const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null;
 ---
 
 <div class="card mb-5">
     <h4 class="mb-5">{field.title}</h4>
     {field.type === "file" && preview && fileHref ? (
-        <a target="_blank" href={fileHref}>Переглянути файл</a>
+        <a target="_blank" href={fileHref}>
+            Переглянути файл
+        </a>
     ) : field.type === "select" || field.type === "multiselect" ? (
         <fieldset class="flex flex-col gap-2 lg:w-3/4 w-full" disabled={preview}>
             {options.map((option) => {
@@ -46,7 +54,7 @@ const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null
                 );
             })}
         </fieldset>
-        ) : (
+    ) : (
         <input
             readonly={preview}
             required={required}
@@ -60,8 +68,8 @@ const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null
             min={field.type === "number" && field.min > 0 ? field.min : undefined}
             max={field.type === "number" && field.max > 0 ? field.max : undefined}
             pattern={field.type === "text" && field.regex ? field.regex : undefined}
-        >
+        />
     )}
-    
+
     {!field.required && <p class="opacity-75 mt-5">*Не обов'язкове</p>}
 </div>

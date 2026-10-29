@@ -4,20 +4,23 @@ import { getDrizzle } from "@db/drizzle";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import { markdownExcerpt } from "../../lib/markdown";
+import { dbTimestamp, parseDbDate } from "@lib/dates";
 import { users } from "@db/schema";
 import { eq } from "drizzle-orm";
 
 const db = getDrizzle();
 const news = await db.query.news.findMany({
     orderBy: {
-        createdAt: "desc"
-    }
+        createdAt: "desc",
+    },
 });
-if (Astro.locals.user){
-    const now = new Date().toISOString().replace('T', ' ').replace('Z', '').split('.')[0];
-    await db.update(users).set({
-        lastNewsRead: now
-    }).where(eq(users.id, Astro.locals.user.id))
+if (Astro.locals.user) {
+    await db
+        .update(users)
+        .set({
+            lastNewsRead: dbTimestamp(),
+        })
+        .where(eq(users.id, Astro.locals.user.id));
 }
 ---
 
@@ -26,16 +29,16 @@ if (Astro.locals.user){
     <a href="/">На головну</a>
     {news.length === 0 && <p class="mt-5">Новин поки що немає.</p>}
     <ul class="mt-5 list-colors">
-        {news.map(item => (
-             <li>
+        {news.map((item) => (
+            <li>
                 <a href={`/news/${item.id}`}>
                     <div class="card mb-5">
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <span class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue">
                                 {item.tag}
                             </span>
-                            <time datetime={new Date(item.createdAt).toISOString()} class="text-sm text-black/60">
-                                {format(new Date(item.createdAt), "d MMMM yyyy", { locale: uk })}
+                            <time datetime={parseDbDate(item.createdAt).toISOString()} class="text-sm text-black/60">
+                                {format(parseDbDate(item.createdAt), "d MMMM yyyy", { locale: uk })}
                             </time>
                         </div>
                         <h4 class="mt-2">{item.title}</h4>

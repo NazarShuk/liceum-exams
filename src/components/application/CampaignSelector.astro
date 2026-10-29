@@ -7,55 +7,55 @@ type Profile = typeof profiles.$inferSelect;
 type Form = typeof forms.$inferSelect;
 
 interface ProfileWithForm extends Profile {
-  form: Form | null;
+    form: Form | null;
 }
 
 interface CampaignWithProfiles extends Campaign {
-  profiles: ProfileWithForm[];
+    profiles: ProfileWithForm[];
 }
 
 interface Props {
-  availableCampaigns: CampaignWithProfiles[];
-  selectedCampaign?: CampaignWithProfiles;
-  applicationCounts?: Record<number, number>;
+    availableCampaigns: CampaignWithProfiles[];
+    selectedCampaign?: CampaignWithProfiles;
+    applicationCounts?: Record<number, number>;
 }
 
 const { availableCampaigns, selectedCampaign, applicationCounts = {} } = Astro.props;
 ---
 
 <section class="flex flex-col gap-5">
-  {selectedCampaign ? (
-    <>
-      <h1>Оберіть профіль</h1>
-      <div class="flex flex-col gap-3 list-colors">
-        {selectedCampaign.profiles.map((profile: ProfileWithForm) => (
-          <ProfileDisplay
-            profile={profile}
-            selectable
-            href={`/cabinet/application?campaignId=${selectedCampaign.id}&profileId=${profile.id}`}
-            count={applicationCounts[profile.id] ?? 0}
-            client:load
-          />
-        ))}
-      </div>
-    </>
-  ) : (
-    <>
-      <h1>Оберіть вступну кампанію</h1>
-      <ul class="flex flex-col gap-3 list-colors">
-        {availableCampaigns.map((campaign: CampaignWithProfiles) => (
-          <li>
-            <a href={`/cabinet/application?campaignId=${campaign.id}`}>
-              <div class="card">
-                <div class="w-full flex flex-row justify-between items-center">
-                  <h4>{campaign.title}</h4>
-                  <p>{campaign.profiles.length} профілів</p>
-                </div>
-              </div>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </>
-  )}
+    {selectedCampaign ? (
+        <>
+            <h1>Оберіть профіль</h1>
+            <div class="flex flex-col gap-3 list-colors">
+                {selectedCampaign.profiles.map((profile: ProfileWithForm) => (
+                    <ProfileDisplay
+                        profile={profile}
+                        selectable
+                        href={`/cabinet/application?campaignId=${selectedCampaign.id}&profileId=${profile.id}`}
+                        count={applicationCounts[profile.id] ?? 0}
+                        client:load
+                    />
+                ))}
+            </div>
+        </>
+    ) : (
+        <>
+            <h1>Оберіть вступну кампанію</h1>
+            <ul class="flex flex-col gap-3 list-colors">
+                {availableCampaigns.map((campaign: CampaignWithProfiles) => (
+                    <li>
+                        <a href={`/cabinet/application?campaignId=${campaign.id}`}>
+                            <div class="card">
+                                <div class="w-full flex flex-row justify-between items-center">
+                                    <h4>{campaign.title}</h4>
+                                    <p>{campaign.profiles.length} профілів</p>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </>
+    )}
 </section>

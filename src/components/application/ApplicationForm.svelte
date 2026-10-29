@@ -1,6 +1,7 @@
 <script lang="ts">
     import { actions, isInputError } from "astro:actions";
     import { tick } from "svelte";
+    import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES } from "@lib/uploads";
     import type { campaigns, forms, profiles, users } from "@db/schema";
 
     type Form = typeof forms.$inferSelect;
@@ -138,7 +139,10 @@
                 message = result.error.message;
                 if (isInputError(result.error)) {
                     fieldErrors = Object.fromEntries(
-                        Object.entries(result.error.fields ?? {}).map(([key, errors]) => [key, (errors || []).join(", ")]),
+                        Object.entries(result.error.fields ?? {}).map(([key, errors]) => [
+                            key,
+                            (errors || []).join(", "),
+                        ]),
                     );
                 }
             } else if (!result.data.success) {
@@ -160,10 +164,7 @@
 </script>
 
 <section class="flex flex-col gap-5">
-    <a
-        href={`/cabinet/application?campaignId=${selectedCampaign?.id}`}
-        class="self-start"
-    >
+    <a href={`/cabinet/application?campaignId=${selectedCampaign?.id}`} class="self-start">
         {"<-"} Назад до профілів
     </a>
 
@@ -192,7 +193,8 @@
                     <select onchange={selectChild}>
                         <option value="">Новий учень</option>
                         {#each userChildren as child (child.id)}
-                            <option value={String(child.id)}>{child.firstName} {child.lastName} {child.middleName ?? ""}</option>
+                            {@const childName = `${child.firstName} ${child.lastName} ${child.middleName ?? ""}`.trim()}
+                            <option value={String(child.id)}>{childName}</option>
                         {/each}
                     </select>
                 </label>
@@ -356,7 +358,7 @@
                             <label class="flex items-center gap-2">
                                 <input
                                     type={field.type === "multiselect" ? "checkbox" : "radio"}
-                                    name={name}
+                                    {name}
                                     value={option}
                                     checked={field.type === "multiselect"
                                         ? (answerOf(field.slug) as string[] | undefined)?.includes(option)
@@ -371,10 +373,11 @@
                 {:else}
                     <input
                         class="lg:w-3/4 w-full"
-                        name={name}
+                        {name}
                         placeholder="Ваша відповідь..."
                         type={field.type}
-                        value={field.type === "file" ? undefined : (answerOf(field.slug) as string | undefined) ?? ""}
+                        accept={field.type === "file" ? ALLOWED_UPLOAD_TYPES.join(",") : undefined}
+                        value={field.type === "file" ? undefined : ((answerOf(field.slug) as string | undefined) ?? "")}
                         required={field.required !== false}
                         minlength={field.type === "text" && field.min > 0 ? field.min : undefined}
                         maxlength={field.type === "text" && field.max > 0 ? field.max : undefined}
@@ -386,6 +389,9 @@
                 {/if}
                 {#if error}
                     <p class="text-diia-red mt-2" role="alert">{error}</p>
+                {/if}
+                {#if field.type === "file"}
+                    <p class="opacity-75 mt-2">PDF, JPG, PNG або WEBP, до {MAX_UPLOAD_BYTES / 1024 / 1024} МБ</p>
                 {/if}
                 {#if field.required === false}
                     <p class="opacity-75 mt-5">*Не обов'язкове</p>
@@ -408,6 +414,9 @@
         <button class="btn-default" disabled={sending}>
             {sending ? "Надсилання..." : "Надіслати"}
         </button>
-        <p class="opacity-75">Натискаючи кнопку "Надіслати", ви надаєте згоду на обробку ваших персональних даних відповідно до Закону України "Про захист персональних даних"</p>
+        <p class="opacity-75">
+            Натискаючи кнопку "Надіслати", ви надаєте згоду на обробку ваших персональних даних відповідно до Закону
+            України "Про захист персональних даних"
+        </p>
     </form>
 </section>

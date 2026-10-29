@@ -1,37 +1,33 @@
 {
-	"$schema": "./node_modules/wrangler/config-schema.json",
-	"compatibility_date": "2026-09-21",
-	"compatibility_flags": [
-		"global_fetch_strictly_public"
-	],
-	"name": "liceum-exams",
-	"main": "@astrojs/cloudflare/entrypoints/server",
-	"assets": {
-		"directory": "./dist",
-		"binding": "ASSETS"
-	},
-	"observability": {
-		"enabled": true
-	},
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "liceum-exams",
-			"database_id": "df1a28a6-9f1c-4a23-8468-a0424f4c5f3d",
-			"migrations_dir": "migrations",
-			"migrations_pattern": "migrations/*/migration.sql"
-		}
-	],
-	"vars": {
-		"GOOGLE_CLIENT_ID": "140530214278-da3mfhac8mmhgu86miaub1he4s8lobkq.apps.googleusercontent.com"
-	},
-	"r2_buckets": [
-		{
-			"binding": "FILE_BUCKET",
-			"bucket_name": "liceum-exams",
-		}
-	],
-	"analytics_engine_datasets": [
-		{ "binding": "ANALYTICS_ENGINE", "dataset": "analytic_events" }
-	]
+    "$schema": "./node_modules/wrangler/config-schema.json",
+    "compatibility_date": "2026-09-21",
+    "compatibility_flags": ["global_fetch_strictly_public"],
+    "name": "liceum-exams",
+    "main": "@astrojs/cloudflare/entrypoints/server",
+    "assets": {
+        "directory": "./dist",
+        "binding": "ASSETS",
+    },
+    "observability": {
+        "enabled": true,
+    },
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "liceum-exams",
+            "database_id": "df1a28a6-9f1c-4a23-8468-a0424f4c5f3d",
+            "migrations_dir": "migrations",
+            "migrations_pattern": "migrations/*/migration.sql",
+        },
+    ],
+    "vars": {
+        "GOOGLE_CLIENT_ID": "140530214278-da3mfhac8mmhgu86miaub1he4s8lobkq.apps.googleusercontent.com",
+    },
+    "r2_buckets": [
+        {
+            "binding": "FILE_BUCKET",
+            "bucket_name": "liceum-exams",
+        },
+    ],
+    "analytics_engine_datasets": [{ "binding": "ANALYTICS_ENGINE", "dataset": "analytic_events" }],
 }

@@ -2,98 +2,126 @@ import { sqliteTable, integer, text, primaryKey } from "drizzle-orm/sqlite-core"
 import { sql } from "drizzle-orm";
 
 export const users = sqliteTable("users", {
-    id: integer("id").primaryKey({autoIncrement: true}),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     externalId: text("external_id"),
 
     firstName: text().notNull(),
     lastName: text().notNull(),
     middleName: text(),
-    birthDate: integer({mode: "timestamp"}),
+    birthDate: integer({ mode: "timestamp" }),
     phone: text("phone"),
-    data: text("data", {mode: "json"}),
-    role: text("role", {enum: ["applicant", "parent", "teacher", "admin"]}).notNull().default("parent"),
+    data: text("data", { mode: "json" }),
+    role: text("role", { enum: ["applicant", "parent", "teacher", "admin"] })
+        .notNull()
+        .default("parent"),
 
     parentId: integer("parent_id"),
 
     lastNewsRead: text("last_news_read").default(sql`(CURRENT_TIMESTAMP)`),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
-})
+});
 
 export const applications = sqliteTable("applications", {
-    id: integer("id").primaryKey({autoIncrement: true}),
+    id: integer("id").primaryKey({ autoIncrement: true }),
 
-    userId: integer("user_id").notNull().references(()=> users.id, {onDelete: "cascade"}),
-    studentId: integer("student_id").references(()=> users.id, {onDelete: "cascade"}),
+    userId: integer("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    studentId: integer("student_id").references(() => users.id, { onDelete: "cascade" }),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
     updatedAt: text("updated_at")
-     .notNull()
-     .default(sql`(CURRENT_TIMESTAMP)`)
-     .$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
-    
-    formId: integer("form_id").notNull().references(()=>forms.id, {onDelete: "cascade"}),
-    profileId: integer("profile_id").notNull().references(()=>profiles.id, {onDelete: "cascade"}),
-    campaignId: integer("campaign_id").references(()=>campaigns.id, {onDelete: "set null"}),
-    answers: text({mode:"json"}).notNull().default("{}").$type<{[key:string]: unknown}>(),
-    state: text({enum: ["draft", "submitted"]}).notNull().default("draft")
-})
+        .notNull()
+        .default(sql`(CURRENT_TIMESTAMP)`)
+        .$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+
+    formId: integer("form_id")
+        .notNull()
+        .references(() => forms.id, { onDelete: "cascade" }),
+    profileId: integer("profile_id")
+        .notNull()
+        .references(() => profiles.id, { onDelete: "cascade" }),
+    campaignId: integer("campaign_id").references(() => campaigns.id, { onDelete: "set null" }),
+    answers: text({ mode: "json" }).notNull().default("{}").$type<{ [key: string]: unknown }>(),
+    state: text({ enum: ["draft", "submitted"] })
+        .notNull()
+        .default("draft"),
+});
 
 export const forms = sqliteTable("forms", {
-    id: integer("id").primaryKey({autoIncrement: true}),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     title: text("title").notNull(),
     description: text("description"),
 
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
     updatedAt: text("updated_at")
-     .notNull()
-     .default(sql`(CURRENT_TIMESTAMP)`)
-     .$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+        .notNull()
+        .default(sql`(CURRENT_TIMESTAMP)`)
+        .$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
 
-    schema: text("schema", {mode:"json"}).$type<
-        {
-            slug:string,
-            title:string,
-            type: "text"|"number"|"date"|"file"|"select"|"multiselect",
-            regex:string,
-            max:number,
-            min:number,
-            required?:boolean,
-            options?:string[]
-        }[]
-    >().notNull().default([]),
-})
+    schema: text("schema", { mode: "json" })
+        .$type<
+            {
+                slug: string;
+                title: string;
+                type: "text" | "number" | "date" | "file" | "select" | "multiselect";
+                regex: string;
+                max: number;
+                min: number;
+                required?: boolean;
+                options?: string[];
+            }[]
+        >()
+        .notNull()
+        .default([]),
+});
 
 export const campaigns = sqliteTable("campaigns", {
-    id: integer("id").primaryKey({autoIncrement: true}),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     title: text("title").notNull(),
-    beginsAt: integer("begins_at", {mode: "timestamp"}),
-    endsAt: integer("ends_at", {mode: "timestamp"}),
-    allowMultipleProfiles: integer("allow_multiple_profiles", {mode: "boolean"}).notNull().default(false)
-})
+    beginsAt: integer("begins_at", { mode: "timestamp" }),
+    endsAt: integer("ends_at", { mode: "timestamp" }),
+    allowMultipleProfiles: integer("allow_multiple_profiles", { mode: "boolean" }).notNull().default(false),
+});
 
 export const profiles = sqliteTable("profiles", {
-    id: integer("id").primaryKey({autoIncrement: true}),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     title: text("title").notNull(),
     description: text("description"),
 
-    formId: integer().references(()=>forms.id),
-})
+    formId: integer().references(() => forms.id),
+});
 
-export const campaignsToProfiles = sqliteTable("campaigns_to_profiles", {
-    campaignId: integer("campaign_id").notNull().references(()=> campaigns.id, {onDelete: "cascade"}),
-    profileId: integer("profile_id").notNull().unique().references(()=> profiles.id, {onDelete: "cascade"})
-}, (t) => [primaryKey({ columns: [t.campaignId, t.profileId] })])
+export const campaignsToProfiles = sqliteTable(
+    "campaigns_to_profiles",
+    {
+        campaignId: integer("campaign_id")
+            .notNull()
+            .references(() => campaigns.id, { onDelete: "cascade" }),
+        profileId: integer("profile_id")
+            .notNull()
+            .unique()
+            .references(() => profiles.id, { onDelete: "cascade" }),
+    },
+    (t) => [primaryKey({ columns: [t.campaignId, t.profileId] })],
+);
 
 export const applicantInvites = sqliteTable("applicant_invites", {
-    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    applicationId: integer("application_id").notNull().references(() => applications.id, {onDelete: "cascade"}),
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => crypto.randomUUID()),
+    applicationId: integer("application_id")
+        .notNull()
+        .references(() => applications.id, { onDelete: "cascade" }),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
-})
+});
 
 export const news = sqliteTable("news", {
-    id: integer("id").primaryKey({autoIncrement: true}),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     title: text("title").notNull(),
     tag: text("tag").notNull(),
     content: text("content").notNull(),
 
-    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
-})
+    createdAt: text("created_at")
+        .notNull()
+        .default(sql`(CURRENT_TIMESTAMP)`),
+});
