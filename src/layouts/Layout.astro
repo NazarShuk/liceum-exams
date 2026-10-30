@@ -50,6 +50,7 @@ const icons = [
             href={`https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=${icons.join(",")}&display=block`}
             rel="stylesheet"
         />
+        {Astro.url.pathname === "/" && <meta name="google-site-verification" content="opb_3F3I2jsNzVlDOvDSS-Wr998r8GadJUsvkKYCME8" />}
         <ClientRouter />
         <title>{title ? title + " - " : ""} Вступ до ліцею</title>
     </head>
