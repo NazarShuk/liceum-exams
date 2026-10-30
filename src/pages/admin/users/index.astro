@@ -1,0 +1,16 @@
+---
+import { getDrizzle } from "@db/drizzle";
+import Layout from "@layouts/Layout.astro";
+import UsersTable from "@components/UsersTable.svelte";
+
+const db = getDrizzle();
+const users = await db.query.users.findMany({
+    with: { parent: true },
+    orderBy: { lastName: "asc" },
+});
+---
+
+<Layout title="Користувачі">
+    <h1>Користувачі</h1>
+    <UsersTable users={users} currentUserId={Astro.locals.user.id} client:load />
+</Layout>

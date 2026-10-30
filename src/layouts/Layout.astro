@@ -19,6 +19,10 @@ const icons = [
     "add_circle",
     "edit",
     "table",
+    "groups",
+    "group_add",
+    "group_remove",
+    "manage_accounts",
     "campaign",
     "event",
     "ballot",
@@ -58,9 +62,9 @@ const icons = [
         {Astro.locals.user && (
             <header class="sticky top-0 z-40 w-full bg-white">
                 <nav class="flex h-16 w-full items-center gap-4 border-b border-diia-bright-grey px-4 py-1 max-lg:pl-16">
-                    <slot name="navbar">
+                    <a class="h-full" href="/">
                         <LiceumLogoVstup class={"h-full"} />
-                    </slot>
+                    </a>
                 </nav>
             </header>
         )}

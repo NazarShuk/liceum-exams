@@ -19,6 +19,18 @@ const links = [
         icon: "add_circle",
     },
     {
+        name: "Про сайт",
+        href: "/about",
+        visible: true,
+        icon: "info",
+    },
+    {
+        name: "Контакти",
+        href: "/contacts",
+        visible: true,
+        icon: "call",
+    },
+    {
         name: "Адміністрування",
         visible: Astro.locals.user.role === "admin",
     },
@@ -27,6 +39,12 @@ const links = [
         href: "/admin/applications",
         visible: Astro.locals.user.role === "admin",
         icon: "table",
+    },
+    {
+        name: "Групи",
+        href: "/admin/groups",
+        visible: Astro.locals.user.role === "admin" || Astro.locals.user.role === "teacher",
+        icon: "groups",
     },
     {
         name: "Кампанії",
@@ -41,16 +59,10 @@ const links = [
         icon: "campaign",
     },
     {
-        name: "Про сайт",
-        href: "/about",
-        visible: true,
-        icon: "info",
-    },
-    {
-        name: "Контакти",
-        href: "/contacts",
-        visible: true,
-        icon: "call",
+        name: "Користувачі",
+        href: "/admin/users",
+        visible: Astro.locals.user.role === "admin",
+        icon: "manage_accounts",
     },
 ];
 

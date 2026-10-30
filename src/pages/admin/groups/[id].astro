@@ -1,0 +1,66 @@
+---
+import { getDrizzle } from "@db/drizzle";
+import Layout from "@layouts/Layout.astro";
+import ApplicationsTable from "@components/ApplicationsTable.svelte";
+import GroupEditor from "@components/GroupEditor.svelte";
+
+const db = getDrizzle();
+const user = Astro.locals.user;
+const groupId = Number(Astro.params.id);
+const group = Number.isInteger(groupId)
+    ? await db.query.groups.findFirst({
+          where: { id: groupId },
+          with: {
+              teachers: true,
+              applications: { with: { student: true, user: true } },
+          },
+      })
+    : undefined;
+
+if (!group || (user.role !== "admin" && !group.teachers.some((teacher) => teacher.id === user.id))) {
+    return Astro.redirect("/admin/groups");
+}
+
+const campaigns = await db.query.campaigns.findMany({
+    with: {
+        profiles: {
+            with: { form: true },
+        },
+    },
+});
+const teachers =
+    user.role === "admin"
+        ? await db.query.users.findMany({
+              where: { role: "teacher" },
+              orderBy: { lastName: "asc" },
+          })
+        : [];
+const allApplications =
+    user.role === "admin"
+        ? await db.query.applications.findMany({
+              where: { state: "submitted" },
+              with: { student: true, user: true, profile: { columns: { title: true } } },
+          })
+        : [];
+---
+
+<Layout title={group.title}>
+    <a href="/admin/groups">{"<-"} Усі групи</a>
+    <h1>{group.title}</h1>
+    {user.role === "admin" && (
+        <GroupEditor group={group} teachers={teachers} applications={allApplications} client:load />
+    )}
+    {campaigns.length > 0 ? (
+        <ApplicationsTable
+            applications={group.applications}
+            campaigns={campaigns}
+            allowDelete={false}
+            allowGroupRemove={user.role === "admin"}
+            allProfiles
+            groupId={group.id}
+            client:load
+        />
+    ) : (
+        <p>Кампаній ще немає.</p>
+    )}
+</Layout>

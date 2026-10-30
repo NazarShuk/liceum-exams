@@ -50,6 +50,16 @@ export const relations = defineRelations(schema, (r) => ({
             to: r.forms.id,
         }),
     },
+    groups: {
+        applications: r.many.applications({
+            from: r.groups.id.through(r.groupsToApplications.groupId),
+            to: r.applications.id.through(r.groupsToApplications.applicationId),
+        }),
+        teachers: r.many.users({
+            from: r.groups.id.through(r.groupsToTeachers.groupId),
+            to: r.users.id.through(r.groupsToTeachers.teacherId),
+        }),
+    },
     applicantInvites: {
         application: r.one.applications({
             from: r.applicantInvites.applicationId,

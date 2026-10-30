@@ -15,12 +15,27 @@ const campaigns = await db.query.campaigns.findMany({
         },
     },
 });
+const teachers = await db.query.users.findMany({
+    where: { role: "teacher" },
+    orderBy: { lastName: "asc" },
+});
+const groups = await db.query.groups.findMany({
+    columns: { id: true, title: true },
+    orderBy: { title: "asc" },
+});
 ---
 
 <Layout title="Заяви">
     <h1>Заяви</h1>
     {campaigns.length > 0 ? (
-        <ApplicationsTable applications={applications} campaigns={campaigns} client:load />
+        <ApplicationsTable
+            applications={applications}
+            campaigns={campaigns}
+            teachers={teachers}
+            groups={groups}
+            allowGroupCreate
+            client:load
+        />
     ) : (
         <p>Кампаній ще немає.</p>
     )}

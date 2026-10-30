@@ -37,7 +37,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
             logErrorEvent({ source: "server", type: "authz_admin_unauthorized", path: context.url.pathname });
             return context.redirect("/");
         }
-        if (context.locals.user.role !== "admin") {
+        const role = context.locals.user.role;
+        const allowed = role === "admin" || (role === "teacher" && context.url.pathname.startsWith("/admin/groups"));
+        if (!allowed) {
             logErrorEvent({
                 source: "server",
                 type: "authz_admin_forbidden",

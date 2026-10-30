@@ -105,6 +105,39 @@ export const campaignsToProfiles = sqliteTable(
     (t) => [primaryKey({ columns: [t.campaignId, t.profileId] })],
 );
 
+export const groups = sqliteTable("groups", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    title: text("title").notNull(),
+
+    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+});
+
+export const groupsToApplications = sqliteTable(
+    "groups_to_applications",
+    {
+        groupId: integer("group_id")
+            .notNull()
+            .references(() => groups.id, { onDelete: "cascade" }),
+        applicationId: integer("application_id")
+            .notNull()
+            .references(() => applications.id, { onDelete: "cascade" }),
+    },
+    (t) => [primaryKey({ columns: [t.groupId, t.applicationId] })],
+);
+
+export const groupsToTeachers = sqliteTable(
+    "groups_to_teachers",
+    {
+        groupId: integer("group_id")
+            .notNull()
+            .references(() => groups.id, { onDelete: "cascade" }),
+        teacherId: integer("teacher_id")
+            .notNull()
+            .references(() => users.id, { onDelete: "cascade" }),
+    },
+    (t) => [primaryKey({ columns: [t.groupId, t.teacherId] })],
+);
+
 export const applicantInvites = sqliteTable("applicant_invites", {
     id: text("id")
         .primaryKey()
