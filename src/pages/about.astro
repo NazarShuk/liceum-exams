@@ -1,0 +1,159 @@
+---
+import Layout from "@layouts/Layout.astro";
+---
+
+<Layout title="Про сайт">
+    <section class="mx-auto max-w-5xl px-5 py-12 sm:px-8">
+        <h1>Про сайт</h1>
+        <p class="mt-4 text-black/70">
+            Це єдиний портал вступу до Наукового ліцею Житомирської політехніки. Він створений, щоб зробити вступ
+            простим і прозорим: подати заяву, стежити за її статусом і отримувати результати випробувань можна онлайн.
+        </p>
+
+        <h2 class="mt-10">Як працює портал</h2>
+        <ol class="mt-3 list-decimal space-y-2 pl-6 text-black/70">
+            <li>Увійдіть через Google</li>
+            <li>Заповніть заяву та додайте потрібні документи.</li>
+            <li>Слідкуйте за статусом заяви в кабінеті.</li>
+            <li>Отримайте результати вступних випробувань.</li>
+        </ol>
+
+        <h2 class="mt-10">Розробка сайту</h2>
+        <p class="mt-4 text-black/70">
+            Сайт розробив{" "}
+            <a href="https://www.nshis.com" target="_blank" rel="noopener noreferrer" class="name-link">
+                Шухардін Назар
+            </a>
+            . Створено за допомогою фреймворку Astro.
+        </p>
+        <p class="mt-3 text-black/70">
+            Сторінки рендеряться на сервері, дані зберігаються в базі Cloudflare D1, а завантажені документи у сховищі
+            R2. Інтерфейс працює на сучасному стеку:
+        </p>
+        <ul class="mt-3 list-disc space-y-2 pl-6 text-black/70">
+            <li>
+                <a class="text-liceum-blue underline" href="https://astro.build" target="_blank" rel="noopener">
+                    Astro
+                </a>
+                - серверний рендеринг сторінок і мінімум JavaScript на клієнті.
+            </li>
+            <li>
+                <a class="text-liceum-blue underline" href="https://svelte.dev" target="_blank" rel="noopener">
+                    Svelte 5
+                </a>
+                - інтерактивні частини: форми заяв, редактори новин і таблиці.
+            </li>
+            <li>
+                <a class="text-liceum-blue underline" href="https://tailwindcss.com" target="_blank" rel="noopener">
+                    Tailwind CSS 4
+                </a>
+                - стилізація інтерфейсу.
+            </li>
+            <li>
+                <a
+                    class="text-liceum-blue underline"
+                    href="https://workers.cloudflare.com"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Cloudflare Workers
+                </a>
+                - хостинг і виконання серверного коду.
+            </li>
+            <li>
+                <a
+                    class="text-liceum-blue underline"
+                    href="https://developers.cloudflare.com/d1/"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Cloudflare D1
+                </a>
+                і
+                <a class="text-liceum-blue underline" href="https://orm.drizzle.team" target="_blank" rel="noopener">
+                    Drizzle ORM
+                </a>
+                - база даних для заяв, новин і користувачів.
+            </li>
+            <li>
+                <a
+                    class="text-liceum-blue underline"
+                    href="https://www.typescriptlang.org"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    TypeScript
+                </a>
+                - типізація коду.
+            </li>
+            <li>Google OAuth для входу до кабінету через Google-акаунт.</li>
+        </ul>
+        <p class="mt-4 text-black/70">
+            Події та помилки збираються через Cloudflare Analytics Engine, а застосунок збирається й перевіряється за
+            допомогою Vite, Prettier і вбудованого тест-раннера Node.js.
+        </p>
+
+        <h2 class="mt-10">Зв’язок</h2>
+        <p class="mt-3 text-black/70">
+            Більше про ліцей на{" "}
+            <a class="text-liceum-blue underline" href="https://lyceum.ztu.edu.ua/" target="_blank" rel="noopener">
+                офіційному сайті
+            </a>
+            . Маєте питання? Перегляньте{" "}
+            <a class="text-liceum-blue underline" href="/contacts">
+                контакти{" "}
+            </a>
+            або напишіть на{" "}
+            <a class="text-liceum-blue underline" href="mailto:liceum@ztu.edu.ua">
+                liceum@ztu.edu.ua
+            </a>
+            .
+        </p>
+    </section>
+</Layout>
+
+<style>
+    .name-link {
+        display: inline-block;
+    }
+
+    .name-link:hover {
+        background-image: linear-gradient(90deg, #18181b, #7c3aed, #18181b);
+        background-size: 200% 100%;
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        font-family: "Comic Sans MS", "Comic Sans", cursive;
+        font-weight: bold;
+        animation:
+            rainbow 2s linear infinite,
+            wobble 0.4s ease-in-out infinite alternate;
+    }
+
+    .name-link:focus-visible {
+        outline: 2px solid var(--color-liceum-blue);
+        outline-offset: 4px;
+    }
+
+    @keyframes rainbow {
+        to {
+            background-position: 200% 0;
+        }
+    }
+
+    @keyframes wobble {
+        from {
+            transform: scale(1);
+        }
+        to {
+            transform: scale(2);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .name-link:hover {
+            animation: none;
+            transform: scale(1.5);
+        }
+    }
+</style>

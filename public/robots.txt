@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /
+
+Allow: /$
+
+Allow: /about$
+Allow: /contacts$
+Allow: /terms$
+Allow: /privacy$

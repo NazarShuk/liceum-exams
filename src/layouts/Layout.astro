@@ -34,6 +34,7 @@ const icons = [
     "delete",
     "export_notes",
     "check_circle",
+    "info",
 ];
 ---
 
@@ -70,7 +71,7 @@ const icons = [
                     <slot />
                 </main>
                 {Astro.slots.has("footer") && (
-                    <footer class="h-32">
+                    <footer class="border-t border-diia-bright-grey px-5 py-8 sm:px-8 lg:px-12">
                         <slot name="footer" />
                     </footer>
                 )}

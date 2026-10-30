@@ -40,6 +40,18 @@ const links = [
         visible: Astro.locals.user.role === "admin",
         icon: "campaign",
     },
+    {
+        name: "Про сайт",
+        href: "/about",
+        visible: true,
+        icon: "info",
+    },
+    {
+        name: "Контакти",
+        href: "/contacts",
+        visible: true,
+        icon: "call",
+    },
 ];
 
 const visibleLinks = links.filter((link) => link.visible);

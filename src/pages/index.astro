@@ -5,32 +5,21 @@ import HeroBackground from "@components/HeroBackground.astro";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import LiceumLogo from "../assets/LiceumLogo.svg";
+import LiceumLogoVstup from "../assets/LiceumLogoVstup.svg";
 import { getDrizzle } from "@db/drizzle";
 import { markdownExcerpt } from "../lib/markdown";
+import { contacts } from "@lib/contacts";
 
 if (Astro.locals.user) {
     return Astro.redirect("/cabinet");
 }
 
-const contacts = [
-    {
-        icon: "location_on",
-        label: "Адреса",
-        value: "вул. Чуднівська, 103, м. Житомир 10005",
-        href: null,
-    },
-    {
-        icon: "call",
-        label: "Телефон",
-        value: "+380509856415",
-        href: "tel:+380509856415",
-    },
-    {
-        icon: "mail",
-        label: "Електронна пошта",
-        value: "liceum@ztu.edu.ua",
-        href: "mailto:liceum@ztu.edu.ua",
-    },
+const footerLinks = [
+    { name: "Про сайт", href: "/about" },
+    { name: "Контакти", href: "/contacts" },
+    { name: "Умови надання послуг", href: "/terms" },
+    { name: "Політика конфіденційності", href: "/privacy" },
+    { name: "Сайт ліцею", href: "https://lyceum.ztu.edu.ua/" },
 ];
 
 const db = getDrizzle();
@@ -144,6 +133,28 @@ const news = await db.query.news.findMany({
             </div>
         </div>
     </section>
+
+    <Fragment slot="footer">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
+            <LiceumLogoVstup width="256" />
+            <nav aria-label="Інформація про сайт">
+                <ul class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                    {footerLinks.map((link) => (
+                        <li>
+                            <a
+                                href={link.href}
+                                target="_blank"
+                                rel={link.href.startsWith("http") ? "noopener" : undefined}
+                                class="inline-flex transition-colors hover:text-liceum-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-liceum-blue"
+                            >
+                                {link.name}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </nav>
+        </div>
+    </Fragment>
 </Layout>
 
 <style>
