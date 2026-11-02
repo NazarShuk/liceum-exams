@@ -409,6 +409,12 @@ export const saveDraft = defineAction({
         studentmiddleName: z.string().optional(),
         studentBirthDate: z.string().optional(),
         studentTelephone: z.string().optional(),
+
+        parentfirstName: z.string().optional(),
+        parentlastName: z.string().optional(),
+        parentmiddleName: z.string().optional(),
+        parentBirthDate: z.string().optional(),
+        parentTelephone: z.string().optional(),
     }),
     handler: async (input, context) => {
         try {
@@ -470,6 +476,13 @@ export const saveDraft = defineAction({
                 middleName: (input.studentmiddleName ?? "").trim(),
                 birthDate: input.studentBirthDate ?? "",
                 telephone: (input.studentTelephone ?? "").trim(),
+            };
+            answers.__parent = {
+                firstName: (input.parentfirstName ?? "").trim(),
+                lastName: (input.parentlastName ?? "").trim(),
+                middleName: (input.parentmiddleName ?? "").trim(),
+                birthDate: input.parentBirthDate ?? "",
+                telephone: (input.parentTelephone ?? "").trim(),
             };
 
             let studentId: number | null = null;
@@ -675,16 +688,29 @@ export const submitFormEdit = defineAction({
                 formId = createdForm.id;
             } else {
                 const form = await db.query.forms.findFirst({ where: { id: input.formId } });
-                if (!form) throw new ActionError({ code: "BAD_REQUEST", message: "Форму не знайдено" });
-                await db
-                    .update(forms)
-                    .set({
-                        title: input.title,
-                        description: input.description,
-                        schema: input.schema,
-                    })
-                    .where(eq(forms.id, input.formId));
-                formId = form.id;
+                // A stale editor can point at a form that was deleted elsewhere; keep its content
+                // by saving it as a new form.
+                if (!form) {
+                    const [createdForm] = await db
+                        .insert(forms)
+                        .values({
+                            title: input.title,
+                            description: input.description,
+                            schema: input.schema,
+                        })
+                        .returning({ id: forms.id });
+                    formId = createdForm.id;
+                } else {
+                    await db
+                        .update(forms)
+                        .set({
+                            title: input.title,
+                            description: input.description,
+                            schema: input.schema,
+                        })
+                        .where(eq(forms.id, form.id));
+                    formId = form.id;
+                }
             }
 
             if (profile && profile.formId !== formId) {

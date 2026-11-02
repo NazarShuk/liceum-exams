@@ -22,17 +22,17 @@ export const submitProfileEdit = defineAction({
             }
 
             const db = getDrizzle();
-            if (input.formId !== null) {
-                const form = await db.query.forms.findFirst({ where: { id: input.formId } });
-                if (!form) {
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Форму не знайдено" });
-                }
+            // The editor can hold a form that was already deleted, so a missing form means "no form"
+            // instead of blocking the profile save.
+            let formId = input.formId;
+            if (formId !== null && !(await db.query.forms.findFirst({ where: { id: formId } }))) {
+                formId = null;
             }
 
             const values = {
                 title: input.title,
                 description: input.description || null,
-                formId: input.formId,
+                formId,
             };
 
             let profileId = input.profileId;
@@ -73,7 +73,7 @@ export const submitProfileEdit = defineAction({
                 }
             }
 
-            if (previousFormId && previousFormId !== input.formId) {
+            if (previousFormId && previousFormId !== formId) {
                 await deleteFormIfUnused(db, previousFormId);
             }
 
@@ -84,7 +84,7 @@ export const submitProfileEdit = defineAction({
                 target: "profiles",
                 targetId: profileId,
             });
-            return { success: true, profileId };
+            return { success: true, profileId, formId };
         } catch (error) {
             if (error instanceof ActionError) throw error;
             console.error(error);

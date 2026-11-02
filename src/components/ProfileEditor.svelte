@@ -138,6 +138,8 @@
             }
 
             profile.id = result.data.profileId;
+            // The server may drop a form that no longer exists; keep the select in sync.
+            profile.formId = result.data.formId;
             if (notify) {
                 onSaved?.({
                     id: profile.id,

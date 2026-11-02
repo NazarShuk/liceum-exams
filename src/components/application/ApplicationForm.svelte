@@ -44,6 +44,7 @@
         value ? new Date(value as string | number | Date).toISOString().slice(0, 10) : "";
 
     const draftStudent = (draft?.answers?.__student ?? {}) as Record<string, string | undefined>;
+    const draftParent = (draft?.answers?.__parent ?? {}) as Record<string, string | undefined>;
     const answerOf = (slug: string) => draft?.answers?.[slug];
 
     let draftId = $state(draft?.id ?? 0);
@@ -61,6 +62,13 @@
     let message = $state("");
     let sending = $state(false);
     let formElement = $state<HTMLFormElement>();
+    let parent = $state({
+        firstName: draftParent.firstName ?? user.firstName ?? "",
+        lastName: draftParent.lastName ?? user.lastName ?? "",
+        middleName: draftParent.middleName ?? user.middleName ?? "",
+        birthDate: draftParent.birthDate ?? toDateInput(user.birthDate),
+        telephone: draftParent.telephone ?? user.phone ?? "",
+    });
 
     let saveStatus = $state<"idle" | "saving" | "saved">("idle");
     let saveTimer: ReturnType<typeof setTimeout> | undefined;
@@ -283,7 +291,7 @@
                     <input
                         name="parentfirstName"
                         required
-                        value={user.firstName}
+                        bind:value={parent.firstName}
                         placeholder="..."
                         aria-invalid={fieldErrors.parentfirstName ? "true" : undefined}
                     />
@@ -296,7 +304,7 @@
                     <input
                         name="parentlastName"
                         required
-                        value={user.lastName}
+                        bind:value={parent.lastName}
                         placeholder="..."
                         aria-invalid={fieldErrors.parentlastName ? "true" : undefined}
                     />
@@ -308,7 +316,7 @@
                     По батькові
                     <input
                         name="parentmiddleName"
-                        value={user.middleName}
+                        bind:value={parent.middleName}
                         placeholder="..."
                         aria-invalid={fieldErrors.parentmiddleName ? "true" : undefined}
                     />
@@ -323,7 +331,7 @@
                     name="parentBirthDate"
                     type="date"
                     required
-                    value={toDateInput(user.birthDate)}
+                    bind:value={parent.birthDate}
                     aria-invalid={fieldErrors.parentBirthDate ? "true" : undefined}
                 />
                 {#if fieldErrors.parentBirthDate}
@@ -336,7 +344,7 @@
                     name="parentTelephone"
                     type="tel"
                     required
-                    value={user.phone}
+                    bind:value={parent.telephone}
                     pattern={"380\\d{9}"}
                     placeholder="380XXXXXXXXX"
                     aria-invalid={fieldErrors.parentTelephone ? "true" : undefined}

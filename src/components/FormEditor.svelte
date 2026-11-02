@@ -32,6 +32,9 @@
             schema: form.schema,
         });
     let deleteError = $state("");
+    let mounted = false;
+    let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
+    let autosavePromise: Promise<unknown> | undefined;
 
     onMount(() => {
         if (loadedForm) {
@@ -46,6 +49,7 @@
         }
 
         savedSnapshot = currentSnapshot();
+        mounted = true;
         const preventLeavingWithUnsavedChanges = (event: BeforeUnloadEvent) => {
             if (currentSnapshot() !== savedSnapshot) {
                 event.preventDefault();
@@ -54,7 +58,10 @@
         };
 
         window.addEventListener("beforeunload", preventLeavingWithUnsavedChanges);
-        return () => window.removeEventListener("beforeunload", preventLeavingWithUnsavedChanges);
+        return () => {
+            clearTimeout(autosaveTimer);
+            window.removeEventListener("beforeunload", preventLeavingWithUnsavedChanges);
+        };
     });
 
     let result = $state<
@@ -117,6 +124,23 @@
         }
     }
 
+    function scheduleAutosave() {
+        clearTimeout(autosaveTimer);
+        if (!mounted || loading || !isDirty()) return;
+        if (!form.title.trim() || form.schema.length === 0) return;
+        // shortcut: a new form inside a brand-new profile needs the profile saved first
+        if (form.id <= 0 && profileId == null) return;
+        autosaveTimer = setTimeout(() => {
+            autosavePromise = saveForm(false, profileId);
+        }, 1000);
+    }
+
+    $effect(() => {
+        // Track every editable value, then save once the user pauses.
+        currentSnapshot();
+        scheduleAutosave();
+    });
+
     async function deleteForm() {
         if (loading || form.id <= 0) return;
         if (!window.confirm("Видалити форму? Це можливо лише якщо за нею немає поданих заяв.")) return;
@@ -145,6 +169,9 @@
     }
 
     export async function save(ownerProfileId?: number): Promise<boolean> {
+        clearTimeout(autosaveTimer);
+        // A manual save can arrive while an autosave is in flight.
+        if (loading) await autosavePromise;
         if (!isDirty()) return true;
         return (await saveForm(false, ownerProfileId ?? profileId)) !== undefined;
     }
@@ -156,7 +183,9 @@
 
 <input class="w-full mb-2.5" placeholder="Назва форми" bind:value={form.title} />
 <textarea class="w-full" placeholder="Опис" bind:value={form.description}></textarea>
-{#if result && !result.error}
+{#if loading}
+    <p class="opacity-75">Збереження...</p>
+{:else if result && !result.error}
     <p class="text-diia-green">Форму збережено!</p>
 {/if}
 {#if result?.error}
