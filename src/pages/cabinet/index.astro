@@ -4,6 +4,7 @@ import { getDrizzle } from "@db/drizzle";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import { parseDbDate } from "@lib/dates";
+import { statusClass, statusLabel } from "@lib/status";
 import { actions } from "astro:actions";
 
 const db = getDrizzle();
@@ -72,7 +73,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
             const studentName = result.student
                 ? `${result.student.firstName} ${result.student.lastName}`
                 : [draftStudent.firstName, draftStudent.lastName].filter(Boolean).join(" ");
-            const statusText = isDraft ? "Чернетка" : "На розгляді";
+            const statusText = isDraft ? "Чернетка" : statusLabel(result.status, !!result.notes);
             return (
                 <li class={`card mb-5 ${isDraft ? "opacity-75 border-dotted" : ""} flex flex-row items-start gap-4`}>
                     {(isDraft || Astro.locals.user.role !== "applicant") && (
@@ -120,7 +121,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
                         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                             <h4>{studentName || "Заява"}</h4>
                             <span
-                                class={`rounded-full px-3 py-0.5 text-sm ${isDraft ? "bg-diia-grey/15 text-black/55" : "bg-liceum-green/15 text-liceum-green"}`}
+                                class={`rounded-full px-3 py-0.5 text-sm ${isDraft ? "bg-diia-grey/15 text-black/55" : statusClass(result.status)}`}
                             >
                                 {statusText}
                             </span>

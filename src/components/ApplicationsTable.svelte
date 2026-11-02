@@ -8,6 +8,7 @@
         users,
     } from "@db/schema";
     import { onMount } from "svelte";
+    import { APPLICATION_STATUSES, statusClass, statusLabel } from "@lib/status";
 
     type User = typeof users.$inferSelect;
     type Form = typeof forms.$inferSelect;
@@ -29,6 +30,7 @@
         allowDelete = true,
         allowGroupCreate = false,
         allowGroupRemove = false,
+        allowStatusEdit = false,
         allProfiles = false,
         groupId = null,
     }: {
@@ -39,17 +41,23 @@
         allowDelete?: boolean;
         allowGroupCreate?: boolean;
         allowGroupRemove?: boolean;
+        allowStatusEdit?: boolean;
         allProfiles?: boolean;
         groupId?: number | null;
     } = $props();
 
+    // svelte-ignore state_referenced_locally
     let applicationRecords = $state<Application[]>([...allApplications]);
+    // svelte-ignore state_referenced_locally
     let selectedCampaignId = $state<number | null>(campaigns[0]?.id ?? null);
+    // svelte-ignore state_referenced_locally
     let selectedProfileId = $state<number | null>(campaigns[0]?.profiles[0]?.id ?? null);
     let selectedApplicationIds = $state<number[]>([]);
     let deleting = $state(false);
     let deleteError = $state("");
+    // svelte-ignore state_referenced_locally
     let groupOptions = $state<{ id: number; title: string }[]>([...groups]);
+    // svelte-ignore state_referenced_locally
     let preferredGroupId = $state<number | "new">(groups[0]?.id ?? "new");
     let groupPanelOpen = $state(false);
     let groupApplicationIds = $state<number[]>([]);
@@ -60,6 +68,11 @@
     let groupError = $state("");
     let groupMessage = $state("");
     let removingGroupApplications = $state(false);
+    let statusApplication = $state<Application | null>(null);
+    let statusValue = $state<(typeof APPLICATION_STATUSES)[number]>("pending");
+    let notesValue = $state("");
+    let savingStatus = $state(false);
+    let statusError = $state("");
 
     const selectedCampaign = $derived(campaigns.find((campaign) => campaign.id === selectedCampaignId));
     const selectedProfile = $derived(selectedCampaign?.profiles.find((profile) => profile.id === selectedProfileId));
@@ -90,6 +103,8 @@
               })) ?? []),
     );
     const keyedColumns = $derived([
+        { key: "status", title: "Статус", type: "status" },
+        { key: "notes", title: "Нотатки", type: "text" },
         { key: "student.name", title: "Учень", type: "text" },
         { key: "student.birthDate", title: "Дата народження учня", type: "date" },
         { key: "student.phone", title: "Телефон учня", type: "text" },
@@ -107,6 +122,10 @@
 
     function cellValue(application: Application, key: string): unknown {
         switch (key) {
+            case "status":
+                return statusLabel(application.status, !!application.notes);
+            case "notes":
+                return application.notes;
             case "student.name":
                 return fullName(application.student);
             case "student.birthDate":
@@ -222,6 +241,46 @@
     function getFileKey(value: unknown): string | null {
         if (typeof value !== "object" || value === null || !("key" in value)) return null;
         return typeof value.key === "string" && value.key.trim() ? value.key : null;
+    }
+
+    function openStatusPanel(application: Application) {
+        statusApplication = application;
+        statusValue = APPLICATION_STATUSES.find((status) => status === application.status) ?? "pending";
+        notesValue = application.notes;
+        statusError = "";
+    }
+
+    async function saveStatus() {
+        if (!statusApplication || savingStatus) return;
+        const applicationId = statusApplication.id;
+        const status = statusValue;
+        if (!status) return;
+
+        savingStatus = true;
+        statusError = "";
+        try {
+            const result = await actions.updateApplication({
+                applicationId,
+                status,
+                notes: notesValue,
+            });
+            if (result.error || !result.data) {
+                statusError = result.error?.message ?? "Не вдалося зберегти статус";
+                return;
+            }
+            const updated = result.data;
+
+            applicationRecords = applicationRecords.map((application) =>
+                application.id === applicationId
+                    ? { ...application, status: updated.status, notes: updated.notes }
+                    : application,
+            );
+            statusApplication = null;
+        } catch (error) {
+            statusError = error instanceof Error ? error.message : "Не вдалося зберегти статус";
+        } finally {
+            savingStatus = false;
+        }
     }
 
     async function deleteApplications(applicationIds: number[]) {
@@ -532,6 +591,17 @@
                                                 <span class="material-symbols-outlined"> delete </span>
                                             </button>
                                         {/if}
+                                        {#if allowStatusEdit}
+                                            <button
+                                                type="button"
+                                                onclick={() => openStatusPanel(application)}
+                                                class="cursor-pointer"
+                                                aria-label="Змінити статус і нотатки"
+                                                title="Статус і нотатки"
+                                            >
+                                                <span class="material-symbols-outlined"> edit_note </span>
+                                            </button>
+                                        {/if}
                                         {#if allowGroupCreate}
                                             <button
                                                 type="button"
@@ -559,7 +629,13 @@
                                 </td>
                                 {#each columns as column (column.key)}
                                     <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                        {#if column.type === "file"}
+                                        {#if column.type === "status"}
+                                            <span
+                                                class={`inline-block rounded-full px-3 py-0.5 text-sm ${statusClass(application.status)}`}
+                                            >
+                                                {statusLabel(application.status, !!application.notes)}
+                                            </span>
+                                        {:else if column.type === "file"}
                                             {@const key = getFileKey(cellValue(application, column.key))}
                                             {#if key}
                                                 <a target="_blank" href="/file?key={encodeURIComponent(key)}"
@@ -567,7 +643,9 @@
                                                 >
                                             {/if}
                                         {:else if cellValue(application, column.key)}
-                                            {formatCellValue(cellValue(application, column.key))}
+                                            <span class={column.key === "notes" ? "whitespace-pre-wrap" : undefined}>
+                                                {formatCellValue(cellValue(application, column.key))}
+                                            </span>
                                         {/if}
                                     </td>
                                 {/each}
@@ -580,6 +658,56 @@
     {/if}
 {:else}
     <p>Кампаній ще немає.</p>
+{/if}
+
+{#if statusApplication}
+    <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
+        role="presentation"
+        onclick={(event) => {
+            if (event.target === event.currentTarget) statusApplication = null;
+        }}
+    >
+        <div
+            class="card flex w-full max-w-lg flex-col gap-3 bg-white"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Статус і нотатки"
+        >
+            <h4>Статус і нотатки</h4>
+            <p class="text-sm opacity-75">{fullName(statusApplication.student) || "Заява"}</p>
+            <label class="flex flex-col gap-1">
+                Статус
+                <select bind:value={statusValue}>
+                    {#each APPLICATION_STATUSES as option (option)}
+                        <option value={option}>{statusLabel(option)}</option>
+                    {/each}
+                </select>
+            </label>
+            <label class="flex flex-col gap-1">
+                Нотатки
+                <textarea
+                    bind:value={notesValue}
+                    rows="5"
+                    maxlength="5000"
+                    placeholder="Нотатки бачать заявник та адміністратори"></textarea>
+            </label>
+            {#if statusError}
+                <p class="text-diia-red" role="alert">{statusError}</p>
+            {/if}
+            <div class="flex flex-row justify-end gap-3">
+                <button type="button" class="cursor-pointer" onclick={() => (statusApplication = null)}>Закрити</button>
+                <button
+                    type="button"
+                    class="btn-default"
+                    disabled={savingStatus || !statusValue.trim()}
+                    onclick={saveStatus}
+                >
+                    {savingStatus ? "Збереження..." : "Зберегти"}
+                </button>
+            </div>
+        </div>
+    </div>
 {/if}
 
 {#if allowGroupCreate && groupPanelOpen}

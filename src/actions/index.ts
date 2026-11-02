@@ -6,6 +6,7 @@ import {
     saveDraft,
     submitForm,
     submitFormEdit,
+    updateApplication,
 } from "./form";
 import { logout } from "./auth";
 import { updateUserRole } from "./user";
@@ -36,6 +37,7 @@ export const server = {
     updateUserRole: updateUserRole,
     applicantLink: applicantLink,
     deleteForm: deleteForm,
+    updateApplication: updateApplication,
     deleteApplications: deleteApplications,
     deleteCampaign: deleteCampaign,
     deleteProfile: deleteProfile,

@@ -7,6 +7,7 @@ import { env } from "cloudflare:workers";
 import { logErrorEvent, logEvent } from "../lib/analytics";
 import { deleteFormIfUnused } from "../lib/forms";
 import { fileKeyFor, isFileKey, uploadError } from "../lib/uploads";
+import { APPLICATION_STATUSES } from "../lib/status";
 
 type Schema = NonNullable<(typeof forms.$inferSelect)["schema"]>;
 type Field = Schema[number];
@@ -805,6 +806,55 @@ export const deleteForm = defineAction({
             logErrorEvent({
                 source: "server",
                 type: "form_delete_exception",
+                userId: context.locals.user?.id,
+                message: error instanceof Error ? error.message : String(error),
+            });
+            throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
+        }
+    },
+});
+
+export const updateApplication = defineAction({
+    accept: "json",
+    input: z.object({
+        applicationId: z.number().int().positive(),
+        status: z.enum(APPLICATION_STATUSES, "Некоректний статус"),
+        notes: z.string().max(5000).default(""),
+    }),
+    handler: async (input, context) => {
+        try {
+            if (!context.locals.user || context.locals.user.role !== "admin") {
+                throw new ActionError({ code: "UNAUTHORIZED" });
+            }
+
+            const db = getDrizzle();
+            const application = await db.query.applications.findFirst({
+                where: { id: input.applicationId, state: "submitted" },
+            });
+            if (!application) {
+                throw new ActionError({ code: "NOT_FOUND", message: "Заяву не знайдено" });
+            }
+
+            await db
+                .update(applications)
+                .set({ status: input.status, notes: input.notes })
+                .where(eq(applications.id, application.id));
+
+            logEvent({
+                type: "application_update",
+                user: context.locals.user,
+                path: context.url?.pathname,
+                target: "applications",
+                targetId: application.id,
+                detail: `status:${input.status}`,
+            });
+            return { success: true, status: input.status, notes: input.notes };
+        } catch (error) {
+            if (error instanceof ActionError) throw error;
+            console.error(error);
+            logErrorEvent({
+                source: "server",
+                type: "application_update_exception",
                 userId: context.locals.user?.id,
                 message: error instanceof Error ? error.message : String(error),
             });

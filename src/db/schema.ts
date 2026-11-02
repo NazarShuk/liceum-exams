@@ -45,6 +45,9 @@ export const applications = sqliteTable("applications", {
     state: text({ enum: ["draft", "submitted"] })
         .notNull()
         .default("draft"),
+    // Arbitrary text, so admins can use their own statuses on top of pending/accepted/rejected.
+    status: text("status").notNull().default("pending"),
+    notes: text("notes").notNull().default(""),
 });
 
 export const forms = sqliteTable("forms", {

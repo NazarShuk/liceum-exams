@@ -34,6 +34,7 @@ const groups = await db.query.groups.findMany({
             teachers={teachers}
             groups={groups}
             allowGroupCreate
+            allowStatusEdit
             client:load
         />
     ) : (
