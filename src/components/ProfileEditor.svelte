@@ -243,11 +243,11 @@
             {#if profile.id > 0}
                 <button
                     type="button"
-                    class="btn-default text-diia-red {loading ? 'opacity-50' : ''}"
+                    class="btn-default bg-diia-red! {loading ? 'opacity-50' : ''}"
                     disabled={loading}
                     onclick={deleteProfile}
                 >
-                    <span class="text-diia-red"> Видалити профіль </span>
+                    Видалити профіль
                 </button>
             {/if}
         </div>

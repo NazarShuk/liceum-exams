@@ -871,7 +871,7 @@ export const applicantLink = defineAction({
                 throw new ActionError({ code: "NOT_FOUND", message: "Учня не знайдено" });
             }
             if (student.externalId) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Учень уже має акаунт — посилання не потрібне" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "Учень уже має акаунт, посилання не потрібне" });
             }
             const existingInvite = await db.query.applicantInvites.findFirst({
                 where: { applicationId: application.id },

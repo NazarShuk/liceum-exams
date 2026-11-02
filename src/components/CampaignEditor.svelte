@@ -248,11 +248,11 @@
         {#if campaign.id > 0}
             <button
                 type="button"
-                class="btn-default{loading ? 'opacity-50' : ''}"
+                class="btn-default{loading ? 'opacity-50' : ''} bg-diia-red!"
                 disabled={loading}
                 onclick={deleteCampaign}
             >
-                <span class="text-diia-red"> Видалити кампанію </span>
+                Видалити кампанію
             </button>
         {/if}
     </div>

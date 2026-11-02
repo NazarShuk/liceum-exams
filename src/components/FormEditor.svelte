@@ -17,7 +17,7 @@
     } = $props();
     let form: Form = $state({
         id: 0,
-        title: "Нова Форма",
+        title: "",
         description: "",
         schema: [],
         createdAt: "0",
@@ -72,11 +72,11 @@
     function addNewField() {
         if (loading) return;
         form.schema.push({
-            slug: "new-field",
-            title: "Нове поле",
+            slug: "",
+            title: "",
             type: "text",
             regex: "",
-            max: 32,
+            max: 64,
             min: 0,
             required: true,
             options: [],
@@ -241,7 +241,7 @@
 
             <button
                 type="button"
-                class="absolute top-2 right-2 cursor-pointer"
+                class="absolute top-2 right-2 cursor-pointer rounded-full bg-diia-red/25 text-diia-red w-8 h-8"
                 onclick={() => (form.schema = form.schema.filter((value, idx) => idx !== i))}>X</button
             >
         </li>
@@ -259,9 +259,9 @@
     <button
         type="button"
         disabled={loading}
-        class="btn-default text-diia-red {loading ? 'opacity-50' : ''}"
+        class="btn-default bg-diia-red! {loading ? 'opacity-50' : ''}"
         onclick={deleteForm}
     >
-        <span class="text-diia-red"> Видалити форму </span>
+        Видалити форму
     </button>
 {/if}
