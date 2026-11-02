@@ -16,6 +16,11 @@ export default defineConfig({
     output: "server",
     adapter: cloudflare(),
 
+    security: {
+        // Actions default to 1 MB; the no-JS file fallback still posts a file to the submit action.
+        actionBodySizeLimit: 12 * 1024 * 1024,
+    },
+
     prefetch: {
         defaultStrategy: "hover",
     },

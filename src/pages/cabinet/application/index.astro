@@ -32,27 +32,29 @@ interface PreviewApplication extends Application {
 
 const db = getDrizzle();
 const now = new Date();
-const availableCampaigns = (await db.query.campaigns.findMany({
-    where: {
-        // An empty date means "no bound", so nulls must pass the filter.
-        AND: [
-            { OR: [{ beginsAt: { isNull: true } }, { beginsAt: { lt: now } }] },
-            { OR: [{ endsAt: { isNull: true } }, { endsAt: { gt: now } }] },
-        ],
-    },
-    with: {
-        profiles: {
-            with: {
-                form: true,
-            },
-            where: {
-                formId: {
-                    isNotNull: true,
+const availableCampaigns = (
+    (await db.query.campaigns.findMany({
+        where: {
+            // An empty date means "no bound", so nulls must pass the filter.
+            AND: [
+                { OR: [{ beginsAt: { isNull: true } }, { beginsAt: { lt: now } }] },
+                { OR: [{ endsAt: { isNull: true } }, { endsAt: { gt: now } }] },
+            ],
+        },
+        with: {
+            profiles: {
+                with: {
+                    form: true,
+                },
+                where: {
+                    formId: {
+                        isNotNull: true,
+                    },
                 },
             },
         },
-    },
-})) as CampaignWithProfiles[];
+    })) as CampaignWithProfiles[]
+).filter((campaign) => campaign.profiles.length > 0);
 
 const profileIds = availableCampaigns.flatMap((campaign) => campaign.profiles.map((profile) => profile.id));
 const applicationCounts: Record<number, number> = {};

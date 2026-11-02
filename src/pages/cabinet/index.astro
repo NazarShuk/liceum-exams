@@ -7,6 +7,24 @@ import { parseDbDate } from "@lib/dates";
 import { actions } from "astro:actions";
 
 const db = getDrizzle();
+const now = new Date();
+const availableCampaigns = await db.query.campaigns.findMany({
+    where: {
+        AND: [
+            { OR: [{ beginsAt: { isNull: true } }, { beginsAt: { lt: now } }] },
+            { OR: [{ endsAt: { isNull: true } }, { endsAt: { gt: now } }] },
+        ],
+    },
+    with: {
+        profiles: {
+            where: { formId: { isNotNull: true } },
+            columns: { id: true },
+        },
+    },
+    columns: { id: true },
+});
+const hasAvailableCampaigns = availableCampaigns.some((campaign) => campaign.profiles.length > 0);
+
 const results = await db.query.applications.findMany({
     where: {
         userId: Astro.locals.user.role !== "applicant" ? Astro.locals.user.id : undefined,
@@ -28,7 +46,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
     )}
 
     <ul class="mt-5 list-colors">
-        {Astro.locals.user.role !== "applicant" && (
+        {Astro.locals.user.role !== "applicant" && hasAvailableCampaigns && (
             <a href="/cabinet/application">
                 <li class="mb-5 border-dashed border-2 border-diia-grey py-7 px-6 flex flex-row justify-center items-center gap-1 rounded">
                     <span class="material-symbols-outlined">add_circle</span>
@@ -36,11 +54,16 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
                 </li>
             </a>
         )}
+        {Astro.locals.user.role !== "applicant" && !hasAvailableCampaigns && (
+            <p class="mb-5 text-center opacity-75">Наразі немає доступних вступних кампаній.</p>
+        )}
         {results.length === 0 && (
             <p class="text-center opacity-75">
                 {Astro.locals.user.role === "applicant"
                     ? "У Вас поки що немає заяв."
-                    : "У Вас поки що немає заяв! Натисніть на кнопку вище щоб створити Вашу першу заяву."}
+                    : hasAvailableCampaigns
+                      ? "У Вас поки що немає заяв! Натисніть на кнопку вище щоб створити Вашу першу заяву."
+                      : "У Вас поки що немає заяв."}
             </p>
         )}
         {results.map((result) => {

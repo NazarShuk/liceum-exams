@@ -7,3 +7,19 @@ export function uploadError(file: File): string | null {
     if (!ALLOWED_UPLOAD_TYPES.includes(file.type)) return "непідтримуваний тип файлу (PDF, JPG, PNG, WEBP)";
     return null;
 }
+
+/** R2 key for a file uploaded by `userId` for the form field `field`. */
+export function fileKeyFor(userId: number, field: string) {
+    return `applications/${userId}/${crypto.randomUUID()}/${encodeURIComponent(field)}`;
+}
+
+/** True when `key` is a well-formed key this user could have uploaded for this field. */
+export function isFileKey(key: unknown, userId: number, field: string): key is string {
+    if (typeof key !== "string") return false;
+    const prefix = `applications/${userId}/`;
+    const suffix = `/${encodeURIComponent(field)}`;
+    if (!key.startsWith(prefix) || !key.endsWith(suffix)) return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        key.slice(prefix.length, -suffix.length),
+    );
+}

@@ -1,13 +1,14 @@
 <script lang="ts">
     import { actions, isInputError } from "astro:actions";
     import { tick } from "svelte";
-    import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES } from "@lib/uploads";
+    import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, uploadError } from "@lib/uploads";
     import type { campaigns, forms, profiles, users } from "@db/schema";
 
     type Form = typeof forms.$inferSelect;
     type Campaign = typeof campaigns.$inferSelect;
     type Profile = typeof profiles.$inferSelect;
     type User = typeof users.$inferSelect;
+    type Field = Form["schema"][number];
 
     interface ProfileWithForm extends Profile {
         form: Form | null;
@@ -75,6 +76,21 @@
     let saving = false;
     let dirty = false;
 
+    type UploadState = { key: string; progress: number; error: string; uploading: boolean };
+    const draftUploads: Record<string, UploadState> = {};
+    for (const field of selectedForm.schema) {
+        if (field.type !== "file") continue;
+        const answer = answerOf(field.slug);
+        const key =
+            typeof answer === "object" && answer !== null && "key" in answer && typeof answer.key === "string"
+                ? answer.key
+                : "";
+        draftUploads[field.slug] = { key, progress: key ? 100 : 0, error: "", uploading: false };
+    }
+    let uploads = $state(draftUploads);
+    let uploading = $derived(Object.values(uploads).some((upload) => upload.uploading));
+    const uploadTokens: Record<string, number> = {};
+
     function scheduleSave() {
         if (sending) return;
         dirty = true;
@@ -110,6 +126,92 @@
         }
     }
 
+    function uploadFile(file: File, field: Field, input: HTMLInputElement) {
+        const slug = field.slug;
+        const token = (uploadTokens[slug] ?? 0) + 1;
+        uploadTokens[slug] = token;
+        // Keep the previous key until the replacement succeeds, so a failed upload does not lose it.
+        const previousKey = uploads[slug]?.key ?? "";
+        uploads[slug] = { key: previousKey, progress: 0, error: "", uploading: true };
+
+        const data = new FormData();
+        data.set("file", file);
+        data.set("formId", String(selectedForm.id));
+        data.set("field", slug);
+
+        const finish = (upload: UploadState) => {
+            if (uploadTokens[slug] !== token) return;
+            uploads[slug] = upload;
+            if (!upload.key) input.value = "";
+            scheduleSave();
+        };
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/application-upload");
+        xhr.upload.onprogress = (event) => {
+            if (uploadTokens[slug] !== token || !event.lengthComputable) return;
+            uploads[slug] = { ...uploads[slug], progress: Math.round((event.loaded / event.total) * 100) };
+        };
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const key = (JSON.parse(xhr.responseText) as { key?: string }).key;
+                    if (key) {
+                        finish({ key, progress: 100, error: "", uploading: false });
+                        return;
+                    }
+                } catch {
+                    // fall through to the error below
+                }
+            }
+            let error = "Не вдалося завантажити файл";
+            try {
+                error = (JSON.parse(xhr.responseText) as { error?: string }).error || error;
+            } catch {
+                // keep the generic message
+            }
+            input.value = "";
+            finish({ key: previousKey, progress: previousKey ? 100 : 0, error, uploading: false });
+        };
+        const fail = () => {
+            input.value = "";
+            finish({
+                key: previousKey,
+                progress: previousKey ? 100 : 0,
+                error: "Не вдалося завантажити файл",
+                uploading: false,
+            });
+        };
+        xhr.onerror = fail;
+        xhr.send(data);
+    }
+
+    function selectFile(event: Event, field: Field) {
+        if (!(event.currentTarget instanceof HTMLInputElement)) return;
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+        const slug = field.slug;
+        const previousKey = uploads[slug]?.key ?? "";
+
+        // A new selection cancels any upload still running for this field.
+        uploadTokens[slug] = (uploadTokens[slug] ?? 0) + 1;
+        if (!file) {
+            uploads[slug] = { key: previousKey, progress: previousKey ? 100 : 0, error: "", uploading: false };
+            scheduleSave();
+            return;
+        }
+
+        const error = uploadError(file);
+        if (error) {
+            input.value = "";
+            uploads[slug] = { key: previousKey, progress: previousKey ? 100 : 0, error, uploading: false };
+            scheduleSave();
+            return;
+        }
+
+        uploadFile(file, field, input);
+    }
+
     function selectChild(event: Event) {
         if (!(event.currentTarget instanceof HTMLSelectElement)) return;
         selectedChildId = event.currentTarget.value;
@@ -133,6 +235,10 @@
     async function submit(event: SubmitEvent) {
         event.preventDefault();
         if (sending || !formElement) return;
+        if (uploading) {
+            message = "Зачекайте, файли ще завантажуються";
+            return;
+        }
 
         clearTimeout(saveTimer);
         dirty = false;
@@ -358,7 +464,11 @@
         {#each selectedForm.schema as field (field.slug)}
             {@const name = "form-" + field.slug}
             {@const error = fieldErrors[name]}
-            <div class="card mb-5" style={error ? "--card-accent: var(--color-diia-scarlet)" : undefined}>
+            {@const upload = field.type === "file" ? uploads[field.slug] : undefined}
+            <div
+                class="card mb-5"
+                style={error || upload?.error ? "--card-accent: var(--color-diia-scarlet)" : undefined}
+            >
                 <h4 class="mb-5">{field.title}</h4>
                 {#if field.type === "select" || field.type === "multiselect"}
                     <fieldset class="flex flex-col gap-2 lg:w-3/4 w-full" aria-invalid={error ? "true" : undefined}>
@@ -381,24 +491,50 @@
                 {:else}
                     <input
                         class="lg:w-3/4 w-full"
-                        {name}
+                        name={upload && (upload.key || upload.uploading) ? "" : name}
                         placeholder="Ваша відповідь..."
                         type={field.type}
                         accept={field.type === "file" ? ALLOWED_UPLOAD_TYPES.join(",") : undefined}
                         value={field.type === "file" ? undefined : ((answerOf(field.slug) as string | undefined) ?? "")}
-                        required={field.required !== false}
+                        required={field.required !== false && !upload?.key}
                         minlength={field.type === "text" && field.min > 0 ? field.min : undefined}
                         maxlength={field.type === "text" && field.max > 0 ? field.max : undefined}
                         min={field.type === "number" && field.min > 0 ? field.min : undefined}
                         max={field.type === "number" && field.max > 0 ? field.max : undefined}
                         pattern={field.type === "text" && field.regex ? field.regex : undefined}
-                        aria-invalid={error ? "true" : undefined}
+                        onchange={field.type === "file" ? (event) => selectFile(event, field) : undefined}
+                        aria-invalid={error || upload?.error ? "true" : undefined}
                     />
                 {/if}
                 {#if error}
                     <p class="text-diia-red mt-2" role="alert">{error}</p>
                 {/if}
                 {#if field.type === "file"}
+                    <input type="hidden" name={`upload-${field.slug}`} value={upload?.key ?? ""} />
+                    {#if upload?.uploading}
+                        <div class="mt-2 flex flex-col gap-1 lg:w-3/4 w-full">
+                            <div
+                                class="h-2 w-full overflow-hidden rounded bg-black/10"
+                                role="progressbar"
+                                aria-label="Завантаження файлу"
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={upload.progress}
+                            >
+                                <div
+                                    class="h-full bg-liceum-blue transition-[width] duration-200"
+                                    style={`width: ${upload.progress}%`}
+                                ></div>
+                            </div>
+                            <span class="opacity-75">Завантаження... {upload.progress}%</span>
+                        </div>
+                    {/if}
+                    {#if upload?.error}
+                        <p class="text-diia-red mt-2" role="alert">{upload.error}</p>
+                    {/if}
+                    {#if upload?.key && !upload.uploading}
+                        <p class="text-diia-green mt-2">Файл завантажено</p>
+                    {/if}
                     <p class="opacity-75 mt-2">PDF, JPG, PNG або WEBP, до {MAX_UPLOAD_BYTES / 1024 / 1024} МБ</p>
                 {/if}
                 {#if field.required === false}
@@ -419,8 +555,8 @@
                 {saveStatus === "saving" ? "Збереження чернетки..." : "Чернетку збережено"}
             </p>
         {/if}
-        <button class="btn-default" disabled={sending}>
-            {sending ? "Надсилання..." : "Надіслати"}
+        <button class="btn-default" disabled={sending || uploading}>
+            {sending ? "Надсилання..." : uploading ? "Завантаження файлів..." : "Надіслати"}
         </button>
         <p class="opacity-75">
             Натискаючи кнопку "Надіслати", ви надаєте згоду на обробку ваших персональних даних відповідно до Закону

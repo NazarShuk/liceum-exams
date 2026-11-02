@@ -6,7 +6,7 @@ import { applications, forms, profiles, users, applicantInvites } from "@db/sche
 import { env } from "cloudflare:workers";
 import { logErrorEvent, logEvent } from "../lib/analytics";
 import { deleteFormIfUnused } from "../lib/forms";
-import { uploadError } from "../lib/uploads";
+import { fileKeyFor, isFileKey, uploadError } from "../lib/uploads";
 
 type Schema = NonNullable<(typeof forms.$inferSelect)["schema"]>;
 type Field = Schema[number];
@@ -137,7 +137,8 @@ export const submitForm = defineAction({
             const fieldErrors: Record<string, string> = {};
             for (const field of form.schema) {
                 const key = "form-" + field.slug;
-                const value =
+                const label = field.title || field.slug;
+                let value =
                     field.type === "multiselect"
                         ? rawForm
                             ? rawForm
@@ -149,13 +150,26 @@ export const submitForm = defineAction({
                           ? (rawForm.get(key) ?? "")
                           : ((input as Record<string, unknown>)[key] ?? "");
 
+                if (field.type === "file") {
+                    // A file uploaded on selection wins; the file input stays only as a no-JS fallback.
+                    const uploadedKey = rawForm
+                        ? rawForm.get("upload-" + field.slug)
+                        : (input as Record<string, unknown>)["upload-" + field.slug];
+                    if (typeof uploadedKey === "string" && uploadedKey !== "") value = uploadedKey;
+                    else if (value instanceof File && value.size === 0 && !value.name) value = "";
+                }
+
                 formFields[field.slug] = value;
                 const fileError = value instanceof File ? uploadError(value) : null;
                 const error = fileError
-                    ? `"${field.title || field.slug}": ${fileError}`
+                    ? `"${label}": ${fileError}`
                     : value instanceof File
                       ? null
-                      : validateAnswer(field, value);
+                      : field.type === "file" && value !== ""
+                        ? isFileKey(value, context.locals.user.id, field.slug)
+                            ? null
+                            : `"${label}": некоректний файл`
+                        : validateAnswer(field, value);
                 if (error) {
                     errors.push(error);
                     fieldErrors[key] = error;
@@ -317,10 +331,11 @@ export const submitForm = defineAction({
                 });
             }
 
-            for (const field in formFields) {
-                const file = formFields[field];
+            for (const field of form.schema) {
+                if (field.type !== "file") continue;
+                const file = formFields[field.slug];
                 if (file instanceof File) {
-                    const key = `applications/${context.locals.user.id}/${crypto.randomUUID()}/${encodeURIComponent(field)}`;
+                    const key = fileKeyFor(context.locals.user.id, field.slug);
                     await env.FILE_BUCKET.put(key, await file.arrayBuffer(), {
                         customMetadata: {
                             owner: context.locals.user.id.toString(),
@@ -328,7 +343,9 @@ export const submitForm = defineAction({
                             fileType: file.type,
                         },
                     });
-                    formFields[field] = { key };
+                    formFields[field.slug] = { key };
+                } else if (typeof file === "string" && file !== "") {
+                    formFields[field.slug] = { key: file };
                 }
             }
 
@@ -456,9 +473,12 @@ export const saveDraft = defineAction({
             const answers: Record<string, unknown> = {};
             for (const field of form.schema) {
                 const key = "form-" + field.slug;
+                const uploadedKey = rawForm?.get("upload-" + field.slug);
                 answers[field.slug] =
                     field.type === "file"
-                        ? ""
+                        ? isFileKey(uploadedKey, context.locals.user.id, field.slug)
+                            ? { key: uploadedKey }
+                            : ""
                         : field.type === "multiselect"
                           ? rawForm
                               ? rawForm
