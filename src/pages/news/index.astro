@@ -22,33 +22,72 @@ if (Astro.locals.user) {
         })
         .where(eq(users.id, Astro.locals.user.id));
 }
+
+const query = (Astro.url.searchParams.get("q") ?? "").trim();
+const activeTag = (Astro.url.searchParams.get("tag") ?? "").trim();
+const tags = [...new Set(news.map((item) => item.tag))].sort((a, b) => a.localeCompare(b, "uk"));
+
+// shortcut: filters the whole news table in memory; move to SQL if the table grows.
+const filteredNews = news.filter((item) => {
+    if (activeTag && item.tag !== activeTag) return false;
+    if (!query) return true;
+    const needle = query.toLowerCase();
+    return [item.title, item.tag, item.content].some((value) => value.toLowerCase().includes(needle));
+});
 ---
 
 <Layout title="Новини">
-    <section class={`${!Astro.locals.user ? "mx-auto max-w-5xl px-5 py-12 sm:px-8" : ""}`}>
+    <section class={`${!Astro.locals.user ? "mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-12" : ""} `}>
         <h1>Новини</h1>
         <a href="/">На головну</a>
-        {news.length === 0 && <p class="mt-5">Новин поки що немає.</p>}
+        <form method="get" class="mt-5 grid gap-3 sm:flex sm:flex-wrap sm:items-end" role="search">
+            <label class="min-w-0 sm:flex-1">
+                <span class="sr-only">Пошук новин</span>
+                <input type="search" name="q" value={query} placeholder="Пошук новин" class="w-full" />
+            </label>
+            <label class="min-w-0 sm:flex-1">
+                <span class="sr-only">Категорія</span>
+                <select name="tag" class="w-full" onchange="this.form.requestSubmit()">
+                    <option value="">Усі Категорії</option>
+                    {tags.map((tag) => (
+                        <option value={tag} selected={tag === activeTag}>
+                            {tag}
+                        </option>
+                    ))}
+                </select>
+            </label>
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="submit" class="btn-default">
+                    Знайти
+                </button>
+                <a href="/news" class={query || activeTag ? "" : "invisible"} aria-hidden={!query && !activeTag}>
+                    Скинути
+                </a>
+            </div>
+        </form>
+        {filteredNews.length === 0 && (
+            <p class="mt-5">{news.length === 0 ? "Новин поки що немає." : "За цим запитом новин не знайдено."}</p>
+        )}
         <ul class="mt-5 list-colors">
-            {news.map((item) => (
+            {filteredNews.map((item) => (
                 <li>
-                    <a href={`/news/${item.id}`}>
-                        <div class="card mb-5">
-                            <div class="flex flex-wrap items-center justify-between gap-3">
-                                <span class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue">
-                                    {item.tag}
-                                </span>
-                                <time
-                                    datetime={parseDbDate(item.createdAt).toISOString()}
-                                    class="text-sm text-black/60"
-                                >
-                                    {format(parseDbDate(item.createdAt), "d MMMM yyyy", { locale: uk })}
-                                </time>
-                            </div>
-                            <h4 class="mt-2">{item.title}</h4>
-                            <p class="text-black/65">{markdownExcerpt(item.content, 160)}</p>
+                    <div class="card mb-5">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <a
+                                href={`/news?tag=${encodeURIComponent(item.tag)}`}
+                                class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue transition-colors hover:brightness-95"
+                            >
+                                {item.tag}
+                            </a>
+                            <time datetime={parseDbDate(item.createdAt).toISOString()} class="text-sm text-black/60">
+                                {format(parseDbDate(item.createdAt), "d MMMM yyyy", { locale: uk })}
+                            </time>
                         </div>
-                    </a>
+                        <a href={`/news/${item.id}`} class="mt-2 block">
+                            <h4>{item.title}</h4>
+                            <p class="text-black/65">{markdownExcerpt(item.content, 160)}</p>
+                        </a>
+                    </div>
                 </li>
             ))}
         </ul>

@@ -185,9 +185,7 @@
 <textarea class="w-full" placeholder="Опис" bind:value={form.description}></textarea>
 <p
     class="text-diia-green"
-    class:opacity-0={!loading && !(result && !result.error)}
-    class:select-none={!loading && !(result && !result.error)}
-    class:opacity-75={loading}
+    class:invisible={!loading && !(result && !result.error)}
 >{#if loading}Збереження...{:else}Форму збережено!{/if}</p>
 {#if result?.error}
     <p class="text-diia-red" role="alert">{result.error.message}</p>

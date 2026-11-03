@@ -227,7 +227,7 @@
         {#if errorMessage}
             <p class="text-diia-red" role="alert">{errorMessage}</p>
         {/if}
-        <p class="text-diia-green {!saved ? 'opacity-0 select-none' : ''}" role="status">Зміни збережено!</p>
+        <p class="text-diia-green {!saved ? 'invisible' : ''}" role="status">Зміни збережено!</p>
 
         <div class="flex flex-row gap-5">
             <button

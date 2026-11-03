@@ -82,16 +82,19 @@ const news = await db.query.news.findMany({
 
             <div class="grid gap-5 md:grid-cols-3">
                 {news.map((item) => (
-                    <article class="card bg-[#FFFFFF]">
+                    <article class="card flex flex-col gap-4 bg-[#FFFFFF]">
+                        <div class="flex items-center justify-between gap-3">
+                            <a
+                                href={`/news?tag=${encodeURIComponent(item.tag)}`}
+                                class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue transition-colors hover:brightness-95"
+                            >
+                                {item.tag}
+                            </a>
+                            <time datetime={new Date(item.createdAt).toISOString()} class="text-sm text-black/60">
+                                {format(new Date(item.createdAt), "d MMMM yyyy", { locale: uk })}
+                            </time>
+                        </div>
                         <a class="flex flex-col gap-4" href={`/news/${item.id}`}>
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue">
-                                    {item.tag}
-                                </span>
-                                <time datetime={new Date(item.createdAt).toISOString()} class="text-sm text-black/60">
-                                    {format(new Date(item.createdAt), "d MMMM yyyy", { locale: uk })}
-                                </time>
-                            </div>
                             <h3 class="news-card-title">{item.title}</h3>
                             <p class="text-black/65">{markdownExcerpt(item.content, 120)}</p>
                         </a>

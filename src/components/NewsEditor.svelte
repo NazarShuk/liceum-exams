@@ -106,7 +106,7 @@
     <MarkdownEditor {carta} bind:value={item.content} />
 
         
-    <p class="text-diia-green {saved && item.id !== -1 ? '' : "opacity-0 select-none"}" role="status">
+    <p class="text-diia-green {saved && item.id !== -1 ? '' : "invisible"}" role="status">
         Зміни збережено!
     </p>
 
