@@ -9,6 +9,7 @@
     } from "@db/schema";
     import { onMount } from "svelte";
     import { APPLICATION_STATUSES, statusClass, statusLabel } from "@lib/status";
+    import { compareCellValues, formatCellValue } from "@lib/table";
 
     type User = typeof users.$inferSelect;
     type Form = typeof forms.$inferSelect;
@@ -143,13 +144,6 @@
         }
     }
 
-    function formatCellValue(value: unknown): string {
-        if (value == null) return "";
-        if (value instanceof Date) return value.toLocaleDateString("uk-UA");
-        if (Array.isArray(value)) return value.map(formatCellValue).join(", ");
-        return String(value);
-    }
-
     function csvCell(value: unknown): string {
         let text = formatCellValue(value);
         if (/^[\t\r\n ]*[=+\-@]/.test(text)) text = `'${text}`;
@@ -159,7 +153,7 @@
     function exportApplicationsToCsv() {
         const rows = [
             columns.map((column) => column.title),
-            ...filteredApplications.map((application) =>
+            ...sortedApplications.map((application) =>
                 columns.map((column) => {
                     const value = cellValue(application, column.key);
                     if (column.type === "file") {
@@ -185,6 +179,7 @@
 
     function handleCampaignChange(event: Event) {
         filters = {};
+        sortKey = null;
         selectedApplicationIds = [];
         const campaignId = Number((event.currentTarget as HTMLSelectElement).value);
         selectedCampaignId = campaignId;
@@ -194,6 +189,7 @@
 
     function handleProfileChange() {
         filters = {};
+        sortKey = null;
         hiddenColumns = [];
         selectedApplicationIds = [];
     }
@@ -202,6 +198,7 @@
         hiddenColumns = hiddenColumns.includes(key)
             ? hiddenColumns.filter((hiddenKey) => hiddenKey !== key)
             : [...hiddenColumns, key];
+        if (hiddenColumns.includes(key) && sortKey === key) sortKey = null;
     }
 
     let filters = $state<{ [key: string]: string }>({});
@@ -219,6 +216,31 @@
             return true;
         }),
     );
+
+    let sortKey = $state<string | null>(null);
+    let sortDirection = $state<"asc" | "desc">("asc");
+    const sortedApplications = $derived.by(() => {
+        const key = sortKey;
+        if (!key) return filteredApplications;
+        const direction = sortDirection === "asc" ? 1 : -1;
+        return [...filteredApplications].sort((a, b) => {
+            const aValue = cellValue(a, key);
+            const bValue = cellValue(b, key);
+            const aEmpty = formatCellValue(aValue) === "";
+            const bEmpty = formatCellValue(bValue) === "";
+            if (aEmpty || bEmpty) return aEmpty === bEmpty ? 0 : aEmpty ? 1 : -1;
+            return direction * compareCellValues(aValue, bValue);
+        });
+    });
+
+    function toggleSort(key: string) {
+        if (sortKey === key) {
+            sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        } else {
+            sortKey = key;
+            sortDirection = "asc";
+        }
+    }
 
     const allVisibleSelected = $derived(
         filteredApplications.length > 0 &&
@@ -353,7 +375,7 @@
                     targetGroupId = createdGroupId;
                 }
                 groupMessage = "Групу створено.";
-                window.location.pathname = "/admin/groups/" + createdGroupId
+                window.location.pathname = "/admin/groups/" + createdGroupId;
             } else {
                 const result = await actions.addApplicationsToGroup({
                     groupId: targetGroupId,
@@ -554,9 +576,27 @@
                                 {/if}
                             </th>
                             {#each columns as column (column.key)}
-                                <th class="px-4 py-5">
+                                <th
+                                    class="px-4 py-5"
+                                    aria-sort={sortKey === column.key
+                                        ? sortDirection === "asc"
+                                            ? "ascending"
+                                            : "descending"
+                                        : "none"}
+                                >
                                     <div class="flex min-h-24 flex-col justify-between relative">
-                                        <p>{column.title}</p>
+                                        <button
+                                            type="button"
+                                            class="flex cursor-pointer items-center gap-1 text-left"
+                                            onclick={() => toggleSort(column.key)}
+                                        >
+                                            {column.title}
+                                            {#if sortKey === column.key}
+                                                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">
+                                                    {sortDirection === "asc" ? "arrow_upward" : "arrow_downward"}
+                                                </span>
+                                            {/if}
+                                        </button>
                                         <input
                                             class="mt-auto w-full"
                                             bind:value={filters[column.key]}
@@ -568,7 +608,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {#each filteredApplications as application (application.id)}
+                        {#each sortedApplications as application (application.id)}
                             <tr>
                                 <td class="border-2 border-diia-bright-grey px-4 py-5">
                                     <div class="flex items-center gap-2">
