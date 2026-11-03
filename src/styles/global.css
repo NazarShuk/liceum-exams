@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "carta-md/default.css";
+@import "@cartamd/plugin-attachment/default.css";
 
 @theme inline {
     --font-e-ukraine: var(--font-e-ukraine);
@@ -58,8 +60,8 @@ h4 {
     @apply text-black;
 }
 .btn-default {
-    @apply px-6.25 py-3.75 text-white rounded-[40px] bg-liceum-blue w-fit transition-colors;
-    @apply hover:cursor-pointer brightness-110;
+    @apply px-6.25 py-3.75 text-white rounded-[40px] bg-liceum-blue w-fit transition;
+    @apply hover:cursor-pointer hover:brightness-110;
 }
 input,
 textarea {
@@ -105,6 +107,135 @@ select option:checked {
 }
 .list-colors .card {
     background-color: color-mix(in srgb, var(--card-accent) 5%, white);
+}
+
+/* Carta editor and viewer follow the Diia/liceum palette. */
+.carta-theme__default {
+    --border-color: var(--color-diia-bright-grey);
+    --selection-color: rgb(35 74 153 / 0.2);
+    --focus-outline: var(--color-liceum-blue);
+    --hover-color: color-mix(in srgb, var(--color-liceum-blue) 10%, white);
+    --caret-color: var(--color-black);
+    --text-color: var(--color-black);
+}
+
+.carta-theme__default.carta-editor {
+    border: 2px solid var(--color-diia-bright-grey);
+    border-radius: 0.5rem;
+    background: white;
+}
+
+.carta-theme__default .carta-toolbar {
+    padding: 0 0.75rem;
+    border-bottom-color: var(--color-diia-bright-grey);
+    border-radius: 0.4rem 0.4rem 0 0;
+    background: color-mix(in srgb, var(--color-liceum-blue) 5%, white);
+}
+
+.carta-theme__default .carta-toolbar-left button {
+    color: rgb(24 24 27 / 0.7);
+}
+
+.carta-theme__default .carta-toolbar-left button.carta-active {
+    border-bottom-color: var(--color-liceum-blue);
+    color: var(--color-liceum-blue);
+}
+
+.carta-theme__default .carta-icons-menu {
+    background: white;
+    border-color: var(--color-diia-bright-grey);
+}
+
+.carta-theme__default .carta-input ::placeholder {
+    color: var(--color-diia-grey);
+}
+
+.carta-font-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.9rem;
+    line-height: 1.5rem;
+    letter-spacing: normal;
+}
+
+.carta-drop-overlay {
+    --icon-color: white;
+    --bg-color: var(--color-liceum-blue);
+    --border-color: rgb(255 255 255 / 0.55);
+}
+
+.carta-loading-overlay {
+    padding: 0.5rem;
+    background: color-mix(in srgb, white 85%, transparent);
+}
+
+/* Shared markdown output for Carta previews and the public news page. */
+.markdown-body > * + * {
+    margin-top: 1rem;
+}
+
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+    margin-top: 2rem;
+}
+
+.markdown-body ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+}
+
+.markdown-body ol {
+    list-style: decimal;
+    padding-left: 1.5rem;
+}
+
+.markdown-body li + li {
+    margin-top: 0.5rem;
+}
+
+.markdown-body a {
+    color: var(--color-liceum-blue);
+    text-decoration: underline;
+}
+
+.markdown-body blockquote {
+    border-left: 4px solid var(--color-diia-bright-grey);
+    padding-left: 1rem;
+    color: rgb(0 0 0 / 0.65);
+}
+
+.markdown-body code,
+.markdown-body pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.markdown-body code {
+    background: var(--color-diia-bright-grey);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+}
+
+.markdown-body pre {
+    overflow-x: auto;
+    background: var(--color-black);
+    color: var(--color-white);
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.markdown-body pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.markdown-body img {
+    max-width: 100%;
+    height: auto;
+}
+
+.markdown-body hr {
+    border-color: var(--color-diia-bright-grey);
 }
 
 .is-navigating {

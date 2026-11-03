@@ -2,6 +2,8 @@
     import { actions } from "astro:actions";
     import { onMount } from "svelte";
     import type { news } from "@db/schema";
+    import { MarkdownEditor } from "carta-md";
+    import { carta } from "@lib/markdown";
 
     type News = typeof news.$inferSelect;
 
@@ -101,17 +103,12 @@
     <input class="w-full" placeholder="Заголовок новини" bind:value={item.title} />
     <input class="w-full" placeholder="Тег" bind:value={item.tag} />
 
-    <label class="flex flex-col gap-2">
-        Текст новини (Markdown)
-        <textarea class="w-full" rows={16} bind:value={item.content}></textarea>
-    </label>
+    <MarkdownEditor {carta} bind:value={item.content} />
 
-    {#if errorMessage}
-        <p class="text-diia-red" role="alert">{errorMessage}</p>
-    {/if}
-    {#if saved}
-        <p class="text-diia-green" role="status">Зміни збережено!</p>
-    {/if}
+        
+    <p class="text-diia-green {saved && item.id !== -1 ? '' : "opacity-0 select-none"}" role="status">
+        Зміни збережено!
+    </p>
 
     <div class="flex flex-row gap-5">
         <button
@@ -125,11 +122,11 @@
         {#if item.id > 0}
             <button
                 type="button"
-                class="btn-default {loading ? 'opacity-50' : ''}"
+                class="btn-default {loading ? 'opacity-50' : ''} bg-diia-red!"
                 disabled={loading}
                 onclick={deleteNews}
             >
-                <span class="text-diia-red"> Видалити новину </span>
+                Видалити новину
             </button>
         {/if}
     </div>
@@ -137,4 +134,10 @@
     {#if item.id > 0}
         <a href={`/news/${item.id}`} target="_blank" rel="noopener">Переглянути на сайті</a>
     {/if}
+
+    <p class="text-diia-red" role="alert">
+        {#if errorMessage}
+            {errorMessage}
+        {/if}
+    </p>
 </div>

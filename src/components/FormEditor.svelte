@@ -183,11 +183,12 @@
 
 <input class="w-full mb-2.5" placeholder="Назва форми" bind:value={form.title} />
 <textarea class="w-full" placeholder="Опис" bind:value={form.description}></textarea>
-{#if loading}
-    <p class="opacity-75">Збереження...</p>
-{:else if result && !result.error}
-    <p class="text-diia-green">Форму збережено!</p>
-{/if}
+<p
+    class="text-diia-green"
+    class:opacity-0={!loading && !(result && !result.error)}
+    class:select-none={!loading && !(result && !result.error)}
+    class:opacity-75={loading}
+>{#if loading}Збереження...{:else}Форму збережено!{/if}</p>
 {#if result?.error}
     <p class="text-diia-red" role="alert">{result.error.message}</p>
 {/if}

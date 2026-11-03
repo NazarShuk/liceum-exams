@@ -4,7 +4,7 @@ import { contacts } from "@lib/contacts";
 ---
 
 <Layout title="Контакти">
-    <section class="mx-auto max-w-5xl px-5 py-12 sm:px-8 lg:px-12">
+    <section class={`${!Astro.locals.user ? "mx-auto max-w-5xl px-5 py-12 sm:px-8" : ""}`}>
         <h1>Контакти</h1>
         <p class="mt-4 max-w-2xl text-black/65">
             Зв’яжіться з нами, якщо маєте питання щодо вступу або роботи порталу.

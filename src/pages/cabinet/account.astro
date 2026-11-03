@@ -1,6 +1,7 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import { actions } from "astro:actions";
+import { parseDbDate } from "@lib/dates";
 
 const result = Astro.getActionResult(actions.logout);
 if (result && !result.error) {
@@ -10,18 +11,40 @@ if (result && !result.error) {
 
 <Layout title="Аккаунт">
     <h1>Аккаунт</h1>
-    <ul>
-        <li>
-            Ім'я {Astro.locals.user?.firstName} {Astro.locals.user?.lastName}
-        </li>
-        <li>
-            Роль {Astro.locals.user.role === "applicant" && "Абітурієнт"}{" "}
-            {Astro.locals.user.role === "parent" && "Опікун"}
-        </li>
-        <li>Телефон {Astro.locals.user.phone}</li>
-    </ul>
+    <div class="card flex flex-col gap-5 my-5">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <label class="flex flex-col gap-1">
+                Ім'я
+                <input readonly value={Astro.locals.user?.firstName ?? ""} />
+            </label>
+            <label class="flex flex-col gap-1">
+                Прізвище
+                <input readonly value={Astro.locals.user?.lastName ?? ""} />
+            </label>
+            <label class="flex flex-col gap-1">
+                По батькові
+                <input readonly value={Astro.locals.user?.middleName ?? ""} />
+            </label>
+        </div>
+        <label class="flex flex-col gap-1">
+            Дата народження
+            <input
+                readonly
+                type="date"
+                value={
+                    Astro.locals.user?.birthDate
+                        ? parseDbDate(Astro.locals.user?.birthDate).toISOString().slice(0, 10)
+                        : ""
+                }
+            />
+        </label>
+        <label class="flex flex-col gap-1">
+            Телефон
+            <input readonly type="tel" value={Astro.locals.user?.phone ?? ""} />
+        </label>
+    </div>
 
     <form action={actions.logout} method="POST">
-        <button class="btn-default">Вийти</button>
+        <button class="btn-default bg-diia-red!">Вийти</button>
     </form>
 </Layout>

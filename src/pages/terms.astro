@@ -3,7 +3,7 @@ import Layout from "@layouts/Layout.astro";
 ---
 
 <Layout title="Умови надання послуг">
-    <section class="mx-auto max-w-5xl px-5 py-12 sm:px-8">
+    <section class={`${!Astro.locals.user ? "mx-auto max-w-5xl px-5 py-12 sm:px-8" : ""}`}>
         <h1>Умови надання послуг</h1>
         <p class="mt-2 text-sm text-black/60">Оновлено 30 жовтня 2026 року</p>
 

@@ -353,6 +353,7 @@
                     targetGroupId = createdGroupId;
                 }
                 groupMessage = "Групу створено.";
+                window.location.pathname = "/admin/groups/" + createdGroupId
             } else {
                 const result = await actions.addApplicationsToGroup({
                     groupId: targetGroupId,
@@ -450,7 +451,7 @@
 {/if}
 
 {#if allProfiles || selectedCampaign}
-    {#if !allProfiles && selectedCampaign.profiles.length === 0}
+    {#if !allProfiles && selectedCampaign!.profiles.length === 0}
         <p>До кампанії ще не додано профілів.</p>
     {:else if !allProfiles && !form}
         <p>Для цього профілю не призначено форму.</p>
@@ -763,7 +764,7 @@
             {/if}
             {#if groupMessage}
                 <p class="text-liceum-green" role="status">
-                    {groupMessage} <a href="/admin/groups">До груп</a>
+                    {groupMessage} <a href="/admin/groups" class="text-liceum-blue! cursor-pointer">До груп</a>
                 </p>
             {/if}
             <div class="flex flex-row justify-end gap-3">

@@ -25,7 +25,7 @@ if (Astro.locals.user) {
 ---
 
 <Layout title="Новини">
-    <section class="mx-auto max-w-5xl px-5 py-12 sm:px-8">
+    <section class={`${!Astro.locals.user ? "mx-auto max-w-5xl px-5 py-12 sm:px-8" : ""}`}>
         <h1>Новини</h1>
         <a href="/">На головну</a>
         {news.length === 0 && <p class="mt-5">Новин поки що немає.</p>}

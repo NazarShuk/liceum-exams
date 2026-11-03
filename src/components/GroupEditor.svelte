@@ -127,7 +127,7 @@
         </button>
         <button
             type="button"
-            class="cursor-pointer text-diia-red disabled:cursor-not-allowed disabled:opacity-50"
+            class="btn-default bg-diia-red! disabled:opacity-50"
             disabled={deleting}
             onclick={remove}
         >
