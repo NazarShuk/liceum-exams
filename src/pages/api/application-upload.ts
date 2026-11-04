@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { getDrizzle } from "@db/drizzle";
 import { fileKeyFor, uploadError } from "@lib/uploads";
+import { rateLimit } from "@lib/rate-limit";
 import { verifyTurnstile } from "@lib/turnstile";
 
 const fail = (error: string, status: number) => Response.json({ error }, { status });
@@ -9,6 +10,9 @@ const fail = (error: string, status: number) => Response.json({ error }, { statu
 export const POST = (async ({ request, locals }) => {
     const user = locals.user;
     if (!user) return fail("Потрібно увійти в акаунт", 401);
+    if (!(await rateLimit("UPLOAD_LIMITER", `app-upload:${user.id}`))) {
+        return fail("Забагато завантажень. Спробуйте пізніше.", 429);
+    }
 
     const formData = await request.formData();
     if (user.role !== "admin" && !(await verifyTurnstile(formData.get("cf-turnstile-response"), request))) {

@@ -5,6 +5,7 @@ import { generateToken } from "@actions/auth";
 import { applicantInvites, users } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { logErrorEvent } from "@lib/analytics";
+import { rateLimit } from "@lib/rate-limit";
 
 const sessionCookie = {
     httpOnly: true,
@@ -15,6 +16,11 @@ const sessionCookie = {
 };
 
 export const GET = (async (context) => {
+    if (!(await rateLimit("AUTH_LIMITER", `google:${context.clientAddress}`))) {
+        logErrorEvent({ source: "server", type: "auth_google_rate_limited", path: context.url.pathname });
+        return new Response(null, { status: 429 });
+    }
+
     if (context.url.searchParams.has("start")) {
         const nonce = crypto.randomUUID();
         const inviteId = (context.url.searchParams.get("invite") ?? "").slice(0, 64);

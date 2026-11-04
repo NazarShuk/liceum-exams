@@ -8,6 +8,7 @@ import { logErrorEvent, logEvent } from "../lib/analytics";
 import { deleteFormIfUnused } from "../lib/forms";
 import { fileKeyFor, isFileKey, uploadError } from "../lib/uploads";
 import { verifyTurnstile } from "../lib/turnstile";
+import { enforceRateLimit } from "../lib/rate-limit";
 import { APPLICATION_STATUSES } from "../lib/status";
 
 type Schema = NonNullable<(typeof forms.$inferSelect)["schema"]>;
@@ -193,6 +194,7 @@ export const submitForm = defineAction({
                 });
                 throw new ActionError({ code: "FORBIDDEN", message: "Абітурієнти не можуть створювати заяви" });
             }
+            await enforceRateLimit("SUBMIT_LIMITER", `submit:${context.locals.user.id}`);
 
             let rawForm: FormData | null = null;
             try {
@@ -476,6 +478,7 @@ export const updateApplicationAnswers = defineAction({
         try {
             const user = context.locals.user;
             if (!user) throw new ActionError({ code: "UNAUTHORIZED" });
+            await enforceRateLimit("SUBMIT_LIMITER", `answers:${user.id}`);
 
             const db = getDrizzle();
             const application = await db.query.applications.findFirst({
@@ -614,6 +617,7 @@ export const saveDraft = defineAction({
                 });
                 throw new ActionError({ code: "FORBIDDEN", message: "Абітурієнти не можуть створювати заяви" });
             }
+            await enforceRateLimit("DRAFT_LIMITER", `draft:${context.locals.user.id}`);
 
             const form = await db.query.forms.findFirst({ where: { id: input.formId } });
             const profile = await db.query.profiles.findFirst({ where: { id: input.profileId } });
