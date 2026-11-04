@@ -1,6 +1,6 @@
 <script lang="ts">
     import { actions, isInputError } from "astro:actions";
-    import { tick } from "svelte";
+    import { onDestroy, tick } from "svelte";
     import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, uploadError } from "@lib/uploads";
     import type { campaigns, forms, profiles, users } from "@db/schema";
 
@@ -87,7 +87,14 @@
     let saving = false;
     let dirty = false;
 
-    type UploadState = { key: string; progress: number; error: string; uploading: boolean };
+    type UploadState = {
+        key: string;
+        progress: number;
+        error: string;
+        uploading: boolean;
+        previewUrl: string;
+        previewIsImage: boolean | null;
+    };
     const draftUploads: Record<string, UploadState> = {};
     for (const field of selectedForm.schema) {
         if (field.type !== "file") continue;
@@ -96,11 +103,36 @@
             typeof answer === "object" && answer !== null && "key" in answer && typeof answer.key === "string"
                 ? answer.key
                 : "";
-        draftUploads[field.slug] = { key, progress: key ? 100 : 0, error: "", uploading: false };
+        draftUploads[field.slug] = {
+            key,
+            progress: key ? 100 : 0,
+            error: "",
+            uploading: false,
+            previewUrl: key ? `/file?key=${encodeURIComponent(key)}&inline=1` : "",
+            // Saved answers only keep the key, so the type is discovered by the preview image.
+            previewIsImage: null,
+        };
     }
     let uploads = $state(draftUploads);
     let uploading = $derived(Object.values(uploads).some((upload) => upload.uploading));
     const uploadTokens: Record<string, number> = {};
+    const objectUrls = new Set<string>();
+
+    onDestroy(() => {
+        for (const url of objectUrls) URL.revokeObjectURL(url);
+    });
+
+    function previewForFile(file: File) {
+        const url = URL.createObjectURL(file);
+        objectUrls.add(url);
+        return url;
+    }
+
+    function previewFailed(slug: string) {
+        const upload = uploads[slug];
+        if (!upload || upload.previewIsImage === false) return;
+        uploads[slug] = { ...upload, previewIsImage: false };
+    }
 
     function scheduleSave() {
         if (sending || edit) return;
@@ -142,8 +174,20 @@
         const token = (uploadTokens[slug] ?? 0) + 1;
         uploadTokens[slug] = token;
         // Keep the previous key until the replacement succeeds, so a failed upload does not lose it.
-        const previousKey = uploads[slug]?.key ?? "";
-        uploads[slug] = { key: previousKey, progress: 0, error: "", uploading: true };
+        const previous = uploads[slug];
+        const previousKey = previous?.key ?? "";
+        const previousPreview = previous?.previewUrl ?? "";
+        const previousIsImage = previous?.previewIsImage ?? null;
+        const previewIsImage = file.type.startsWith("image/");
+        const previewUrl = previewForFile(file);
+        uploads[slug] = {
+            key: previousKey,
+            progress: 0,
+            error: "",
+            uploading: true,
+            previewUrl,
+            previewIsImage,
+        };
 
         const data = new FormData();
         data.set("file", file);
@@ -168,7 +212,7 @@
                 try {
                     const key = (JSON.parse(xhr.responseText) as { key?: string }).key;
                     if (key) {
-                        finish({ key, progress: 100, error: "", uploading: false });
+                        finish({ key, progress: 100, error: "", uploading: false, previewUrl, previewIsImage });
                         return;
                     }
                 } catch {
@@ -182,7 +226,14 @@
                 // keep the generic message
             }
             input.value = "";
-            finish({ key: previousKey, progress: previousKey ? 100 : 0, error, uploading: false });
+            finish({
+                key: previousKey,
+                progress: previousKey ? 100 : 0,
+                error,
+                uploading: false,
+                previewUrl: previousPreview,
+                previewIsImage: previousIsImage,
+            });
         };
         const fail = () => {
             input.value = "";
@@ -191,6 +242,8 @@
                 progress: previousKey ? 100 : 0,
                 error: "Не вдалося завантажити файл",
                 uploading: false,
+                previewUrl: previousPreview,
+                previewIsImage: previousIsImage,
             });
         };
         xhr.onerror = fail;
@@ -202,12 +255,22 @@
         const input = event.currentTarget;
         const file = input.files?.[0];
         const slug = field.slug;
-        const previousKey = uploads[slug]?.key ?? "";
+        const previous = uploads[slug];
+        const previousKey = previous?.key ?? "";
+        const previousPreview = previous?.previewUrl ?? "";
+        const previousIsImage = previous?.previewIsImage ?? null;
 
         // A new selection cancels any upload still running for this field.
         uploadTokens[slug] = (uploadTokens[slug] ?? 0) + 1;
         if (!file) {
-            uploads[slug] = { key: previousKey, progress: previousKey ? 100 : 0, error: "", uploading: false };
+            uploads[slug] = {
+                key: previousKey,
+                progress: previousKey ? 100 : 0,
+                error: "",
+                uploading: false,
+                previewUrl: previousPreview,
+                previewIsImage: previousIsImage,
+            };
             scheduleSave();
             return;
         }
@@ -215,7 +278,14 @@
         const error = uploadError(file);
         if (error) {
             input.value = "";
-            uploads[slug] = { key: previousKey, progress: previousKey ? 100 : 0, error, uploading: false };
+            uploads[slug] = {
+                key: previousKey,
+                progress: previousKey ? 100 : 0,
+                error,
+                uploading: false,
+                previewUrl: previousPreview,
+                previewIsImage: previousIsImage,
+            };
             scheduleSave();
             return;
         }
@@ -521,54 +591,85 @@
                             </label>
                         {/each}
                     </fieldset>
+                {:else if field.type === "file"}
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
+                        <div class="flex flex-1 flex-col gap-2">
+                            <input
+                                class="w-full"
+                                name={upload && (upload.key || upload.uploading) ? "" : name}
+                                type="file"
+                                accept={ALLOWED_UPLOAD_TYPES.join(",")}
+                                required={field.required !== false && !upload?.key}
+                                onchange={(event) => selectFile(event, field)}
+                                aria-invalid={error || upload?.error ? "true" : undefined}
+                            />
+                            <input type="hidden" name={`upload-${field.slug}`} value={upload?.key ?? ""} />
+                            {#if upload?.uploading}
+                                <div class="flex flex-col gap-1">
+                                    <div
+                                        class="h-2 w-full overflow-hidden rounded bg-black/10"
+                                        role="progressbar"
+                                        aria-label="Завантаження файлу"
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-valuenow={upload.progress}
+                                    >
+                                        <div
+                                            class="h-full bg-liceum-blue transition-[width] duration-200"
+                                            style={`width: ${upload.progress}%`}
+                                        ></div>
+                                    </div>
+                                    <span class="opacity-75">Завантаження... {upload.progress}%</span>
+                                </div>
+                            {/if}
+                            {#if upload?.error}
+                                <p class="text-diia-red" role="alert">{upload.error}</p>
+                            {/if}
+                            {#if upload?.key && !upload.uploading}
+                                <p class="text-diia-green">Файл завантажено</p>
+                            {/if}
+                            <p class="opacity-75">
+                                PDF, JPG, PNG або WEBP, до {MAX_UPLOAD_BYTES / 1024 / 1024} МБ
+                            </p>
+                        </div>
+                        {#if upload?.previewUrl}
+                            {#if upload.previewIsImage === false}
+                                <iframe
+                                    src={upload.previewUrl}
+                                    title={field.title}
+                                    class="h-56 w-full rounded lg:w-1/3"
+                                ></iframe>
+                            {:else}
+                                <img
+                                    src={upload.previewUrl}
+                                    alt={field.title}
+                                    class="max-h-56 w-full rounded object-contain lg:w-1/3"
+                                    onerror={() => previewFailed(field.slug)}
+                                />
+                            {/if}
+                            {:else}
+                                <!--so the layout stays the same-->
+                                <div class="w-full lg:w-1/3"></div>
+                        {/if}
+                    </div>
                 {:else}
                     <input
                         class="lg:w-3/4 w-full"
-                        name={upload && (upload.key || upload.uploading) ? "" : name}
+                        {name}
                         placeholder="Ваша відповідь..."
                         type={field.type}
-                        accept={field.type === "file" ? ALLOWED_UPLOAD_TYPES.join(",") : undefined}
-                        value={field.type === "file" ? undefined : ((answerOf(field.slug) as string | undefined) ?? "")}
-                        required={field.required !== false && !upload?.key}
+                        value={(answerOf(field.slug) as string | undefined) ?? ""}
+                        required={field.required !== false}
                         minlength={field.type === "text" && field.min > 0 ? field.min : undefined}
                         maxlength={field.type === "text" && field.max > 0 ? field.max : undefined}
                         min={field.type === "number" && field.min > 0 ? field.min : undefined}
                         max={field.type === "number" && field.max > 0 ? field.max : undefined}
                         pattern={field.type === "text" && field.regex ? field.regex : undefined}
-                        onchange={field.type === "file" ? (event) => selectFile(event, field) : undefined}
-                        aria-invalid={error || upload?.error ? "true" : undefined}
+                        aria-invalid={error ? "true" : undefined}
                     />
                 {/if}
                 {#if error}
                     <p class="text-diia-red mt-2" role="alert">{error}</p>
-                {/if}
-                {#if field.type === "file"}
-                    <input type="hidden" name={`upload-${field.slug}`} value={upload?.key ?? ""} />
-                    {#if upload?.uploading}
-                        <div class="mt-2 flex flex-col gap-1 lg:w-3/4 w-full">
-                            <div
-                                class="h-2 w-full overflow-hidden rounded bg-black/10"
-                                role="progressbar"
-                                aria-label="Завантаження файлу"
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={upload.progress}
-                            >
-                                <div
-                                    class="h-full bg-liceum-blue transition-[width] duration-200"
-                                    style={`width: ${upload.progress}%`}
-                                ></div>
-                            </div>
-                            <span class="opacity-75">Завантаження... {upload.progress}%</span>
-                        </div>
-                    {/if}
-                    {#if upload?.error}
-                        <p class="text-diia-red mt-2" role="alert">{upload.error}</p>
-                    {/if}
-                    {#if upload?.key && !upload.uploading}
-                        <p class="text-diia-green mt-2">Файл завантажено</p>
-                    {/if}
-                    <p class="opacity-75 mt-2">PDF, JPG, PNG або WEBP, до {MAX_UPLOAD_BYTES / 1024 / 1024} МБ</p>
                 {/if}
                 {#if field.required === false}
                     <p class="opacity-75 mt-5">*Не обов'язкове</p>

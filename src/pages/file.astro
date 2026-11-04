@@ -5,6 +5,7 @@ import { getDrizzle } from "@db/drizzle";
 import { applications } from "@db/schema";
 
 const key = Astro.url.searchParams.get("key") || "";
+const inline = Astro.url.searchParams.get("inline") === "1";
 const keyPattern = /^applications\/\d+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[^/]+$/;
 
 if (!keyPattern.test(key)) return new Response(null, { status: 404 });
@@ -35,8 +36,9 @@ const encodedFileName = encodeURIComponent(fileName).replace(
 );
 return new Response(await file.arrayBuffer(), {
     headers: {
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodedFileName}`,
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodedFileName}`,
         "Content-Type": file.customMetadata?.fileType || "application/octet-stream",
+        "X-Content-Type-Options": "nosniff",
     },
 });
 ---
