@@ -6,15 +6,21 @@ export const contacts = [
         href: null,
     },
     {
+        icon: "mail",
+        label: "Електронна пошта",
+        value: "liceum@ztu.edu.ua",
+        href: "mailto:liceum@ztu.edu.ua",
+    },
+    {
         icon: "call",
         label: "Телефон",
         value: "+380509856415",
         href: "tel:+380509856415",
     },
     {
-        icon: "mail",
-        label: "Електронна пошта",
-        value: "liceum@ztu.edu.ua",
-        href: "mailto:liceum@ztu.edu.ua",
+        icon: "account_circle",
+        label: "Директор Наукового ліцею",
+        value: "Венцель Наталія Василівна",
+        href: null,
     },
 ];
