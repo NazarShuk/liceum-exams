@@ -117,6 +117,7 @@
     let uploading = $derived(Object.values(uploads).some((upload) => upload.uploading));
     const uploadTokens: Record<string, number> = {};
     const objectUrls = new Set<string>();
+    const fileInputs: Record<string, HTMLInputElement | undefined> = {};
 
     onDestroy(() => {
         for (const url of objectUrls) URL.revokeObjectURL(url);
@@ -407,6 +408,19 @@
         }
 
         uploadFile(file, field, input);
+    }
+
+    function removeFile(slug: string) {
+        // Cancels any upload still running for this field, like re-selecting does.
+        uploadTokens[slug] = (uploadTokens[slug] ?? 0) + 1;
+        const previous = uploads[slug];
+        if (previous?.previewUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(previous.previewUrl);
+            objectUrls.delete(previous.previewUrl);
+        }
+        if (fileInputs[slug]) fileInputs[slug].value = "";
+        uploads[slug] = { key: "", progress: 0, error: "", uploading: false, previewUrl: "", previewIsImage: null };
+        scheduleSave();
     }
 
     function selectChild(event: Event) {
@@ -722,6 +736,7 @@
                         <div class="flex flex-1 flex-col gap-2">
                             <input
                                 class="w-full"
+                                bind:this={fileInputs[field.slug]}
                                 name={upload && (upload.key || upload.uploading) ? "" : name}
                                 type="file"
                                 accept={ALLOWED_UPLOAD_TYPES.join(",")}
@@ -752,7 +767,16 @@
                                 <p class="text-diia-red" role="alert">{upload.error}</p>
                             {/if}
                             {#if upload?.key && !upload.uploading}
-                                <p class="text-diia-green">Файл завантажено</p>
+                                <div class="flex items-center gap-3">
+                                    <p class="text-diia-green">Файл завантажено</p>
+                                    <button
+                                        type="button"
+                                        class="cursor-pointer text-diia-red underline"
+                                        onclick={() => removeFile(field.slug)}
+                                    >
+                                        Видалити файл
+                                    </button>
+                                </div>
                             {/if}
                             <p class="opacity-75">
                                 PDF, JPG, PNG або WEBP, до {MAX_UPLOAD_BYTES / 1024 / 1024} МБ
