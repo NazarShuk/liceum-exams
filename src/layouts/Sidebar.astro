@@ -104,7 +104,7 @@ if (!Astro.url.pathname.startsWith("/news")) {
             {visibleLinks.map((link) => (
                 <li class={`${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl ${!link.href ? "mt-5" : ""}`}>
                     <a
-                        class="flex flex-row items-center p-2.5 gap-1"
+                        class="flex flex-row items-center p-2.5 gap-1 rounded-3xl transition-colors hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey"
                         href={link.href}
                         aria-current={Astro.url.pathname === link.href ? "page" : undefined}
                     >
@@ -117,7 +117,7 @@ if (!Astro.url.pathname.startsWith("/news")) {
 
         <div class="flex flex-col justify-end h-fit gap-5 w-full p-1 border-t border-diia-bright-grey min-h-24 mb-5">
             <a
-                class="relative flex flex-row items-center gap-1"
+                class="relative flex flex-row items-center gap-1 rounded-xl transition-colors hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey"
                 href={"/news"}
                 aria-current={Astro.url.pathname === "/news" ? "page" : undefined}
             >
@@ -127,7 +127,10 @@ if (!Astro.url.pathname.startsWith("/news")) {
                     <div class="absolute top-1/2 left-0 w-4 h-4 bg-liceum-red rounded-full animate-ping -translate-y-1/2 translate-x-1/2"></div>
                 )}
             </a>
-            <a href="/cabinet/account" class="flex flex-row items-center gap-1">
+            <a
+                href="/cabinet/account"
+                class="flex flex-row items-center gap-1 rounded-xl transition-colors hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey"
+            >
                 <span class="material-symbols-outlined">account_circle</span>
                 {Astro.locals.user.firstName + " " + Astro.locals.user.lastName}
             </a>
