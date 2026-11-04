@@ -46,6 +46,12 @@ if (!previewApplication.form) {
         </span>
     </div>
 
+    {previewApplication.status === "attention" && (
+        <a class="btn-default self-start" href={`/cabinet/application?edit=${previewApplication.id}`}>
+            Редагувати заяву
+        </a>
+    )}
+
     {previewApplication.notes && (
         <div class="card flex flex-col gap-2">
             <h3>Нотатки</h3>

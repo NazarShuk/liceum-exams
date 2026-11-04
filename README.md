@@ -12,3 +12,7 @@ TODO:
 
 - результати екзаменів
 - вирішити проблеми з часом
+- file preview in the form
+- change favicon
+- more hover effects
+- show what's interactive

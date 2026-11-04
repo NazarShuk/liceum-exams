@@ -148,8 +148,31 @@ if (Number.isInteger(previewId) && previewId > 0) {
     previewApplication = app;
 }
 
+const editId = Number(Astro.url.searchParams.get("edit"));
+let editApplication:
+    | (Application & {
+          form: Form | null;
+          profile: ProfileWithForm;
+          user: User | null;
+          student: User | null;
+      })
+    | undefined;
+
+if (Number.isInteger(editId) && editId > 0) {
+    const app = await db.query.applications.findFirst({
+        where: { id: editId, state: "submitted", status: "attention" },
+        with: { form: true, profile: { with: { form: true } }, user: true, student: true },
+    });
+    const form = app?.form;
+    const profile = app?.profile;
+    if (!app || !form || !profile || (app.userId !== Astro.locals.user.id && app.studentId !== Astro.locals.user.id)) {
+        return new Response(null, { status: 404 });
+    }
+    editApplication = { ...app, form, profile };
+}
+
 // Applicants may only view their applications, never create new ones
-if (Astro.locals.user.role === "applicant" && !previewApplication) {
+if (Astro.locals.user.role === "applicant" && !previewApplication && !editApplication) {
     return Astro.redirect("/cabinet");
 }
 
@@ -164,10 +187,19 @@ const submitError = result
           : result.data.message
     : undefined;
 
+const editResult = Astro.getActionResult(actions.updateApplicationAnswers);
+const editError = editResult
+    ? editResult.error
+        ? editResult.error.message
+        : editResult.data.success
+          ? undefined
+          : editResult.data.message
+    : undefined;
+
 // Progressive enhancement: submits the action without JS, re-rendered by the page below.
 const submitAction = (() => {
     const params = new URLSearchParams(Astro.url.searchParams);
-    params.set("_action", "submitForm");
+    params.set("_action", editApplication ? "updateApplicationAnswers" : "submitForm");
     return `?${params}`;
 })();
 
@@ -175,13 +207,17 @@ if (result && !result.error && result.data.success) {
     return Astro.redirect("/cabinet/application?success=true&preview=" + Number(result.data.id));
 }
 
+if (editResult && !editResult.error && editResult.data.success) {
+    return Astro.redirect("/cabinet/application?preview=" + Number(editResult.data.id));
+}
+
 const justSubmitted = !submitError && Astro.url.searchParams.has("success") ? previewApplication : undefined;
 ---
 
 <Layout title="Заява">
-    {submitError && (
+    {(submitError || editError) && (
         <p class="text-diia-red" role="alert">
-            {submitError}
+            {submitError || editError}
         </p>
     )}
 
@@ -206,6 +242,24 @@ const justSubmitted = !submitError && Astro.url.searchParams.has("success") ? pr
         </section>
     ) : previewApplication ? (
         <ApplicationPreview previewApplication={previewApplication} applicationAnswers={applicationAnswers} />
+    ) : editApplication?.form ? (
+        <ApplicationForm
+            client:load
+            selectedForm={editApplication.form}
+            selectedCampaign={undefined}
+            selectedProfile={editApplication.profile}
+            user={Astro.locals.user}
+            userChildren={userChildren}
+            actionUrl={submitAction}
+            edit={{
+                id: editApplication.id,
+                studentId: editApplication.studentId,
+                student: editApplication.student,
+                user: editApplication.user,
+                answers: editApplication.answers,
+                notes: editApplication.notes,
+            }}
+        />
     ) : selectedProfile && selectedForm ? (
         <ApplicationForm
             client:load

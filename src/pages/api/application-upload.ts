@@ -8,7 +8,6 @@ const fail = (error: string, status: number) => Response.json({ error }, { statu
 export const POST = (async ({ request, locals }) => {
     const user = locals.user;
     if (!user) return fail("Потрібно увійти в акаунт", 401);
-    if (user.role === "applicant") return fail("Абітурієнти не можуть створювати заяви", 403);
 
     const formData = await request.formData();
     const file = formData.get("file");
@@ -17,11 +16,24 @@ export const POST = (async ({ request, locals }) => {
 
     if (!(file instanceof File)) return fail("Файл не вибрано", 400);
 
-    const form = Number.isInteger(formId)
-        ? await getDrizzle().query.forms.findFirst({ where: { id: formId } })
-        : undefined;
+    const db = getDrizzle();
+    const form = Number.isInteger(formId) ? await db.query.forms.findFirst({ where: { id: formId } }) : undefined;
     const schemaField = form?.schema.find((item) => item.slug === field);
     if (!schemaField || schemaField.type !== "file") return fail("Поле для файлу не знайдено", 400);
+
+    if (user.role === "applicant") {
+        // Applicants may only upload while an admin has asked them to fix their application.
+        const editable = await db.query.applications.findFirst({
+            where: {
+                OR: [{ studentId: user.id }, { userId: user.id }],
+                formId,
+                state: "submitted",
+                status: "attention",
+            },
+            columns: { id: true },
+        });
+        if (!editable) return fail("Абітурієнти не можуть створювати заяви", 403);
+    }
 
     const error = uploadError(file);
     if (error) return fail(error, 400);

@@ -7,6 +7,7 @@ import {
     submitForm,
     submitFormEdit,
     updateApplication,
+    updateApplicationAnswers,
 } from "./form";
 import { logout } from "./auth";
 import { updateUserRole } from "./user";
@@ -38,6 +39,7 @@ export const server = {
     applicantLink: applicantLink,
     deleteForm: deleteForm,
     updateApplication: updateApplication,
+    updateApplicationAnswers: updateApplicationAnswers,
     deleteApplications: deleteApplications,
     deleteCampaign: deleteCampaign,
     deleteProfile: deleteProfile,

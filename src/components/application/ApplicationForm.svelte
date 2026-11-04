@@ -26,6 +26,7 @@
         userChildren = [],
         actionUrl,
         draft,
+        edit,
     }: {
         selectedForm: Form;
         selectedCampaign: CampaignWithProfiles | undefined;
@@ -39,36 +40,46 @@
             student: User | null;
             answers: Record<string, unknown>;
         };
+        edit?: {
+            id: number;
+            studentId: number | null;
+            student: User | null;
+            user: User | null;
+            answers: Record<string, unknown>;
+            notes: string;
+        };
     } = $props();
 
     const toDateInput = (value: unknown) =>
         value ? new Date(value as string | number | Date).toISOString().slice(0, 10) : "";
 
-    const draftStudent = (draft?.answers?.__student ?? {}) as Record<string, string | undefined>;
-    const draftParent = (draft?.answers?.__parent ?? {}) as Record<string, string | undefined>;
-    const answerOf = (slug: string) => draft?.answers?.[slug];
+    const source = edit ?? draft;
+    const draftStudent = (source?.answers?.__student ?? {}) as Record<string, string | undefined>;
+    const draftParent = (source?.answers?.__parent ?? {}) as Record<string, string | undefined>;
+    const answerOf = (slug: string) => source?.answers?.[slug];
 
     let draftId = $state(draft?.id ?? 0);
-    let selectedChildId = $state(draft?.studentId ? String(draft.studentId) : "");
-    let studentId = $state(draft?.studentId ? String(draft.studentId) : "");
+    let selectedChildId = $state(!edit && draft?.studentId ? String(draft.studentId) : "");
+    let studentId = $state(source?.studentId ? String(source.studentId) : "");
     let student = $state({
-        firstName: draft?.student?.firstName ?? draftStudent.firstName ?? "",
-        lastName: draft?.student?.lastName ?? draftStudent.lastName ?? "",
-        middleName: draft?.student?.middleName ?? draftStudent.middleName ?? "",
-        birthDate: draft?.student?.birthDate ? toDateInput(draft.student.birthDate) : (draftStudent.birthDate ?? ""),
-        telephone: draft?.student?.phone ?? draftStudent.telephone ?? "",
+        firstName: source?.student?.firstName ?? draftStudent.firstName ?? "",
+        lastName: source?.student?.lastName ?? draftStudent.lastName ?? "",
+        middleName: source?.student?.middleName ?? draftStudent.middleName ?? "",
+        birthDate: source?.student?.birthDate ? toDateInput(source.student.birthDate) : (draftStudent.birthDate ?? ""),
+        telephone: source?.student?.phone ?? draftStudent.telephone ?? "",
     });
 
     let fieldErrors = $state<Record<string, string>>({});
     let message = $state("");
     let sending = $state(false);
     let formElement = $state<HTMLFormElement>();
+    const parentUser = edit?.user ?? user;
     let parent = $state({
-        firstName: draftParent.firstName ?? user.firstName ?? "",
-        lastName: draftParent.lastName ?? user.lastName ?? "",
-        middleName: draftParent.middleName ?? user.middleName ?? "",
-        birthDate: draftParent.birthDate ?? toDateInput(user.birthDate),
-        telephone: draftParent.telephone ?? user.phone ?? "",
+        firstName: draftParent.firstName ?? parentUser.firstName ?? "",
+        lastName: draftParent.lastName ?? parentUser.lastName ?? "",
+        middleName: draftParent.middleName ?? parentUser.middleName ?? "",
+        birthDate: draftParent.birthDate ?? toDateInput(parentUser.birthDate),
+        telephone: draftParent.telephone ?? parentUser.phone ?? "",
     });
 
     let saveStatus = $state<"idle" | "saving" | "saved">("idle");
@@ -92,7 +103,7 @@
     const uploadTokens: Record<string, number> = {};
 
     function scheduleSave() {
-        if (sending) return;
+        if (sending || edit) return;
         dirty = true;
         saveStatus = "idle";
         clearTimeout(saveTimer);
@@ -247,7 +258,8 @@
         fieldErrors = {};
 
         try {
-            const result = await actions.submitForm(new FormData(formElement));
+            const formData = new FormData(formElement);
+            const result = edit ? await actions.updateApplicationAnswers(formData) : await actions.submitForm(formData);
 
             if (result.error) {
                 message = result.error.message;
@@ -263,7 +275,11 @@
                 message = result.data.message || "";
                 fieldErrors = result.data.fieldErrors || {};
             } else {
-                window.location.assign(`/cabinet/application?success=true&preview=${result.data.id}`);
+                window.location.assign(
+                    edit
+                        ? `/cabinet/application?preview=${result.data.id}`
+                        : `/cabinet/application?success=true&preview=${result.data.id}`,
+                );
                 return;
             }
 
@@ -278,8 +294,14 @@
 </script>
 
 <section class="flex flex-col gap-5">
-    <a href={`/cabinet/application?campaignId=${selectedCampaign?.id}`} class="self-start">
-        {"<-"} Назад до профілів
+    <a
+        href={edit
+            ? `/cabinet/application?preview=${edit.id}`
+            : `/cabinet/application?campaignId=${selectedCampaign?.id}`}
+        class="self-start"
+    >
+        {"<-"}
+        {edit ? "Назад до заяви" : "Назад до профілів"}
     </a>
 
     <div>
@@ -288,6 +310,13 @@
             <p class="pt-2">{selectedForm.description}</p>
         {/if}
     </div>
+
+    {#if edit?.notes}
+        <div class="card flex flex-col gap-2">
+            <h3>Нотатки</h3>
+            <p class="whitespace-pre-wrap">{edit.notes}</p>
+        </div>
+    {/if}
 
     <form
         class="flex flex-col"
@@ -298,10 +327,14 @@
         oninput={scheduleSave}
         onchange={scheduleSave}
     >
-        <input type="hidden" name="draftId" value={draftId || ""} />
+        {#if edit}
+            <input type="hidden" name="applicationId" value={edit.id} />
+        {:else}
+            <input type="hidden" name="draftId" value={draftId || ""} />
+        {/if}
         <div class="card flex flex-col gap-5 mb-5">
             <h3>Інформація учня</h3>
-            {#if userChildren.length > 0}
+            {#if !edit && userChildren.length > 0}
                 <label class="flex flex-col gap-1">
                     Оберіть учня
                     <select onchange={selectChild}>
@@ -556,11 +589,21 @@
             </p>
         {/if}
         <button class="btn-default" disabled={sending || uploading}>
-            {sending ? "Надсилання..." : uploading ? "Завантаження файлів..." : "Надіслати"}
+            {sending
+                ? edit
+                    ? "Збереження..."
+                    : "Надсилання..."
+                : uploading
+                  ? "Завантаження файлів..."
+                  : edit
+                    ? "Зберегти зміни"
+                    : "Надіслати"}
         </button>
-        <p class="opacity-75">
-            Натискаючи кнопку "Надіслати", ви надаєте згоду на обробку ваших персональних даних відповідно до Закону
-            України "Про захист персональних даних"
-        </p>
+        {#if !edit}
+            <p class="opacity-75">
+                Натискаючи кнопку "Надіслати", ви надаєте згоду на обробку ваших персональних даних відповідно до Закону
+                України "Про захист персональних даних"
+            </p>
+        {/if}
     </form>
 </section>

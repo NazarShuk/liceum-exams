@@ -64,6 +64,96 @@ function validateAnswer(field: Field, value: unknown): string | null {
     return null;
 }
 
+async function collectAnswers(
+    form: { schema: Schema },
+    rawForm: FormData | null,
+    input: Record<string, unknown>,
+    userId: number,
+    path: string,
+    existingAnswers: Record<string, unknown> = {},
+) {
+    const formFields: Record<string, unknown> = {};
+    const errors: string[] = [];
+    const fieldErrors: Record<string, string> = {};
+    for (const field of form.schema) {
+        const key = "form-" + field.slug;
+        const label = field.title || field.slug;
+        let value =
+            field.type === "multiselect"
+                ? rawForm
+                    ? rawForm
+                          .getAll(key)
+                          .map(String)
+                          .filter((v) => v !== "")
+                    : (input[key] ?? [])
+                : rawForm
+                  ? (rawForm.get(key) ?? "")
+                  : (input[key] ?? "");
+
+        if (field.type === "file") {
+            // A file uploaded on selection wins; the file input stays only as a no-JS fallback.
+            const uploadedKey = rawForm ? rawForm.get("upload-" + field.slug) : input["upload-" + field.slug];
+            if (typeof uploadedKey === "string" && uploadedKey !== "") value = uploadedKey;
+            else if (value instanceof File && value.size === 0 && !value.name) value = "";
+        }
+
+        formFields[field.slug] = value;
+        const existing = existingAnswers[field.slug];
+        const existingKey =
+            typeof existing === "object" && existing !== null && "key" in existing && typeof existing.key === "string"
+                ? existing.key
+                : undefined;
+        const fileError = value instanceof File ? uploadError(value) : null;
+        const error = fileError
+            ? `"${label}": ${fileError}`
+            : value instanceof File
+              ? null
+              : field.type === "file" && value !== ""
+                ? isFileKey(value, userId, field.slug) || value === existingKey
+                    ? null
+                    : `"${label}": некоректний файл`
+                : validateAnswer(field, value);
+        if (error) {
+            errors.push(error);
+            fieldErrors[key] = error;
+            logErrorEvent({
+                source: "user",
+                type: "form_validation_error",
+                path,
+                field: field.slug,
+                value:
+                    typeof value === "string"
+                        ? value.slice(0, 200)
+                        : Array.isArray(value)
+                          ? value.map(String).join(",").slice(0, 200)
+                          : "",
+                userId,
+            });
+        }
+    }
+    return { formFields, errors, fieldErrors };
+}
+
+async function storeFiles(form: { schema: Schema }, formFields: Record<string, unknown>, userId: number) {
+    for (const field of form.schema) {
+        if (field.type !== "file") continue;
+        const file = formFields[field.slug];
+        if (file instanceof File) {
+            const key = fileKeyFor(userId, field.slug);
+            await env.FILE_BUCKET.put(key, await file.arrayBuffer(), {
+                customMetadata: {
+                    owner: userId.toString(),
+                    fileName: file.name,
+                    fileType: file.type,
+                },
+            });
+            formFields[field.slug] = { key };
+        } else if (typeof file === "string" && file !== "") {
+            formFields[field.slug] = { key: file };
+        }
+    }
+}
+
 export const submitForm = defineAction({
     accept: "form",
     input: z.looseObject({
@@ -133,62 +223,13 @@ export const submitForm = defineAction({
                 rawForm = null;
             }
 
-            const formFields: Record<string, unknown> = {};
-            const errors: string[] = [];
-            const fieldErrors: Record<string, string> = {};
-            for (const field of form.schema) {
-                const key = "form-" + field.slug;
-                const label = field.title || field.slug;
-                let value =
-                    field.type === "multiselect"
-                        ? rawForm
-                            ? rawForm
-                                  .getAll(key)
-                                  .map(String)
-                                  .filter((v) => v !== "")
-                            : ((input as Record<string, unknown>)[key] ?? [])
-                        : rawForm
-                          ? (rawForm.get(key) ?? "")
-                          : ((input as Record<string, unknown>)[key] ?? "");
-
-                if (field.type === "file") {
-                    // A file uploaded on selection wins; the file input stays only as a no-JS fallback.
-                    const uploadedKey = rawForm
-                        ? rawForm.get("upload-" + field.slug)
-                        : (input as Record<string, unknown>)["upload-" + field.slug];
-                    if (typeof uploadedKey === "string" && uploadedKey !== "") value = uploadedKey;
-                    else if (value instanceof File && value.size === 0 && !value.name) value = "";
-                }
-
-                formFields[field.slug] = value;
-                const fileError = value instanceof File ? uploadError(value) : null;
-                const error = fileError
-                    ? `"${label}": ${fileError}`
-                    : value instanceof File
-                      ? null
-                      : field.type === "file" && value !== ""
-                        ? isFileKey(value, context.locals.user.id, field.slug)
-                            ? null
-                            : `"${label}": некоректний файл`
-                        : validateAnswer(field, value);
-                if (error) {
-                    errors.push(error);
-                    fieldErrors[key] = error;
-                    logErrorEvent({
-                        source: "user",
-                        type: "form_validation_error",
-                        path: context.url?.pathname || "/",
-                        field: field.slug,
-                        value:
-                            typeof value === "string"
-                                ? value.slice(0, 200)
-                                : Array.isArray(value)
-                                  ? value.map(String).join(",").slice(0, 200)
-                                  : "",
-                        userId: context.locals.user?.id,
-                    });
-                }
-            }
+            const { formFields, errors, fieldErrors } = await collectAnswers(
+                form,
+                rawForm,
+                input as Record<string, unknown>,
+                context.locals.user.id,
+                context.url?.pathname || "/",
+            );
             if (errors.length > 0) return { success: false, message: errors.join("; "), fieldErrors };
 
             await db
@@ -332,23 +373,7 @@ export const submitForm = defineAction({
                 });
             }
 
-            for (const field of form.schema) {
-                if (field.type !== "file") continue;
-                const file = formFields[field.slug];
-                if (file instanceof File) {
-                    const key = fileKeyFor(context.locals.user.id, field.slug);
-                    await env.FILE_BUCKET.put(key, await file.arrayBuffer(), {
-                        customMetadata: {
-                            owner: context.locals.user.id.toString(),
-                            fileName: file.name,
-                            fileType: file.type,
-                        },
-                    });
-                    formFields[field.slug] = { key };
-                } else if (typeof file === "string" && file !== "") {
-                    formFields[field.slug] = { key: file };
-                }
-            }
+            await storeFiles(form, formFields, context.locals.user.id);
 
             const draft =
                 input.draftId == null
@@ -406,6 +431,118 @@ export const submitForm = defineAction({
                 source: "server",
                 type: "form_submit_exception",
                 path: context.url?.pathname || "/",
+                userId: context.locals.user?.id,
+                message: e instanceof Error ? e.message : String(e),
+            });
+            throw new ActionError({ code: "INTERNAL_SERVER_ERROR" });
+        }
+    },
+});
+
+export const updateApplicationAnswers = defineAction({
+    accept: "form",
+    input: z.looseObject({
+        applicationId: z.coerce.number().int().positive(),
+
+        studentfirstName: z.string().min(1, "Вкажіть ім'я учня"),
+        studentlastName: z.string().min(1, "Вкажіть прізвище учня"),
+        studentmiddleName: z.string().optional(),
+
+        studentBirthDate: birthDate,
+        studentTelephone: z.string().regex(/^380\d{9}$/, "Введіть номер у форматі 380XXXXXXXXX"),
+
+        parentfirstName: z.string().min(1, "Вкажіть ім'я"),
+        parentlastName: z.string().min(1, "Вкажіть прізвище"),
+        parentmiddleName: z.string().optional(),
+
+        parentBirthDate: birthDate,
+        parentTelephone: z.string().regex(/^380\d{9}$/, "Введіть номер у форматі 380XXXXXXXXX"),
+    }),
+    handler: async (input, context) => {
+        try {
+            const user = context.locals.user;
+            if (!user) throw new ActionError({ code: "UNAUTHORIZED" });
+
+            const db = getDrizzle();
+            const application = await db.query.applications.findFirst({
+                where: { id: input.applicationId, state: "submitted" },
+                with: { form: true },
+            });
+            // Only the application's parent or student may see or edit it.
+            if (!application || (application.userId !== user.id && application.studentId !== user.id)) {
+                throw new ActionError({ code: "NOT_FOUND", message: "Заяву не знайдено" });
+            }
+            if (application.status !== "attention") {
+                throw new ActionError({
+                    code: "FORBIDDEN",
+                    message: "Редагування доступне лише для заяв зі статусом «Зверніть увагу»",
+                });
+            }
+            const form = application.form;
+            if (!form) throw new ActionError({ code: "BAD_REQUEST" });
+
+            let rawForm: FormData | null = null;
+            try {
+                rawForm = await context.request.formData();
+            } catch {
+                rawForm = null;
+            }
+
+            const { formFields, errors, fieldErrors } = await collectAnswers(
+                form,
+                rawForm,
+                input as Record<string, unknown>,
+                user.id,
+                context.url?.pathname || "/",
+                application.answers,
+            );
+            if (errors.length > 0) return { success: false, message: errors.join("; "), fieldErrors };
+
+            await storeFiles(form, formFields, user.id);
+
+            await db
+                .update(users)
+                .set({
+                    firstName: input.parentfirstName,
+                    lastName: input.parentlastName,
+                    middleName: input.parentmiddleName || null,
+                    birthDate: input.parentBirthDate,
+                    phone: input.parentTelephone,
+                })
+                .where(eq(users.id, application.userId));
+
+            if (application.studentId != null) {
+                await db
+                    .update(users)
+                    .set({
+                        firstName: input.studentfirstName,
+                        lastName: input.studentlastName,
+                        middleName: input.studentmiddleName || null,
+                        birthDate: input.studentBirthDate,
+                        phone: input.studentTelephone,
+                    })
+                    .where(eq(users.id, application.studentId));
+            }
+
+            await db
+                .update(applications)
+                .set({ answers: formFields, status: "pending" })
+                .where(eq(applications.id, application.id));
+
+            logEvent({
+                type: "application_edit",
+                user,
+                path: context.url?.pathname,
+                target: "applications",
+                targetId: application.id,
+            });
+            return { success: true, id: application.id };
+        } catch (e) {
+            if (e instanceof ActionError) throw e;
+            console.error(e);
+            logErrorEvent({
+                source: "server",
+                type: "application_edit_exception",
                 userId: context.locals.user?.id,
                 message: e instanceof Error ? e.message : String(e),
             });
