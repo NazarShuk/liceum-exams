@@ -80,7 +80,7 @@ if (!Astro.url.pathname.startsWith("/news")) {
     aria-controls="sidebar"
     aria-expanded="false"
     aria-label="Відкрити меню"
-    class="fixed left-2 top-2 z-60 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-diia-bright-grey focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black lg:hidden"
+    class="fixed left-2 top-2 z-60 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-diia-bright-grey focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black lg:hidden cursor-pointer"
 >
     <span class="material-symbols-outlined" data-sidebar-icon="open">
         menu
@@ -102,7 +102,7 @@ if (!Astro.url.pathname.startsWith("/news")) {
     <nav class="overflow-hidden flex flex-col justify-between h-full">
         <ul class="h-full overflow-auto">
             {visibleLinks.map((link) => (
-                <li class={`${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl`}>
+                <li class={`${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl ${!link.href ? "mt-5" : ""}`}>
                     <a
                         class="flex flex-row items-center p-2.5 gap-1"
                         href={link.href}
@@ -115,7 +115,7 @@ if (!Astro.url.pathname.startsWith("/news")) {
             ))}
         </ul>
 
-        <div class="flex flex-col justify-end h-fit gap-5 w-full p-1 border-t border-diia-bright-grey min-h-24">
+        <div class="flex flex-col justify-end h-fit gap-5 w-full p-1 border-t border-diia-bright-grey min-h-24 mb-5">
             <a
                 class="relative flex flex-row items-center gap-1"
                 href={"/news"}
