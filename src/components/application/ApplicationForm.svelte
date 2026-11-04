@@ -508,7 +508,7 @@
     </div>
 
     {#if edit?.notes}
-        <div class="card flex flex-col gap-2">
+        <div class="card flex flex-col gap-2 border-liceum-grey!">
             <h3>Нотатки</h3>
             <p class="whitespace-pre-wrap">{edit.notes}</p>
         </div>
@@ -545,20 +545,6 @@
             <input type="hidden" name="studentId" value={studentId} />
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <label class="flex flex-col gap-1">
-                    Ім'я
-                    <input
-                        name="studentfirstName"
-                        required
-                        placeholder="..."
-                        readonly={selectedChildId !== ""}
-                        bind:value={student.firstName}
-                        aria-invalid={fieldErrors.studentfirstName ? "true" : undefined}
-                    />
-                    {#if fieldErrors.studentfirstName}
-                        <span class="text-diia-red" role="alert">{fieldErrors.studentfirstName}</span>
-                    {/if}
-                </label>
-                <label class="flex flex-col gap-1">
                     Прізвище
                     <input
                         name="studentlastName"
@@ -570,6 +556,20 @@
                     />
                     {#if fieldErrors.studentlastName}
                         <span class="text-diia-red" role="alert">{fieldErrors.studentlastName}</span>
+                    {/if}
+                </label>
+                <label class="flex flex-col gap-1">
+                    Ім'я
+                    <input
+                        name="studentfirstName"
+                        required
+                        placeholder="..."
+                        readonly={selectedChildId !== ""}
+                        bind:value={student.firstName}
+                        aria-invalid={fieldErrors.studentfirstName ? "true" : undefined}
+                    />
+                    {#if fieldErrors.studentfirstName}
+                        <span class="text-diia-red" role="alert">{fieldErrors.studentfirstName}</span>
                     {/if}
                 </label>
                 <label class="flex flex-col gap-1">
@@ -622,19 +622,6 @@
             <h3>Інформація батьків</h3>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <label class="flex flex-col gap-1">
-                    Ім'я
-                    <input
-                        name="parentfirstName"
-                        required
-                        bind:value={parent.firstName}
-                        placeholder="..."
-                        aria-invalid={fieldErrors.parentfirstName ? "true" : undefined}
-                    />
-                    {#if fieldErrors.parentfirstName}
-                        <span class="text-diia-red" role="alert">{fieldErrors.parentfirstName}</span>
-                    {/if}
-                </label>
-                <label class="flex flex-col gap-1">
                     Прізвище
                     <input
                         name="parentlastName"
@@ -645,6 +632,19 @@
                     />
                     {#if fieldErrors.parentlastName}
                         <span class="text-diia-red" role="alert">{fieldErrors.parentlastName}</span>
+                    {/if}
+                </label>
+                <label class="flex flex-col gap-1">
+                    Ім'я
+                    <input
+                        name="parentfirstName"
+                        required
+                        bind:value={parent.firstName}
+                        placeholder="..."
+                        aria-invalid={fieldErrors.parentfirstName ? "true" : undefined}
+                    />
+                    {#if fieldErrors.parentfirstName}
+                        <span class="text-diia-red" role="alert">{fieldErrors.parentfirstName}</span>
                     {/if}
                 </label>
                 <label class="flex flex-col gap-1">

@@ -15,19 +15,40 @@ const sessionCookie = {
 };
 
 export const GET = (async (context) => {
+    if (context.url.searchParams.has("start")) {
+        const nonce = crypto.randomUUID();
+        const inviteId = (context.url.searchParams.get("invite") ?? "").slice(0, 64);
+        context.cookies.set("oauth_state", `${nonce}|${inviteId ? `inviteId=${inviteId}` : ""}`, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "lax",
+            path: "/",
+            maxAge: 60 * 10,
+        });
+        const params = new URLSearchParams({
+            client_id: env.GOOGLE_CLIENT_ID,
+            redirect_uri: `${context.url.origin}/api/google`,
+            response_type: "code",
+            scope: "openid email profile",
+            state: nonce,
+        });
+        return context.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+    }
+
     const code = context.url.searchParams.get("code") || "";
     if (!code) {
         logErrorEvent({ source: "server", type: "auth_google_missing_code", path: context.url.pathname });
         return new Response(null, { status: 400 });
     }
 
-    // `state` is the nonce rendered into the sign-in cookie; the invite id lives there too,
+    // `state` is the nonce from the sign-in cookie; the invite id lives there too,
     // so a hand-crafted callback URL cannot claim somebody else's invitation.
     const [nonce, inviteId = ""] = (context.cookies.get("oauth_state")?.value ?? "").split("|");
     context.cookies.delete("oauth_state", { path: "/" });
     if (!nonce || nonce !== context.url.searchParams.get("state")) {
         logErrorEvent({ source: "server", type: "auth_google_bad_state", path: context.url.pathname });
-        return new Response(null, { status: 400 });
+        // A stale sign-in tab should land back on a page with a fresh button, not on a blank 400.
+        return context.redirect("/");
     }
 
     try {

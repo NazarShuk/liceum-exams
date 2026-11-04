@@ -43,6 +43,33 @@ body {
     @apply bg-white;
 }
 
+/* The "Зверніть увагу" status badge gets a pulsing dot so it stands out. */
+.status-attention::before {
+    content: "";
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.375rem;
+    border-radius: 9999px;
+    background: var(--color-liceum-red);
+    vertical-align: 0.05em;
+    animation: status-ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes status-ping {
+    75%,
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .status-attention::before {
+        animation: none;
+    }
+}
+
 h1 {
     @apply text-[56px]/[64px]; /*text-[26px]/[38px]*/
     @apply text-black;
@@ -61,7 +88,7 @@ h4 {
 }
 .btn-default {
     @apply px-6.25 py-3.75 text-white rounded-[40px] bg-liceum-blue w-fit transition;
-    @apply hover:cursor-pointer hover:brightness-110;
+    @apply hover:cursor-pointer hover:brightness-110 active:scale-95;
 }
 input,
 textarea {

@@ -44,7 +44,7 @@ const studentName = application.student ? `${application.student.firstName} ${ap
                     статусом і бачити оцінки з екзаменів.
                 </p>
                 <div class="mt-8">
-                    <GoogleSignIn state={`inviteId=${applicantInvite.id}`} />
+                    <GoogleSignIn inviteId={applicantInvite.id} />
                 </div>
             </div>
 
