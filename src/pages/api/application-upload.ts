@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { getDrizzle } from "@db/drizzle";
 import { fileKeyFor, uploadError } from "@lib/uploads";
+import { verifyTurnstile } from "@lib/turnstile";
 
 const fail = (error: string, status: number) => Response.json({ error }, { status });
 
@@ -10,6 +11,9 @@ export const POST = (async ({ request, locals }) => {
     if (!user) return fail("Потрібно увійти в акаунт", 401);
 
     const formData = await request.formData();
+    if (user.role !== "admin" && !(await verifyTurnstile(formData.get("cf-turnstile-response"), request))) {
+        return fail("Підтвердіть, що ви не робот", 403);
+    }
     const file = formData.get("file");
     const formId = Number(formData.get("formId"));
     const field = String(formData.get("field") ?? "");

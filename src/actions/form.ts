@@ -7,6 +7,7 @@ import { env } from "cloudflare:workers";
 import { logErrorEvent, logEvent } from "../lib/analytics";
 import { deleteFormIfUnused } from "../lib/forms";
 import { fileKeyFor, isFileKey, uploadError } from "../lib/uploads";
+import { verifyTurnstile } from "../lib/turnstile";
 import { APPLICATION_STATUSES } from "../lib/status";
 
 type Schema = NonNullable<(typeof forms.$inferSelect)["schema"]>;
@@ -193,6 +194,26 @@ export const submitForm = defineAction({
                 throw new ActionError({ code: "FORBIDDEN", message: "Абітурієнти не можуть створювати заяви" });
             }
 
+            let rawForm: FormData | null = null;
+            try {
+                rawForm = await context.request.formData();
+            } catch {
+                rawForm = null;
+            }
+
+            if (
+                context.locals.user.role !== "admin" &&
+                !(await verifyTurnstile(rawForm?.get("cf-turnstile-response"), context.request))
+            ) {
+                logErrorEvent({
+                    source: "user",
+                    type: "form_turnstile_failed",
+                    path: context.url?.pathname || "/",
+                    userId: context.locals.user.id,
+                });
+                throw new ActionError({ code: "FORBIDDEN", message: "Підтвердіть, що ви не робот" });
+            }
+
             const form = await db.query.forms.findFirst({ where: { id: input.formId } });
             if (!form) {
                 logErrorEvent({
@@ -214,13 +235,6 @@ export const submitForm = defineAction({
                     message: `formId:${form.id},profileId:${input.profileId}`,
                 });
                 throw new ActionError({ code: "BAD_REQUEST" });
-            }
-
-            let rawForm: FormData | null = null;
-            try {
-                rawForm = await context.request.formData();
-            } catch {
-                rawForm = null;
             }
 
             const { formFields, errors, fieldErrors } = await collectAnswers(
@@ -486,6 +500,19 @@ export const updateApplicationAnswers = defineAction({
                 rawForm = await context.request.formData();
             } catch {
                 rawForm = null;
+            }
+
+            if (
+                user.role !== "admin" &&
+                !(await verifyTurnstile(rawForm?.get("cf-turnstile-response"), context.request))
+            ) {
+                logErrorEvent({
+                    source: "user",
+                    type: "form_edit_turnstile_failed",
+                    path: context.url?.pathname || "/",
+                    userId: user.id,
+                });
+                throw new ActionError({ code: "FORBIDDEN", message: "Підтвердіть, що ви не робот" });
             }
 
             const { formFields, errors, fieldErrors } = await collectAnswers(

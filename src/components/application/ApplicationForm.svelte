@@ -1,6 +1,6 @@
 <script lang="ts">
     import { actions, isInputError } from "astro:actions";
-    import { onDestroy, tick } from "svelte";
+    import { onDestroy, onMount, tick } from "svelte";
     import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, uploadError } from "@lib/uploads";
     import type { campaigns, forms, profiles, users } from "@db/schema";
 
@@ -122,6 +122,104 @@
         for (const url of objectUrls) URL.revokeObjectURL(url);
     });
 
+    const TURNSTILE_SITE_KEY = "0x4AAAAAAFzmO4M5QRLIw6bZ";
+
+    let turnstileContainer = $state<HTMLDivElement>();
+    let turnstileError = $state("");
+    let turnstileWidgetId: string | undefined;
+    let turnstileToken: string | null = null;
+    let tokenWaiters: Array<(token: string | null) => void> = [];
+
+    // Tokens are single-use; each upload/submit takes one, then the widget is reset.
+    function takeTurnstileToken(timeoutMs = 30_000): Promise<string | null> {
+        if (turnstileToken) {
+            const token = turnstileToken;
+            turnstileToken = null;
+            return Promise.resolve(token);
+        }
+        return new Promise((resolve) => {
+            let waiter: (token: string | null) => void;
+            const timer = setTimeout(() => {
+                tokenWaiters = tokenWaiters.filter((item) => item !== waiter);
+                resolve(null);
+            }, timeoutMs);
+            waiter = (token) => {
+                clearTimeout(timer);
+                resolve(token);
+            };
+            tokenWaiters.push(waiter);
+        });
+    }
+
+    function resolveTurnstileToken(token: string) {
+        const waiter = tokenWaiters.shift();
+        if (waiter) waiter(token);
+        else turnstileToken = token;
+    }
+
+    function failTurnstileToken() {
+        const waiters = tokenWaiters;
+        tokenWaiters = [];
+        for (const waiter of waiters) waiter(null);
+    }
+
+    function resetTurnstile() {
+        turnstileToken = null;
+        if (turnstileWidgetId && window.turnstile) window.turnstile.reset(turnstileWidgetId);
+    }
+
+    function loadTurnstile() {
+        if (window.turnstile) return Promise.resolve();
+        const existing = document.querySelector<HTMLScriptElement>(
+            'script[src*="challenges.cloudflare.com/turnstile/v0/api.js"]',
+        );
+        if (existing) {
+            return new Promise<void>((resolve, reject) => {
+                existing.addEventListener("load", () => resolve(), { once: true });
+                existing.addEventListener("error", () => reject(new Error("turnstile")), { once: true });
+            });
+        }
+        return new Promise<void>((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+            script.async = true;
+            script.defer = true;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error("turnstile"));
+            document.head.appendChild(script);
+        });
+    }
+
+    onMount(() => {
+        let cancelled = false;
+        loadTurnstile()
+            .then(() => {
+                if (cancelled || !turnstileContainer || !window.turnstile) return;
+                turnstileWidgetId = window.turnstile.render(turnstileContainer, {
+                    sitekey: TURNSTILE_SITE_KEY,
+                    action: "application",
+                    appearance: "interaction-only",
+                    callback: resolveTurnstileToken,
+                    "expired-callback": () => {
+                        turnstileToken = null;
+                    },
+                    "error-callback": () => {
+                        turnstileError = "Не вдалося пройти перевірку. Оновіть сторінку.";
+                        failTurnstileToken();
+                    },
+                });
+            })
+            .catch(() => {
+                if (!cancelled) turnstileError = "Не вдалося завантажити перевірку. Оновіть сторінку.";
+            });
+
+        return () => {
+            cancelled = true;
+            failTurnstileToken();
+            if (turnstileWidgetId && window.turnstile) window.turnstile.remove(turnstileWidgetId);
+        };
+    });
+
     function previewForFile(file: File) {
         const url = URL.createObjectURL(file);
         objectUrls.add(url);
@@ -169,7 +267,7 @@
         }
     }
 
-    function uploadFile(file: File, field: Field, input: HTMLInputElement) {
+    async function uploadFile(file: File, field: Field, input: HTMLInputElement) {
         const slug = field.slug;
         const token = (uploadTokens[slug] ?? 0) + 1;
         uploadTokens[slug] = token;
@@ -189,17 +287,33 @@
             previewIsImage,
         };
 
+        if (!turnstileToken) turnstileContainer?.scrollIntoView({ behavior: "smooth", block: "center" });
+        const turnstile = await takeTurnstileToken();
+        if (!turnstile) {
+            input.value = "";
+            finishUpload({
+                key: previousKey,
+                progress: previousKey ? 100 : 0,
+                error: "Підтвердіть, що ви не робот, і повторіть завантаження",
+                uploading: false,
+                previewUrl: previousPreview,
+                previewIsImage: previousIsImage,
+            });
+            return;
+        }
+
         const data = new FormData();
         data.set("file", file);
         data.set("formId", String(selectedForm.id));
         data.set("field", slug);
+        data.set("cf-turnstile-response", turnstile);
 
-        const finish = (upload: UploadState) => {
+        function finishUpload(upload: UploadState) {
             if (uploadTokens[slug] !== token) return;
             uploads[slug] = upload;
             if (!upload.key) input.value = "";
             scheduleSave();
-        };
+        }
 
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/api/application-upload");
@@ -208,11 +322,12 @@
             uploads[slug] = { ...uploads[slug], progress: Math.round((event.loaded / event.total) * 100) };
         };
         xhr.onload = () => {
+            resetTurnstile();
             if (xhr.status >= 200 && xhr.status < 300) {
                 try {
                     const key = (JSON.parse(xhr.responseText) as { key?: string }).key;
                     if (key) {
-                        finish({ key, progress: 100, error: "", uploading: false, previewUrl, previewIsImage });
+                        finishUpload({ key, progress: 100, error: "", uploading: false, previewUrl, previewIsImage });
                         return;
                     }
                 } catch {
@@ -226,7 +341,7 @@
                 // keep the generic message
             }
             input.value = "";
-            finish({
+            finishUpload({
                 key: previousKey,
                 progress: previousKey ? 100 : 0,
                 error,
@@ -236,8 +351,9 @@
             });
         };
         const fail = () => {
+            resetTurnstile();
             input.value = "";
-            finish({
+            finishUpload({
                 key: previousKey,
                 progress: previousKey ? 100 : 0,
                 error: "Не вдалося завантажити файл",
@@ -326,9 +442,18 @@
         sending = true;
         message = "";
         fieldErrors = {};
+        let usedTurnstile = false;
 
         try {
+            const turnstile = await takeTurnstileToken();
+            if (!turnstile) {
+                message = "Підтвердіть, що ви не робот, і надішліть ще раз";
+                return;
+            }
+            usedTurnstile = true;
+
             const formData = new FormData(formElement);
+            formData.set("cf-turnstile-response", turnstile);
             const result = edit ? await actions.updateApplicationAnswers(formData) : await actions.submitForm(formData);
 
             if (result.error) {
@@ -359,6 +484,7 @@
             message = error instanceof Error ? error.message : "Не вдалося надіслати заяву";
         } finally {
             sending = false;
+            if (usedTurnstile) resetTurnstile();
         }
     }
 </script>
@@ -634,10 +760,7 @@
                         </div>
                         {#if upload?.previewUrl}
                             {#if upload.previewIsImage === false}
-                                <iframe
-                                    src={upload.previewUrl}
-                                    title={field.title}
-                                    class="h-56 w-full rounded lg:w-1/3"
+                                <iframe src={upload.previewUrl} title={field.title} class="h-56 w-full rounded lg:w-1/3"
                                 ></iframe>
                             {:else}
                                 <img
@@ -647,9 +770,9 @@
                                     onerror={() => previewFailed(field.slug)}
                                 />
                             {/if}
-                            {:else}
-                                <!--so the layout stays the same-->
-                                <div class="w-full lg:w-1/3"></div>
+                        {:else}
+                            <!--so the layout stays the same-->
+                            <div class="w-full lg:w-1/3"></div>
                         {/if}
                     </div>
                 {:else}
@@ -677,6 +800,11 @@
             </div>
         {/each}
 
+        <div class="mb-3" bind:this={turnstileContainer}></div>
+        {#if turnstileError}
+            <p class="text-diia-red mb-2" role="alert">{turnstileError}</p>
+        {/if}
+
         <input type="hidden" name="formId" value={selectedForm.id} />
         <input type="hidden" name="profileId" value={selectedProfile.id} />
         {#if Object.keys(fieldErrors).length > 0}
@@ -684,11 +812,9 @@
         {:else if message}
             <p class="text-diia-red" role="alert">{message}</p>
         {/if}
-        {#if saveStatus !== "idle"}
-            <p class="opacity-75 mb-2" role="status">
-                {saveStatus === "saving" ? "Збереження чернетки..." : "Чернетку збережено"}
-            </p>
-        {/if}
+        <p class="opacity-75 mb-2 {saveStatus === 'idle' ? 'invisible' : ''}" role="status">
+            {saveStatus === "saving" ? "Збереження чернетки..." : "Чернетку збережено"}
+        </p>
         <button class="btn-default" disabled={sending || uploading}>
             {sending
                 ? edit

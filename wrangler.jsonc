@@ -22,6 +22,7 @@
     ],
     "vars": {
         "GOOGLE_CLIENT_ID": "140530214278-da3mfhac8mmhgu86miaub1he4s8lobkq.apps.googleusercontent.com",
+        "TURNSTILE_HOSTNAMES": "liceum-exams.nshis.com",
     },
     "r2_buckets": [
         {
