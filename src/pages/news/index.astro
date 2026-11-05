@@ -74,12 +74,24 @@ const filteredNews = news.filter((item) => {
                 <li>
                     <div class="card mb-5">
                         <div class="flex flex-wrap items-center justify-between gap-3">
-                            <a
-                                href={`/news?tag=${encodeURIComponent(item.tag)}`}
-                                class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue transition-colors hover:brightness-95"
-                            >
-                                {item.tag}
-                            </a>
+                            <div class="flex flex-wrap items-center gap-2">
+                                {item.pinned && (
+                                    <span
+                                        class="material-symbols-outlined text-[20px] text-diia-grey"
+                                        title="Закріплена новина"
+                                        aria-label="Закріплена новина"
+                                        role="img"
+                                    >
+                                        push_pin
+                                    </span>
+                                )}
+                                <a
+                                    href={`/news?tag=${encodeURIComponent(item.tag)}`}
+                                    class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue transition-colors hover:brightness-95"
+                                >
+                                    {item.tag}
+                                </a>
+                            </div>
                             <time datetime={parseDbDate(item.createdAt).toISOString()} class="text-sm text-black/60">
                                 {format(parseDbDate(item.createdAt), "d MMMM yyyy", { locale: uk })}
                             </time>
