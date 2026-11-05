@@ -8,6 +8,7 @@ import LiceumLogo from "../assets/LiceumLogo.svg";
 import LiceumLogoVstup from "../assets/LiceumLogoVstup.svg";
 import { getDrizzle } from "@db/drizzle";
 import { markdownExcerpt } from "../lib/markdown";
+import { parseDbDate } from "@lib/dates";
 import { contacts } from "@lib/contacts";
 
 if (Astro.locals.user) {
@@ -92,8 +93,8 @@ const news = await db.query.news.findMany({
                             >
                                 {item.tag}
                             </a>
-                            <time datetime={new Date(item.createdAt).toISOString()} class="text-sm text-black/60">
-                                {format(new Date(item.createdAt), "d MMMM yyyy", { locale: uk })}
+                            <time datetime={parseDbDate(item.createdAt).toISOString()} class="text-sm text-black/60">
+                                {format(parseDbDate(item.createdAt), "d MMMM yyyy", { locale: uk })}
                             </time>
                         </div>
                         <a class="flex flex-col gap-4" href={`/news/${item.id}`}>

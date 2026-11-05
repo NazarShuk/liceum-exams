@@ -28,7 +28,6 @@
         "date-fns": "^4.4.0",
         "drizzle-orm": "^1.0.0-rc.4",
         "jose": "^6.2.12",
-        "marked": "^18.1.2",
         "svelte": "^5.57.1",
         "tailwindcss": "^4.3.3"
     },
@@ -38,12 +37,10 @@
     "devDependencies": {
         "@astrojs/check": "^0.9.10",
         "@types/node": "^26.6.2",
-        "dotenv": "^18.0.5",
         "drizzle-kit": "^1.0.0-rc.4",
         "prettier": "^3.9.10",
         "prettier-plugin-astro": "^1.1.2",
         "prettier-plugin-svelte": "^4.1.1",
-        "tsx": "^4.23.15",
         "typescript": "^6.0.3",
         "wrangler": "^4.147.0"
     }

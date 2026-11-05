@@ -8,6 +8,15 @@ export function uploadError(file: File): string | null {
     return null;
 }
 
+/** R2 keys stored in a saved application's answers. */
+export function answerFileKeys(answers: Record<string, unknown>): string[] {
+    return Object.values(answers).flatMap((answer) => {
+        if (typeof answer !== "object" || answer === null || !("key" in answer)) return [];
+        const key = (answer as { key?: unknown }).key;
+        return typeof key === "string" && key.startsWith("applications/") ? [key] : [];
+    });
+}
+
 /** R2 key for a file uploaded by `userId` for the form field `field`. */
 export function fileKeyFor(userId: number, field: string) {
     return `applications/${userId}/${crypto.randomUUID()}/${encodeURIComponent(field)}`;

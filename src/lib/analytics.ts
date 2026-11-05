@@ -37,7 +37,7 @@ export function logErrorEvent(params: Omit<Event, "source"> & { source: "server"
     write(params);
 }
 
-// Successful actions, i.e. the audit trail shown at /admin/logs.
+// Successful actions for the audit trail.
 export function logEvent(params: {
     type: string;
     user?: { id: number; role: string } | null;

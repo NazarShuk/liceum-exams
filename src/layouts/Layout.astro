@@ -14,7 +14,6 @@ interface Props {
 const { className, title, noPadding } = Astro.props;
 const showChrome = Astro.url.pathname !== "/";
 const icons = [
-    "visibility_off",
     "more_vert",
     "draft",
     "add_circle",
@@ -26,8 +25,6 @@ const icons = [
     "manage_accounts",
     "campaign",
     "event",
-    "ballot",
-    "conversion_path",
     "account_circle",
     "login",
     "push_pin",
@@ -45,7 +42,7 @@ const icons = [
     "info",
     "edit_note",
     "arrow_upward",
-    "arrow_downward"
+    "arrow_downward",
 ];
 ---
 
@@ -61,7 +58,9 @@ const icons = [
             href={`https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=${icons.join(",")}&display=block`}
             rel="stylesheet"
         />
-        {Astro.url.pathname === "/" && <meta name="google-site-verification" content="opb_3F3I2jsNzVlDOvDSS-Wr998r8GadJUsvkKYCME8" />}
+        {Astro.url.pathname === "/" && (
+            <meta name="google-site-verification" content="opb_3F3I2jsNzVlDOvDSS-Wr998r8GadJUsvkKYCME8" />
+        )}
         <ClientRouter />
         <title>{title ? title + " - " : ""} Вступ до ліцею</title>
     </head>

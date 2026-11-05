@@ -8,16 +8,13 @@
     const {
         group,
         teachers,
-        applications,
     }: {
         group: Group & { teachers: User[]; applications: { id: number }[] };
         teachers: User[];
-        applications: { id: number; student: User | null; user: User | null; profile: { title: string } | null }[];
     } = $props();
 
     let title = $state(group.title);
     let selectedTeacherIds = $state<number[]>(group.teachers.map((teacher) => teacher.id));
-    let selectedApplicationIds = $state<number[]>(group.applications.map((application) => application.id));
     let saving = $state(false);
     let deleting = $state(false);
     let error = $state("");
@@ -42,14 +39,8 @@
             : [...selectedTeacherIds, id];
     }
 
-    function toggleApplication(id: number) {
-        selectedApplicationIds = selectedApplicationIds.includes(id)
-            ? selectedApplicationIds.filter((applicationId) => applicationId !== id)
-            : [...selectedApplicationIds, id];
-    }
-
     async function save() {
-        if (saving || !title.trim() || selectedApplicationIds.length === 0) return;
+        if (saving || !title.trim() || group.applications.length === 0) return;
 
         saving = true;
         error = "";
@@ -58,7 +49,7 @@
                 groupId: group.id,
                 title: title.trim(),
                 teacherIds: selectedTeacherIds,
-                applicationIds: selectedApplicationIds,
+                applicationIds: group.applications.map((application) => application.id),
             });
             if (result.error) {
                 error = result.error.message;
@@ -120,17 +111,12 @@
         <button
             type="button"
             class="btn-default"
-            disabled={saving || !title.trim() || selectedApplicationIds.length === 0}
+            disabled={saving || !title.trim() || group.applications.length === 0}
             onclick={save}
         >
             {saving ? "Збереження..." : "Зберегти"}
         </button>
-        <button
-            type="button"
-            class="btn-default bg-diia-red! disabled:opacity-50"
-            disabled={deleting}
-            onclick={remove}
-        >
+        <button type="button" class="btn-default bg-diia-red! disabled:opacity-50" disabled={deleting} onclick={remove}>
             {deleting ? "Видалення..." : "Видалити групу"}
         </button>
     </div>

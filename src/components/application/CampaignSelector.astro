@@ -31,7 +31,6 @@ const { availableCampaigns, selectedCampaign, applicationCounts = {} } = Astro.p
                 {selectedCampaign.profiles.map((profile: ProfileWithForm) => (
                     <ProfileDisplay
                         profile={profile}
-                        selectable
                         href={`/cabinet/application?campaignId=${selectedCampaign.id}&profileId=${profile.id}`}
                         count={applicationCounts[profile.id] ?? 0}
                         client:load

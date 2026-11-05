@@ -130,7 +130,7 @@ if (!previewApplication.form) {
     {previewApplication.form?.schema.length > 0 && (
         <div>
             {previewApplication.form.schema.map((field: FormFieldSchema) => (
-                <FormField preview previewValue={applicationAnswers[field.slug]} {field} />
+                <FormField previewValue={applicationAnswers[field.slug]} {field} />
             ))}
         </div>
     )}

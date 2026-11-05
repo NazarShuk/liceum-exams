@@ -143,7 +143,23 @@ export const deleteCampaign = defineAction({
                 throw new ActionError({ code: "BAD_REQUEST", message: "Кампанію не знайдено" });
             }
 
+            const campaignProfiles = await db
+                .select({ id: profiles.id, formId: profiles.formId })
+                .from(campaignsToProfiles)
+                .innerJoin(profiles, eq(profiles.id, campaignsToProfiles.profileId))
+                .where(eq(campaignsToProfiles.campaignId, input.campaignId));
+
             await db.delete(campaigns).where(eq(campaigns.id, input.campaignId));
+
+            // Drop profiles with no application history so they and their forms do not float around.
+            for (const profile of campaignProfiles) {
+                const applicationCount = await db.$count(applications, eq(applications.profileId, profile.id));
+                if (applicationCount > 0) continue;
+
+                await db.delete(profiles).where(eq(profiles.id, profile.id));
+                if (profile.formId) await deleteFormIfUnused(db, profile.formId);
+            }
+
             logEvent({
                 type: "campaign_delete",
                 user: context.locals.user,

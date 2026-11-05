@@ -6,7 +6,7 @@ import { applications, forms, profiles, users, applicantInvites } from "@db/sche
 import { env } from "cloudflare:workers";
 import { logErrorEvent, logEvent } from "../lib/analytics";
 import { deleteFormIfUnused } from "../lib/forms";
-import { fileKeyFor, isFileKey, uploadError } from "../lib/uploads";
+import { answerFileKeys, fileKeyFor, isFileKey, uploadError } from "../lib/uploads";
 import { verifyTurnstile } from "../lib/turnstile";
 import { enforceRateLimit } from "../lib/rate-limit";
 import { APPLICATION_STATUSES } from "../lib/status";
@@ -154,6 +154,13 @@ async function storeFiles(form: { schema: Schema }, formFields: Record<string, u
             formFields[field.slug] = { key: file };
         }
     }
+}
+
+/** Delete files the user replaced or removed since the previous save. */
+async function discardReplacedFiles(oldAnswers: Record<string, unknown>, newAnswers: Record<string, unknown>) {
+    const kept = new Set(answerFileKeys(newAnswers));
+    const removed = answerFileKeys(oldAnswers).filter((key) => !kept.has(key));
+    if (removed.length > 0) await env.FILE_BUCKET.delete(removed);
 }
 
 export const submitForm = defineAction({
@@ -419,8 +426,9 @@ export const submitForm = defineAction({
 
             if (draft) {
                 await db.update(applications).set(values).where(eq(applications.id, draft.id));
+                await discardReplacedFiles(draft.answers, formFields);
                 logEvent({
-                    type: "draft_save",
+                    type: "application_submit",
                     user: context.locals.user,
                     path: context.url?.pathname,
                     target: "applications",
@@ -558,6 +566,7 @@ export const updateApplicationAnswers = defineAction({
                 .update(applications)
                 .set({ answers: formFields, status: "pending" })
                 .where(eq(applications.id, application.id));
+            await discardReplacedFiles(application.answers, formFields);
 
             logEvent({
                 type: "application_edit",
@@ -747,6 +756,7 @@ export const saveDraft = defineAction({
                     .update(applications)
                     .set(values)
                     .where(and(eq(applications.id, draft.id), eq(applications.state, "draft")));
+                await discardReplacedFiles(draft.answers, answers);
                 return { id: draft.id };
             }
 
@@ -805,7 +815,9 @@ export const deleteDraft = defineAction({
                 throw new ActionError({ code: "NOT_FOUND", message: "Чернетку не знайдено" });
             }
 
+            const fileKeys = answerFileKeys(draft.answers);
             await db.delete(applications).where(eq(applications.id, draft.id));
+            if (fileKeys.length > 0) await env.FILE_BUCKET.delete(fileKeys);
             logEvent({
                 type: "draft_delete",
                 user: context.locals.user,
@@ -855,6 +867,22 @@ export const submitFormEdit = defineAction({
             const db = getDrizzle();
             if (!context.locals.user) throw new ActionError({ code: "UNAUTHORIZED" });
             if (context.locals.user.role !== "admin") throw new ActionError({ code: "UNAUTHORIZED" });
+
+            // The field slug keys every answer, so duplicate or empty slugs would overwrite each other.
+            const slugs = new Set<string>();
+            for (const field of input.schema) {
+                const slug = field.slug.trim();
+                if (!slug || !field.title.trim()) {
+                    throw new ActionError({ code: "BAD_REQUEST", message: "Усі поля форми повинні мати назву" });
+                }
+                if (slugs.has(slug)) {
+                    throw new ActionError({
+                        code: "BAD_REQUEST",
+                        message: `Поля з однаковою назвою: «${field.title}»`,
+                    });
+                }
+                slugs.add(slug);
+            }
 
             const profile = input.profileId
                 ? await db.query.profiles.findFirst({ where: { id: input.profileId } })
@@ -1048,20 +1076,11 @@ export const deleteApplications = defineAction({
                 throw new ActionError({ code: "BAD_REQUEST", message: "Заяв не знайдено" });
             }
 
-            const fileKeys = records.flatMap(({ answers }) =>
-                Object.values(answers).flatMap((answer) => {
-                    if (typeof answer !== "object" || answer === null || !("key" in answer)) {
-                        return [];
-                    }
-                    const key = answer.key;
-                    return typeof key === "string" && key.startsWith("applications/") ? [key] : [];
-                }),
-            );
+            const fileKeys = records.flatMap(({ answers }) => answerFileKeys(answers));
+            await db.delete(applications).where(inArray(applications.id, input.applicationIds));
             if (fileKeys.length > 0) {
                 await env.FILE_BUCKET.delete(fileKeys);
             }
-
-            await db.delete(applications).where(inArray(applications.id, input.applicationIds));
             logEvent({
                 type: "applications_delete",
                 user: context.locals.user,

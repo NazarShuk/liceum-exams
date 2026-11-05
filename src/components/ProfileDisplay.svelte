@@ -8,17 +8,13 @@
         profile,
         onRemove,
         onClick,
-        selectable = false,
         href,
-        className,
         count,
     }: {
         profile: Profile;
         onRemove?: () => void;
         onClick?: () => void;
-        selectable?: boolean;
         href?: string;
-        className?: string;
         count?: number;
     } = $props();
 
@@ -35,9 +31,7 @@
 <a {href}>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
-        class="card relative flex min-h-24 h-fit flex-row items-center gap-4 {className} {onClick
-            ? 'cursor-pointer'
-            : ''}"
+        class="card relative flex min-h-24 h-fit flex-row items-center gap-4 {onClick ? 'cursor-pointer' : ''}"
         role={onClick ? "button" : undefined}
         tabindex={onClick ? 0 : undefined}
         onclick={onClick}

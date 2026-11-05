@@ -4,15 +4,13 @@ type Schema = (typeof forms.$inferSelect)["schema"][0];
 
 interface Props {
     field: Schema;
-    preview: boolean;
     previewValue: unknown | undefined;
 }
 
-const { field, preview, previewValue } = Astro.props;
+const { field, previewValue } = Astro.props;
 
 const name = "form-" + field.slug;
 const options = field.options ?? [];
-const required = !preview && field.required !== false;
 
 const selectedValues = (Array.isArray(previewValue) ? previewValue : previewValue == null ? [] : [previewValue]).map(
     String,
@@ -30,35 +28,29 @@ const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null;
 
 <div class="card mb-5">
     <h4 class="mb-5">{field.title}</h4>
-    {field.type === "file" && preview && fileHref ? (
+    {field.type === "file" && fileHref ? (
         <a class="btn-default" target="_blank" href={fileHref}>
             Завантажити файл
         </a>
     ) : field.type === "select" || field.type === "multiselect" ? (
-        <fieldset class="flex flex-col gap-2 lg:w-3/4 w-full" disabled={preview}>
-            {options.map((option) => {
-                const checked = preview && selectedValues.includes(option);
-                const inputName = field.type === "multiselect" ? name : name;
-                return (
-                    <label class="flex items-center gap-2">
-                        <input
-                            type={field.type === "multiselect" ? "checkbox" : "radio"}
-                            name={inputName}
-                            value={option}
-                            required={required && field.type === "select"}
-                            checked={checked}
-                            disabled={preview}
-                        />
-                        <span>{option}</span>
-                    </label>
-                );
-            })}
+        <fieldset class="flex flex-col gap-2 lg:w-3/4 w-full" disabled>
+            {options.map((option) => (
+                <label class="flex items-center gap-2">
+                    <input
+                        type={field.type === "multiselect" ? "checkbox" : "radio"}
+                        name={name}
+                        value={option}
+                        checked={selectedValues.includes(option)}
+                        disabled
+                    />
+                    <span>{option}</span>
+                </label>
+            ))}
         </fieldset>
     ) : (
         <input
-            readonly={preview}
-            required={required}
-            value={preview ? textValue : undefined}
+            readonly
+            value={textValue}
             class="lg:w-3/4 w-full"
             name={name}
             placeholder={"Ваша відповідь..."}
