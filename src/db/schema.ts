@@ -156,6 +156,8 @@ export const news = sqliteTable("news", {
     title: text("title").notNull(),
     tag: text("tag").notNull(),
     content: text("content").notNull(),
+    pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
+    hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
 
     createdAt: text("created_at")
         .notNull()

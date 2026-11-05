@@ -13,7 +13,7 @@ import { logout } from "./auth";
 import { updateUserRole } from "./user";
 import { deleteCampaign, submitCampaignEdit } from "./campaign";
 import { deleteProfile, submitProfileEdit } from "./profile";
-import { deleteNews, submitNewsEdit } from "./news";
+import { deleteNews, submitNewsEdit, updateNewsFlags } from "./news";
 import {
     addApplicationsToGroup,
     createGroup,
@@ -30,6 +30,7 @@ export const server = {
     submitCampaignEdit: submitCampaignEdit,
     submitProfileEdit: submitProfileEdit,
     submitNewsEdit: submitNewsEdit,
+    updateNewsFlags: updateNewsFlags,
     createGroup: createGroup,
     submitGroupEdit: submitGroupEdit,
     deleteGroup: deleteGroup,

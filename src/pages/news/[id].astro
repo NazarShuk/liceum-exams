@@ -13,7 +13,8 @@ const item = await db.query.news.findFirst({
     where: { id: Number.parseInt(Astro.params.id || "-1") },
 });
 
-if (!item) {
+const isAdmin = Astro.locals.user?.role === "admin";
+if (!item || (item.hidden && !isAdmin)) {
     return new Response(null, { status: 404 });
 }
 
@@ -33,6 +34,11 @@ if (Astro.locals.user) {
         <div>
             <a href="/news">{"<-"} Усі новини</a>
             <h1 class="mt-3 text-balance">{item.title}</h1>
+            {item.hidden && (
+                <p class="mt-3 rounded bg-diia-gorse px-4 py-2 text-sm text-liceum-orange">
+                    Ця новина прихована від відвідувачів.
+                </p>
+            )}
             <p class="pt-2 text-sm opacity-70">
                 <a href={`/news?tag=${encodeURIComponent(item.tag)}`} class="text-liceum-blue">
                     {item.tag}

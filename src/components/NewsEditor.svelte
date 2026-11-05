@@ -18,6 +18,10 @@
         tag: loadedNews?.tag ?? "",
         // svelte-ignore state_referenced_locally
         content: loadedNews?.content ?? "",
+        // svelte-ignore state_referenced_locally
+        pinned: loadedNews?.pinned ?? false,
+        // svelte-ignore state_referenced_locally
+        hidden: loadedNews?.hidden ?? false,
     });
     let loading = $state(false);
     let errorMessage = $state("");
@@ -28,6 +32,8 @@
             title: item.title,
             tag: item.tag,
             content: item.content,
+            pinned: item.pinned,
+            hidden: item.hidden,
         });
 
     savedSnapshot = currentSnapshot();
@@ -57,6 +63,8 @@
                 title: item.title,
                 tag: item.tag,
                 content: item.content,
+                pinned: item.pinned,
+                hidden: item.hidden,
             });
 
             if (result.error) {
@@ -103,12 +111,20 @@
     <input class="w-full" placeholder="Заголовок новини" bind:value={item.title} />
     <input class="w-full" placeholder="Тег" bind:value={item.tag} />
 
+    <div class="flex flex-wrap gap-x-6 gap-y-3">
+        <label class="flex items-center gap-2">
+            <input type="checkbox" bind:checked={item.pinned} />
+            Закріпити новину
+        </label>
+        <label class="flex items-center gap-2">
+            <input type="checkbox" bind:checked={item.hidden} />
+            Приховати з сайту
+        </label>
+    </div>
+
     <MarkdownEditor {carta} bind:value={item.content} />
 
-        
-    <p class="text-diia-green {saved && item.id !== -1 ? '' : "invisible"}" role="status">
-        Зміни збережено!
-    </p>
+    <p class="text-diia-green {saved && item.id !== -1 ? '' : 'invisible'}" role="status">Зміни збережено!</p>
 
     <div class="flex flex-row gap-5">
         <button

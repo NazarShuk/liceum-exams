@@ -1,7 +1,7 @@
 ---
 import { getDrizzle } from "@db/drizzle";
 import { news } from "@db/schema";
-import { gt } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 
 const db = getDrizzle();
 const user = Astro.locals.user;
@@ -92,7 +92,7 @@ const visibleLinks = (user ? authLinks : guestLinks).filter((link) => link.visib
 
 let unreadNews = 0;
 if (user && !Astro.url.pathname.startsWith("/news")) {
-    unreadNews = await db.$count(news, gt(news.createdAt, user.lastNewsRead!));
+    unreadNews = await db.$count(news, and(gt(news.createdAt, user.lastNewsRead!), eq(news.hidden, false)));
 }
 ---
 

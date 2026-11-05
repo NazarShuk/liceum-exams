@@ -10,7 +10,9 @@ import { eq } from "drizzle-orm";
 
 const db = getDrizzle();
 const news = await db.query.news.findMany({
+    where: { hidden: false },
     orderBy: {
+        pinned: "desc",
         createdAt: "desc",
     },
 });

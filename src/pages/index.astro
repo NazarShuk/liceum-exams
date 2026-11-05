@@ -24,8 +24,10 @@ const footerLinks = [
 
 const db = getDrizzle();
 const news = await db.query.news.findMany({
+    where: { hidden: false },
     limit: 3,
     orderBy: {
+        pinned: "desc",
         createdAt: "desc",
     },
 });
