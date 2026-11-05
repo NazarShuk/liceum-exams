@@ -102,9 +102,11 @@ if (!Astro.url.pathname.startsWith("/news")) {
     <nav class="overflow-hidden flex flex-col justify-between h-full">
         <ul class="h-full overflow-auto">
             {visibleLinks.map((link) => (
-                <li class={`${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl ${!link.href ? "mt-5" : ""}`}>
+                <li
+                    class={`${Astro.url.pathname === link.href ? "bg-diia-bright-grey" : ""} rounded-3xl ${!link.href ? "mt-5" : ""}`}
+                >
                     <a
-                        class="flex flex-row items-center p-2.5 gap-1 rounded-3xl transition-colors hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey"
+                        class={`flex flex-row items-center p-2.5 gap-1 rounded-3xl transition-colors ${link.href ? "hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey" : ""}`}
                         href={link.href}
                         aria-current={Astro.url.pathname === link.href ? "page" : undefined}
                     >
