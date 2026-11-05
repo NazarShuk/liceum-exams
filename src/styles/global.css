@@ -196,7 +196,8 @@ select option:checked {
 }
 
 /* Shared markdown output for Carta previews and the public news page. */
-.markdown-body > * + * {
+.markdown-body > * + *,
+.carta-renderer.markdown-body > div > * + * {
     margin-top: 1rem;
 }
 
@@ -223,6 +224,11 @@ select option:checked {
 .markdown-body a {
     color: var(--color-liceum-blue);
     text-decoration: underline;
+}
+
+.markdown-body strong,
+.markdown-body b {
+    font-weight: 700;
 }
 
 .markdown-body blockquote {
@@ -257,12 +263,19 @@ select option:checked {
 }
 
 .markdown-body img {
-    max-width: 100%;
+    display: block;
+    max-width: min(100%, 40rem);
+    max-height: 30rem;
+    width: auto;
     height: auto;
+    margin-inline: auto;
+    border-radius: 0.5rem;
 }
 
 .markdown-body hr {
-    border-color: var(--color-diia-bright-grey);
+    border: 0;
+    border-top: 1px solid var(--color-diia-bright-grey);
+    margin: 2rem 0;
 }
 
 .is-navigating {

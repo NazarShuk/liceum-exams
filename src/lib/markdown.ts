@@ -2,6 +2,7 @@ import { attachment } from "@cartamd/plugin-attachment";
 import { Carta, type Plugin } from "carta-md";
 import type { Element, Root } from "hast";
 import { ALLOWED_UPLOAD_TYPES } from "@lib/uploads";
+import HrIcon from "@components/icons/HrIcon.svelte";
 
 // Raw HTML is dropped by Carta's remark-rehype pipeline; block unsafe URLs like the old marked setup did.
 const isUnsafeUrl = (url: string) => !/^(https?:|mailto:|#|\/|\.)/i.test(url);
@@ -33,6 +34,23 @@ const safeLinks: Plugin = {
     ],
 };
 
+const horizontalRule: Plugin = {
+    icons: [
+        {
+            id: "horizontalRule",
+            label: "Горизонтальна лінія",
+            component: HrIcon,
+            action: (input) => {
+                const line = input.getLine();
+                const insertion = `${line.value.trim() ? "\n\n" : ""}---\n\n`;
+                const position = line.end + insertion.length;
+                input.insertAt(line.end, insertion);
+                input.textarea.setSelectionRange(position, position);
+            },
+        },
+    ],
+};
+
 const newsAttachment = attachment({
     supportedMimeTypes: ALLOWED_UPLOAD_TYPES,
     upload: async (file) => {
@@ -48,7 +66,7 @@ const newsAttachment = attachment({
 });
 
 export const carta = new Carta({
-    extensions: [safeLinks, newsAttachment],
+    extensions: [safeLinks, horizontalRule, newsAttachment],
     sanitizer: false,
 });
 
