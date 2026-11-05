@@ -138,7 +138,7 @@
         {#if item.id > 0}
             <button
                 type="button"
-                class="btn-default {loading ? 'opacity-50' : ''} bg-diia-red!"
+                class="btn-default {loading ? 'opacity-50' : ''} bg-brand-red!"
                 disabled={loading}
                 onclick={deleteNews}
             >

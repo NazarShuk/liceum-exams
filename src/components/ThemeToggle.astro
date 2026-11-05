@@ -1,0 +1,29 @@
+---
+interface Props {
+    class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<button
+    id="theme-toggle"
+    type="button"
+    aria-label="Перемкнути світлу або темну тему"
+    class={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-diia-bright-grey focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${className ?? ""}`}
+>
+    <span class="material-symbols-outlined theme-icon-sun">light_mode</span>
+    <span class="material-symbols-outlined theme-icon-moon">dark_mode</span>
+</button>
+
+<style>
+    .theme-icon-moon {
+        display: none;
+    }
+    :global(.dark) .theme-icon-sun {
+        display: none;
+    }
+    :global(.dark) .theme-icon-moon {
+        display: block;
+    }
+</style>

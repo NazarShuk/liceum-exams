@@ -139,7 +139,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
     </ul>
 
     {linkResult && linkResult.data?.id && (
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5" role="presentation">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50 p-5" role="presentation">
             <div
                 class="card flex w-full max-w-2xl flex-col gap-5 bg-white max-h-screen overflow-auto text-center"
                 role="dialog"
@@ -167,7 +167,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
                     Надішліть це посилання абітурієнту. Абітурієнт зможе зареєструватися та слідкувати за заявою
                     самостійно.
                 </p>
-                <button class="btn-default bg-diia-red! mx-auto" onclick="window.location.reload()">
+                <button class="btn-default bg-brand-red! mx-auto" onclick="window.location.reload()">
                     Закрити
                 </button>
             </div>

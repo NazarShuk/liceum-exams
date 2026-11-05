@@ -116,7 +116,12 @@
         >
             {saving ? "Збереження..." : "Зберегти"}
         </button>
-        <button type="button" class="btn-default bg-diia-red! disabled:opacity-50" disabled={deleting} onclick={remove}>
+        <button
+            type="button"
+            class="btn-default bg-brand-red! disabled:opacity-50"
+            disabled={deleting}
+            onclick={remove}
+        >
             {deleting ? "Видалення..." : "Видалити групу"}
         </button>
     </div>

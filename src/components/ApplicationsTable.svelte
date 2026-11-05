@@ -703,7 +703,7 @@
 
 {#if statusApplication}
     <div
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50 p-5"
         role="presentation"
         onclick={(event) => {
             if (event.target === event.currentTarget) statusApplication = null;
@@ -753,7 +753,7 @@
 
 {#if allowGroupCreate && groupPanelOpen}
     <div
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50 p-5"
         role="presentation"
         onclick={(event) => {
             if (event.target === event.currentTarget) groupPanelOpen = false;

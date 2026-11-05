@@ -241,7 +241,7 @@
             {#if profile.id > 0}
                 <button
                     type="button"
-                    class="btn-default bg-diia-red! {loading ? 'opacity-50' : ''}"
+                    class="btn-default bg-brand-red! {loading ? 'opacity-50' : ''}"
                     disabled={loading}
                     onclick={deleteProfile}
                 >

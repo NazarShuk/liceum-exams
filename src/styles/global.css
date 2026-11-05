@@ -4,29 +4,48 @@
 
 @theme inline {
     --font-e-ukraine: var(--font-e-ukraine);
+}
+
+@theme {
     --color-diia-yellow: #ffda4f;
     --color-diia-lime: #d3db4b;
     --color-diia-light-green: #8fbf34;
-    --color-diia-green: #45ad5b;
-    --color-diia-blue: #3b76bb;
+    --color-diia-green: light-dark(#45ad5b, #5cc46f);
+    --color-diia-blue: light-dark(#3b76bb, #6aa3e0);
     --color-diia-blurple: #525ea8;
     --color-diia-magenta: #a92d8d;
-    --color-diia-red: #cb2f4f;
+    --color-diia-red: light-dark(#cb2f4f, #ff7b8f);
     --color-diia-dark-orange: #e8401f;
-    --color-diia-orange: #ef822a;
-    --color-diia-scarlet: #ff3800;
-    --color-diia-grey: #959595;
-    --color-diia-bright-grey: #e7eef3;
-    --color-diia-gorse: #fff7db;
+    --color-diia-orange: light-dark(#ef822a, #ffa25c);
+    --color-diia-scarlet: light-dark(#ff3800, #ff6b40);
+    --color-diia-grey: light-dark(#959595, #8b8f99);
+    --color-diia-bright-grey: light-dark(#e7eef3, #2a2a32);
+    --color-diia-gorse: light-dark(#fff7db, #382f16);
 
-    --color-liceum-blue: #234a99;
-    --color-liceum-orange: #ef5f01;
-    --color-liceum-green: #55ab03;
-    --color-liceum-red: #de2405;
-    --color-liceum-grey: #a9adb6;
+    --color-liceum-blue: light-dark(#234a99, #8db0f0);
+    --color-liceum-orange: light-dark(#ef5f01, #ff9550);
+    --color-liceum-green: light-dark(#55ab03, #8bc34a);
+    --color-liceum-red: light-dark(#de2405, #ff6f5c);
+    --color-liceum-grey: light-dark(#a9adb6, #6b707a);
 
-    --color-black: #18181b;
-    --color-white: #f4f4f5;
+    --color-black: light-dark(#18181b, #d4d4d8);
+    --color-white: light-dark(#f4f4f5, #1b1b20);
+    --color-page: light-dark(#f4f4f5, #121214);
+    --color-card: light-dark(#ffffff, #232329);
+
+    /* Fixed colors for solid accent surfaces; these must not flip with the theme. */
+    --color-overlay: #000000;
+    --color-on-brand: #f4f4f5;
+    --color-brand-blue: #234a99;
+    --color-brand-red: #cb2f4f;
+}
+
+:root {
+    color-scheme: light;
+}
+
+.dark {
+    color-scheme: dark;
 }
 * {
     @apply font-light lg:text-[16px]/[24px] font-e-ukraine;
@@ -40,7 +59,12 @@ html {
     }
 }
 body {
-    @apply bg-white;
+    background-color: var(--color-page);
+    color: var(--color-black);
+}
+
+.dark .brand-logo {
+    filter: brightness(1.9);
 }
 
 /* The "Зверніть увагу" status badge gets a pulsing dot so it stands out. */
@@ -87,7 +111,7 @@ h4 {
     @apply text-black;
 }
 .btn-default {
-    @apply px-6.25 py-3.75 text-white rounded-[40px] bg-liceum-blue w-fit transition;
+    @apply px-6.25 py-3.75 text-on-brand rounded-[40px] bg-brand-blue w-fit transition;
     @apply hover:cursor-pointer hover:brightness-110 active:scale-95;
 }
 input,
@@ -133,7 +157,7 @@ select option:checked {
     --card-accent: var(--color-liceum-orange);
 }
 .list-colors .card {
-    background-color: color-mix(in srgb, var(--card-accent) 5%, white);
+    background-color: color-mix(in srgb, var(--card-accent) 5%, var(--color-card));
 }
 
 /* Carta editor and viewer follow the Diia/liceum palette. */
@@ -141,7 +165,7 @@ select option:checked {
     --border-color: var(--color-diia-bright-grey);
     --selection-color: rgb(35 74 153 / 0.2);
     --focus-outline: var(--color-liceum-blue);
-    --hover-color: color-mix(in srgb, var(--color-liceum-blue) 10%, white);
+    --hover-color: color-mix(in srgb, var(--color-liceum-blue) 10%, var(--color-white));
     --caret-color: var(--color-black);
     --text-color: var(--color-black);
 }
@@ -149,18 +173,18 @@ select option:checked {
 .carta-theme__default.carta-editor {
     border: 2px solid var(--color-diia-bright-grey);
     border-radius: 0.5rem;
-    background: white;
+    background: var(--color-card);
 }
 
 .carta-theme__default .carta-toolbar {
     padding: 0 0.75rem;
     border-bottom-color: var(--color-diia-bright-grey);
     border-radius: 0.4rem 0.4rem 0 0;
-    background: color-mix(in srgb, var(--color-liceum-blue) 5%, white);
+    background: color-mix(in srgb, var(--color-liceum-blue) 5%, var(--color-card));
 }
 
 .carta-theme__default .carta-toolbar-left button {
-    color: rgb(24 24 27 / 0.7);
+    color: color-mix(in srgb, var(--color-black) 70%, transparent);
 }
 
 .carta-theme__default .carta-toolbar-left button.carta-active {
@@ -169,7 +193,7 @@ select option:checked {
 }
 
 .carta-theme__default .carta-icons-menu {
-    background: white;
+    background: var(--color-card);
     border-color: var(--color-diia-bright-grey);
 }
 
@@ -192,7 +216,7 @@ select option:checked {
 
 .carta-loading-overlay {
     padding: 0.5rem;
-    background: color-mix(in srgb, white 85%, transparent);
+    background: color-mix(in srgb, var(--color-card) 85%, transparent);
 }
 
 /* Shared markdown output for Carta previews and the public news page. */
@@ -234,7 +258,7 @@ select option:checked {
 .markdown-body blockquote {
     border-left: 4px solid var(--color-diia-bright-grey);
     padding-left: 1rem;
-    color: rgb(0 0 0 / 0.65);
+    color: color-mix(in srgb, var(--color-black) 65%, transparent);
 }
 
 .markdown-body code,
@@ -251,8 +275,8 @@ select option:checked {
 
 .markdown-body pre {
     overflow-x: auto;
-    background: var(--color-black);
-    color: var(--color-white);
+    background: #18181b;
+    color: #f4f4f5;
     padding: 1rem;
     border-radius: 0.5rem;
 }
@@ -292,17 +316,20 @@ input[type="checkbox"]:checked {
     background-repeat: no-repeat;
     background-size: 100% 100%;
 }
+.dark input[type="checkbox"]:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M7.875 15.2219L2.85235 10.1993L4.10054 8.95108L7.875 12.7373L15.8877 4.72462L17.1359 5.96104L7.875 15.2219Z' fill='%23f4f4f5'/%3E%3C/svg%3E");
+}
 input[type="radio"] {
     @apply rounded-full;
 }
 input[type="radio"]:checked {
-    background-image: radial-gradient(circle, black 40%, transparent 41%);
+    background-image: radial-gradient(circle, var(--color-black) 40%, transparent 41%);
     background-position: center;
     background-repeat: no-repeat;
 }
 input[type="checkbox"]:focus-visible,
 input[type="radio"]:focus-visible {
-    outline: 2px solid #000;
+    outline: 2px solid var(--color-black);
     outline-offset: 2px;
 }
 
@@ -329,4 +356,10 @@ input[type="radio"]:focus-visible {
 }
 :not(.Mac-OS)::-webkit-scrollbar-track {
     background: #f4f4f5;
+}
+.dark :not(.Mac-OS)::-webkit-scrollbar-thumb {
+    background: #4a4a52;
+}
+.dark :not(.Mac-OS)::-webkit-scrollbar-track {
+    background: var(--color-page);
 }

@@ -258,7 +258,7 @@
     <button
         type="button"
         disabled={loading}
-        class="btn-default bg-diia-red! {loading ? 'opacity-50' : ''}"
+        class="btn-default bg-brand-red! {loading ? 'opacity-50' : ''}"
         onclick={deleteForm}
     >
         Видалити форму

@@ -3,6 +3,7 @@ import { ClientRouter } from "astro:transitions";
 import { Font } from "astro:assets";
 import "../styles/global.css";
 import Sidebar from "./Sidebar.astro";
+import ThemeToggle from "@components/ThemeToggle.astro";
 import LiceumLogoVstup from "../assets/LiceumLogoVstup.svg";
 
 interface Props {
@@ -43,6 +44,8 @@ const icons = [
     "edit_note",
     "arrow_upward",
     "arrow_downward",
+    "light_mode",
+    "dark_mode",
 ];
 ---
 
@@ -54,6 +57,15 @@ const icons = [
         <link rel="icon" href="/favicon.svg" />
         <Font cssVariable="--font-e-ukraine" />
         <meta name="generator" content={Astro.generator} />
+        <script is:inline>
+            (() => {
+                try {
+                    const saved = localStorage.getItem("theme");
+                    const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+                    document.documentElement.classList.toggle("dark", dark);
+                } catch {}
+            })();
+        </script>
         <link
             href={`https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=${icons.join(",")}&display=block`}
             rel="stylesheet"
@@ -65,11 +77,12 @@ const icons = [
         <title>{title ? title + " - " : ""} Вступ до ліцею</title>
     </head>
     <body class="flex min-h-screen flex-col">
+        {showChrome && <ThemeToggle class="fixed right-2 top-2 z-60" />}
         {showChrome && (
             <header class="sticky top-0 z-40 w-full bg-white">
                 <nav class="flex h-16 w-full items-center gap-4 border-b border-diia-bright-grey px-4 py-1 max-lg:pl-16">
                     <a class="h-full" href="/">
-                        <LiceumLogoVstup class={"h-full w-full"} />
+                        <LiceumLogoVstup class={"brand-logo h-full w-full"} />
                     </a>
                 </nav>
             </header>
@@ -92,6 +105,29 @@ const icons = [
 </html>
 
 <script>
+    const root = document.documentElement;
+
+    function setTheme(dark: boolean) {
+        root.classList.toggle("dark", dark);
+        try {
+            localStorage.setItem("theme", dark ? "dark" : "light");
+        } catch {}
+    }
+
+    document.addEventListener("click", (event) => {
+        if ((event.target as Element | null)?.closest("#theme-toggle")) {
+            setTheme(!root.classList.contains("dark"));
+        }
+    });
+
+    document.addEventListener("astro:after-swap", () => {
+        try {
+            const saved = localStorage.getItem("theme");
+            const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+            root.classList.toggle("dark", dark);
+        } catch {}
+    });
+
     document.addEventListener("astro:before-preparation", () => {
         document.documentElement.classList.add("is-navigating");
     });

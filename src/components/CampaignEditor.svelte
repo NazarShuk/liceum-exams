@@ -244,7 +244,7 @@
         {#if campaign.id > 0}
             <button
                 type="button"
-                class="btn-default{loading ? 'opacity-50' : ''} bg-diia-red!"
+                class="btn-default{loading ? 'opacity-50' : ''} bg-brand-red!"
                 disabled={loading}
                 onclick={deleteCampaign}
             >
@@ -255,7 +255,7 @@
 
     {#if editingProfileId !== null}
         <div
-            class="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-2 sm:p-4"
+            class="fixed inset-0 z-60 flex items-center justify-center bg-overlay/50 p-2 sm:p-4"
             role="presentation"
             onclick={closeProfileEditor}
         >
