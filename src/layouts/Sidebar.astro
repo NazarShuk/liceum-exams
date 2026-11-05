@@ -4,8 +4,9 @@ import { news } from "@db/schema";
 import { gt } from "drizzle-orm";
 
 const db = getDrizzle();
+const user = Astro.locals.user;
 
-const links = [
+const authLinks = [
     {
         name: "Мої заяви",
         href: "/cabinet",
@@ -15,7 +16,7 @@ const links = [
     {
         name: "Створити заяву",
         href: "/cabinet/application",
-        visible: Astro.locals.user.role !== "applicant",
+        visible: user?.role !== "applicant",
         icon: "add_circle",
     },
     {
@@ -32,45 +33,66 @@ const links = [
     },
     {
         name: "Адміністрування",
-        visible: Astro.locals.user.role === "admin",
+        visible: user?.role === "admin",
     },
     {
         name: "Заяви",
         href: "/admin/applications",
-        visible: Astro.locals.user.role === "admin",
+        visible: user?.role === "admin",
         icon: "table",
     },
     {
         name: "Групи",
         href: "/admin/groups",
-        visible: Astro.locals.user.role === "admin" || Astro.locals.user.role === "teacher",
+        visible: user?.role === "admin" || user?.role === "teacher",
         icon: "groups",
     },
     {
         name: "Кампанії",
         href: "/admin/campaigns",
-        visible: Astro.locals.user.role === "admin",
+        visible: user?.role === "admin",
         icon: "event",
     },
     {
         name: "Новини",
         href: "/admin/news",
-        visible: Astro.locals.user.role === "admin",
+        visible: user?.role === "admin",
         icon: "campaign",
     },
     {
         name: "Користувачі",
         href: "/admin/users",
-        visible: Astro.locals.user.role === "admin",
+        visible: user?.role === "admin",
         icon: "manage_accounts",
     },
 ];
 
-const visibleLinks = links.filter((link) => link.visible);
+const guestLinks = [
+    {
+        name: "Увійти",
+        href: "/api/google?start=1",
+        visible: true,
+        icon: "login",
+    },
+    {
+        name: "Контакти",
+        href: "/contacts",
+        visible: true,
+        icon: "call",
+    },
+    {
+        name: "Новини",
+        href: "/news",
+        visible: true,
+        icon: "campaign",
+    },
+];
+
+const visibleLinks = (user ? authLinks : guestLinks).filter((link) => link.visible);
 
 let unreadNews = 0;
-if (!Astro.url.pathname.startsWith("/news")) {
-    unreadNews = await db.$count(news, gt(news.createdAt, Astro.locals.user.lastNewsRead!));
+if (user && !Astro.url.pathname.startsWith("/news")) {
+    unreadNews = await db.$count(news, gt(news.createdAt, user.lastNewsRead!));
 }
 ---
 
@@ -108,6 +130,8 @@ if (!Astro.url.pathname.startsWith("/news")) {
                     <a
                         class={`flex flex-row items-center p-2.5 gap-1 rounded-3xl transition-colors ${link.href ? "hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey" : ""}`}
                         href={link.href}
+                        data-astro-reload={link.href?.startsWith("/api/") ? true : undefined}
+                        data-astro-prefetch={link.href?.startsWith("/api/") ? "false" : undefined}
                         aria-current={Astro.url.pathname === link.href ? "page" : undefined}
                     >
                         {link.icon && <span class="material-symbols-outlined">{link.icon}</span>}
@@ -117,26 +141,28 @@ if (!Astro.url.pathname.startsWith("/news")) {
             ))}
         </ul>
 
-        <div class="flex flex-col justify-end h-fit gap-5 w-full p-1 border-t border-diia-bright-grey min-h-24 mb-5">
-            <a
-                class="relative flex flex-row items-center gap-1 rounded-xl transition-colors hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey"
-                href={"/news"}
-                aria-current={Astro.url.pathname === "/news" ? "page" : undefined}
-            >
-                <span class="material-symbols-outlined">campaign</span>
-                Новини
-                {unreadNews > 0 && (
-                    <div class="absolute top-1/2 left-0 w-4 h-4 bg-liceum-red rounded-full animate-ping -translate-y-1/2 translate-x-1/2"></div>
-                )}
-            </a>
-            <a
-                href="/cabinet/account"
-                class="flex flex-row items-center gap-1 rounded-xl transition-colors hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey"
-            >
-                <span class="material-symbols-outlined">account_circle</span>
-                {Astro.locals.user.firstName + " " + Astro.locals.user.lastName}
-            </a>
-        </div>
+        {user && (
+            <div class="flex flex-col justify-end h-fit gap-5 w-full p-1 border-t border-diia-bright-grey min-h-24 mb-5">
+                <a
+                    class="relative flex flex-row items-center gap-1 rounded-xl transition-colors hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey"
+                    href={"/news"}
+                    aria-current={Astro.url.pathname === "/news" ? "page" : undefined}
+                >
+                    <span class="material-symbols-outlined">campaign</span>
+                    Новини
+                    {unreadNews > 0 && (
+                        <div class="absolute top-1/2 left-0 w-4 h-4 bg-liceum-red rounded-full animate-ping -translate-y-1/2 translate-x-1/2"></div>
+                    )}
+                </a>
+                <a
+                    href="/cabinet/account"
+                    class="flex flex-row items-center gap-1 rounded-xl transition-colors hover:bg-diia-bright-grey/60 active:bg-diia-bright-grey"
+                >
+                    <span class="material-symbols-outlined">account_circle</span>
+                    {user.firstName + " " + user.lastName}
+                </a>
+            </div>
+        )}
     </nav>
 </aside>
 

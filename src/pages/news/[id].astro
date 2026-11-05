@@ -29,7 +29,7 @@ if (Astro.locals.user) {
 ---
 
 <Layout title={item.title}>
-    <section class={`${!Astro.locals.user ? "mx-auto max-w-5xl px-5 py-12 sm:px-8" : ""}`}>
+    <section>
         <div>
             <a href="/news">{"<-"} Усі новини</a>
             <h1 class="mt-3 text-balance">{item.title}</h1>

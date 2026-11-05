@@ -37,9 +37,8 @@ const filteredNews = news.filter((item) => {
 ---
 
 <Layout title="Новини">
-    <section class={`${!Astro.locals.user ? "mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-12" : ""} `}>
+    <section>
         <h1>Новини</h1>
-        <a href="/">На головну</a>
         <form method="get" class="mt-5 grid gap-3 sm:flex sm:flex-wrap sm:items-end" role="search">
             <label class="min-w-0 sm:flex-1">
                 <span class="sr-only">Пошук новин</span>
