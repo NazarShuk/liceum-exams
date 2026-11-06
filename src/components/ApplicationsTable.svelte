@@ -34,6 +34,7 @@
         allowStatusEdit = false,
         allProfiles = false,
         groupId = null,
+        fillHeight = false,
     }: {
         applications: Application[];
         campaigns: CampaignWithProfiles[];
@@ -45,6 +46,7 @@
         allowStatusEdit?: boolean;
         allProfiles?: boolean;
         groupId?: number | null;
+        fillHeight?: boolean;
     } = $props();
 
     // svelte-ignore state_referenced_locally
@@ -444,221 +446,103 @@
     });
 </script>
 
-{#if !allProfiles}
-    <div class="flex flex-row gap-5">
-        <label>
-            Кампанія
-            <select onchange={handleCampaignChange} bind:value={selectedCampaignId} class="mb-5">
-                {#each campaigns as campaign (campaign.id)}
-                    <option value={campaign.id}>
-                        {campaign.title}
-                    </option>
-                {/each}
-            </select>
-        </label>
-
-        {#if selectedCampaign && selectedCampaign.profiles.length > 0}
+<div class={`flex min-h-0 flex-col ${fillHeight ? "flex-1" : ""}`}>
+    {#if !allProfiles}
+        <div class="flex shrink-0 flex-row gap-5">
             <label>
-                Профіль
-                <select onchange={handleProfileChange} bind:value={selectedProfileId} class="mb-5">
-                    {#each selectedCampaign.profiles as profile (profile.id)}
-                        <option value={profile.id}>
-                            {profile.title}
+                Кампанія
+                <select onchange={handleCampaignChange} bind:value={selectedCampaignId} class="mb-5">
+                    {#each campaigns as campaign (campaign.id)}
+                        <option value={campaign.id}>
+                            {campaign.title}
                         </option>
                     {/each}
                 </select>
             </label>
-        {/if}
-    </div>
-{/if}
 
-{#if allProfiles || selectedCampaign}
-    {#if !allProfiles && selectedCampaign!.profiles.length === 0}
-        <p>До кампанії ще не додано профілів.</p>
-    {:else if !allProfiles && !form}
-        <p>Для цього профілю не призначено форму.</p>
-    {:else if allProfiles && applications.length === 0}
-        <p>У групі ще немає заяв.</p>
-    {:else}
-        <div class="relative">
-            <details class="absolute right-2 top-2 z-20">
-                <summary
-                    aria-label="Налаштувати видимість колонок"
-                    class="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full text-diia-grey hover:bg-diia-bright-grey hover:text-black"
-                >
-                    <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
-                </summary>
-                <div
-                    class="absolute right-0 z-10 mt-2 max-h-80 min-w-64 overflow-y-auto rounded border border-diia-bright-grey bg-white p-3 shadow-lg"
-                >
-                    {#each keyedColumns as column (column.key)}
-                        <label class="flex min-h-10 cursor-pointer items-center gap-2 py-2">
-                            <input
-                                type="checkbox"
-                                checked={!hiddenColumns.includes(column.key)}
-                                onchange={() => toggleColumn(column.key)}
-                            />
-                            <span class="text-[16px]/[24px] font-light text-black">{column.title}</span>
-                        </label>
-                    {/each}
-                </div>
-            </details>
-            <div class="max-h-[calc(100svh-4rem)] overflow-auto">
-                <table class="table-fixed" style="width: {(columns.length + 1) * 12}rem; min-width: 100%">
-                    <thead class="bg-diia-bright-grey">
-                        <tr>
-                            <th class="sticky top-0 z-10 bg-diia-bright-grey px-4 py-5">
-                                <div class="flex min-h-24 items-center gap-2">
-                                    {#if allowDelete || allowGroupRemove}
-                                        <input
-                                            type="checkbox"
-                                            aria-label="Вибрати всі видимі заяви"
-                                            checked={allVisibleSelected}
-                                            onchange={toggleVisibleApplications}
-                                        />
-                                    {/if}
-                                    <span>Дії</span>
-                                </div>
+            {#if selectedCampaign && selectedCampaign.profiles.length > 0}
+                <label>
+                    Профіль
+                    <select onchange={handleProfileChange} bind:value={selectedProfileId} class="mb-5">
+                        {#each selectedCampaign.profiles as profile (profile.id)}
+                            <option value={profile.id}>
+                                {profile.title}
+                            </option>
+                        {/each}
+                    </select>
+                </label>
+            {/if}
+        </div>
+    {/if}
 
-                                <div class="flex flex-row w-full justify-between">
-                                    {#if allowDelete}
-                                        <button
-                                            type="button"
-                                            disabled={deleting || selectedApplicationIds.length === 0}
-                                            onclick={deleteSelectedApplications}
-                                            class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                            aria-label="Видалити"
-                                            title="Видалити"
-                                        >
-                                            <span class="material-symbols-outlined"> delete </span>
-                                        </button>
-                                    {/if}
-
-                                    {#if allowGroupRemove}
-                                        <button
-                                            type="button"
-                                            disabled={removingGroupApplications || selectedApplicationIds.length === 0}
-                                            onclick={() => removeApplicationsFromGroup(selectedApplicationIds)}
-                                            class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                            aria-label="Прибрати з групи"
-                                            title="Прибрати з групи"
-                                        >
-                                            <span class="material-symbols-outlined"> group_remove </span>
-                                        </button>
-                                    {/if}
-
-                                    {#if allowGroupCreate}
-                                        <button
-                                            type="button"
-                                            disabled={selectedApplicationIds.length === 0}
-                                            onclick={() => openGroupPanel(selectedApplicationIds, "new")}
-                                            class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                            aria-label="Створити групу"
-                                            title="Створити групу"
-                                        >
-                                            <span class="material-symbols-outlined"> group_add </span>
-                                        </button>
-                                    {/if}
-
-                                    <button
-                                        type="button"
-                                        class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                        aria-label="Експортувати CSV"
-                                        title="Експортувати CSV"
-                                        disabled={filteredApplications.length === 0 || columns.length === 0}
-                                        onclick={exportApplicationsToCsv}
-                                    >
-                                        <span class="material-symbols-outlined"> export_notes </span>
-                                    </button>
-                                </div>
-                                {#if deleteError}
-                                    <p class="text-diia-red" role="alert">{deleteError}</p>
-                                {/if}
-                            </th>
-                            {#each columns as column (column.key)}
-                                <th
-                                    class="sticky top-0 z-10 bg-diia-bright-grey px-4 py-5"
-                                    aria-sort={sortKey === column.key
-                                        ? sortDirection === "asc"
-                                            ? "ascending"
-                                            : "descending"
-                                        : "none"}
-                                >
-                                    <div class="flex min-h-24 flex-col justify-between relative">
-                                        <button
-                                            type="button"
-                                            class="flex cursor-pointer items-center gap-1 text-left"
-                                            onclick={() => toggleSort(column.key)}
-                                        >
-                                            {column.title}
-                                            {#if sortKey === column.key}
-                                                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">
-                                                    {sortDirection === "asc" ? "arrow_upward" : "arrow_downward"}
-                                                </span>
-                                            {/if}
-                                        </button>
-                                        <input
-                                            class="mt-auto w-full"
-                                            bind:value={filters[column.key]}
-                                            placeholder="Фільтр..."
-                                        />
-                                    </div>
-                                </th>
-                            {/each}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {#each sortedApplications as application (application.id)}
+    {#if allProfiles || selectedCampaign}
+        {#if !allProfiles && selectedCampaign!.profiles.length === 0}
+            <p>До кампанії ще не додано профілів.</p>
+        {:else if !allProfiles && !form}
+            <p>Для цього профілю не призначено форму.</p>
+        {:else if allProfiles && applications.length === 0}
+            <p>У групі ще немає заяв.</p>
+        {:else}
+            <div class={`relative ${fillHeight ? "flex min-h-0 flex-1 flex-col" : ""}`}>
+                <details class="absolute right-2 top-2 z-20">
+                    <summary
+                        aria-label="Налаштувати видимість колонок"
+                        class="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full text-diia-grey hover:bg-diia-bright-grey hover:text-black"
+                    >
+                        <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
+                    </summary>
+                    <div
+                        class="absolute right-0 z-10 mt-2 max-h-80 min-w-64 overflow-y-auto rounded border border-diia-bright-grey bg-white p-3 shadow-lg"
+                    >
+                        {#each keyedColumns as column (column.key)}
+                            <label class="flex min-h-10 cursor-pointer items-center gap-2 py-2">
+                                <input
+                                    type="checkbox"
+                                    checked={!hiddenColumns.includes(column.key)}
+                                    onchange={() => toggleColumn(column.key)}
+                                />
+                                <span class="text-[16px]/[24px] font-light text-black">{column.title}</span>
+                            </label>
+                        {/each}
+                    </div>
+                </details>
+                <div class={fillHeight ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto"}>
+                    <table class="table-fixed" style="width: {(columns.length + 1) * 12}rem; min-width: 100%">
+                        <thead class="bg-diia-bright-grey">
                             <tr>
-                                <td class="border-2 border-diia-bright-grey px-4 py-5">
-                                    <div class="flex items-center gap-2">
+                                <th class="sticky top-0 z-10 bg-diia-bright-grey px-4 py-5">
+                                    <div class="flex min-h-24 items-center gap-2">
                                         {#if allowDelete || allowGroupRemove}
                                             <input
                                                 type="checkbox"
-                                                aria-label={`Вибрати заяву ${application.id}`}
-                                                checked={selectedApplicationIds.includes(application.id)}
-                                                onchange={() => toggleApplication(application.id)}
+                                                aria-label="Вибрати всі видимі заяви"
+                                                checked={allVisibleSelected}
+                                                onchange={toggleVisibleApplications}
                                             />
                                         {/if}
+                                        <span>Дії</span>
+                                    </div>
+
+                                    <div class="flex flex-row w-full justify-between">
                                         {#if allowDelete}
                                             <button
                                                 type="button"
-                                                disabled={deleting}
-                                                onclick={() => deleteApplications([application.id])}
+                                                disabled={deleting || selectedApplicationIds.length === 0}
+                                                onclick={deleteSelectedApplications}
                                                 class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                                aria-label="Видалити заяву"
+                                                aria-label="Видалити"
                                                 title="Видалити"
                                             >
                                                 <span class="material-symbols-outlined"> delete </span>
                                             </button>
                                         {/if}
-                                        {#if allowStatusEdit}
+
+                                        {#if allowGroupRemove}
                                             <button
                                                 type="button"
-                                                onclick={() => openStatusPanel(application)}
-                                                class="cursor-pointer"
-                                                aria-label="Змінити статус і нотатки"
-                                                title="Статус і нотатки"
-                                            >
-                                                <span class="material-symbols-outlined"> edit_note </span>
-                                            </button>
-                                        {/if}
-                                        {#if allowGroupCreate}
-                                            <button
-                                                type="button"
-                                                onclick={() => openGroupPanel([application.id])}
-                                                class="cursor-pointer"
-                                                aria-label="Додати до групи"
-                                                title="Додати до групи"
-                                            >
-                                                <span class="material-symbols-outlined"> group_add </span>
-                                            </button>
-                                        {/if}
-                                        {#if allowGroupRemove && groupId}
-                                            <button
-                                                type="button"
-                                                disabled={removingGroupApplications}
-                                                onclick={() => removeApplicationsFromGroup([application.id])}
+                                                disabled={removingGroupApplications ||
+                                                    selectedApplicationIds.length === 0}
+                                                onclick={() => removeApplicationsFromGroup(selectedApplicationIds)}
                                                 class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                                 aria-label="Прибрати з групи"
                                                 title="Прибрати з групи"
@@ -666,40 +550,166 @@
                                                 <span class="material-symbols-outlined"> group_remove </span>
                                             </button>
                                         {/if}
-                                    </div>
-                                </td>
-                                {#each columns as column (column.key)}
-                                    <td class="px-4 py-5 border-2 border-diia-bright-grey">
-                                        {#if column.type === "status"}
-                                            <span
-                                                class={`inline-block rounded-full px-3 py-0.5 text-sm ${statusClass(application.status)}`}
+
+                                        {#if allowGroupCreate}
+                                            <button
+                                                type="button"
+                                                disabled={selectedApplicationIds.length === 0}
+                                                onclick={() => openGroupPanel(selectedApplicationIds, "new")}
+                                                class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                                aria-label="Створити групу"
+                                                title="Створити групу"
                                             >
-                                                {statusLabel(application.status, !!application.notes)}
-                                            </span>
-                                        {:else if column.type === "file"}
-                                            {@const key = getFileKey(cellValue(application, column.key))}
-                                            {#if key}
-                                                <a target="_blank" href="/file?key={encodeURIComponent(key)}"
-                                                    >Переглянути файл</a
-                                                >
-                                            {/if}
-                                        {:else if cellValue(application, column.key)}
-                                            <span class={column.key === "notes" ? "whitespace-pre-wrap" : undefined}>
-                                                {formatCellValue(cellValue(application, column.key))}
-                                            </span>
+                                                <span class="material-symbols-outlined"> group_add </span>
+                                            </button>
                                         {/if}
-                                    </td>
+
+                                        <button
+                                            type="button"
+                                            class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                            aria-label="Експортувати CSV"
+                                            title="Експортувати CSV"
+                                            disabled={filteredApplications.length === 0 || columns.length === 0}
+                                            onclick={exportApplicationsToCsv}
+                                        >
+                                            <span class="material-symbols-outlined"> export_notes </span>
+                                        </button>
+                                    </div>
+                                    {#if deleteError}
+                                        <p class="text-diia-red" role="alert">{deleteError}</p>
+                                    {/if}
+                                </th>
+                                {#each columns as column (column.key)}
+                                    <th
+                                        class="sticky top-0 z-10 bg-diia-bright-grey px-4 py-5"
+                                        aria-sort={sortKey === column.key
+                                            ? sortDirection === "asc"
+                                                ? "ascending"
+                                                : "descending"
+                                            : "none"}
+                                    >
+                                        <div class="flex min-h-24 flex-col justify-between relative">
+                                            <button
+                                                type="button"
+                                                class="flex cursor-pointer items-center gap-1 text-left"
+                                                onclick={() => toggleSort(column.key)}
+                                            >
+                                                {column.title}
+                                                {#if sortKey === column.key}
+                                                    <span
+                                                        class="material-symbols-outlined text-[18px]"
+                                                        aria-hidden="true"
+                                                    >
+                                                        {sortDirection === "asc" ? "arrow_upward" : "arrow_downward"}
+                                                    </span>
+                                                {/if}
+                                            </button>
+                                            <input
+                                                class="mt-auto w-full"
+                                                bind:value={filters[column.key]}
+                                                placeholder="Фільтр..."
+                                            />
+                                        </div>
+                                    </th>
                                 {/each}
                             </tr>
-                        {/each}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {#each sortedApplications as application (application.id)}
+                                <tr>
+                                    <td class="border-2 border-diia-bright-grey px-4 py-5">
+                                        <div class="flex items-center gap-2">
+                                            {#if allowDelete || allowGroupRemove}
+                                                <input
+                                                    type="checkbox"
+                                                    aria-label={`Вибрати заяву ${application.id}`}
+                                                    checked={selectedApplicationIds.includes(application.id)}
+                                                    onchange={() => toggleApplication(application.id)}
+                                                />
+                                            {/if}
+                                            {#if allowDelete}
+                                                <button
+                                                    type="button"
+                                                    disabled={deleting}
+                                                    onclick={() => deleteApplications([application.id])}
+                                                    class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                                    aria-label="Видалити заяву"
+                                                    title="Видалити"
+                                                >
+                                                    <span class="material-symbols-outlined"> delete </span>
+                                                </button>
+                                            {/if}
+                                            {#if allowStatusEdit}
+                                                <button
+                                                    type="button"
+                                                    onclick={() => openStatusPanel(application)}
+                                                    class="cursor-pointer"
+                                                    aria-label="Змінити статус і нотатки"
+                                                    title="Статус і нотатки"
+                                                >
+                                                    <span class="material-symbols-outlined"> edit_note </span>
+                                                </button>
+                                            {/if}
+                                            {#if allowGroupCreate}
+                                                <button
+                                                    type="button"
+                                                    onclick={() => openGroupPanel([application.id])}
+                                                    class="cursor-pointer"
+                                                    aria-label="Додати до групи"
+                                                    title="Додати до групи"
+                                                >
+                                                    <span class="material-symbols-outlined"> group_add </span>
+                                                </button>
+                                            {/if}
+                                            {#if allowGroupRemove && groupId}
+                                                <button
+                                                    type="button"
+                                                    disabled={removingGroupApplications}
+                                                    onclick={() => removeApplicationsFromGroup([application.id])}
+                                                    class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                                    aria-label="Прибрати з групи"
+                                                    title="Прибрати з групи"
+                                                >
+                                                    <span class="material-symbols-outlined"> group_remove </span>
+                                                </button>
+                                            {/if}
+                                        </div>
+                                    </td>
+                                    {#each columns as column (column.key)}
+                                        <td class="px-4 py-5 border-2 border-diia-bright-grey">
+                                            {#if column.type === "status"}
+                                                <span
+                                                    class={`inline-block rounded-full px-3 py-0.5 text-sm ${statusClass(application.status)}`}
+                                                >
+                                                    {statusLabel(application.status, !!application.notes)}
+                                                </span>
+                                            {:else if column.type === "file"}
+                                                {@const key = getFileKey(cellValue(application, column.key))}
+                                                {#if key}
+                                                    <a target="_blank" href="/file?key={encodeURIComponent(key)}"
+                                                        >Переглянути файл</a
+                                                    >
+                                                {/if}
+                                            {:else if cellValue(application, column.key)}
+                                                <span
+                                                    class={column.key === "notes" ? "whitespace-pre-wrap" : undefined}
+                                                >
+                                                    {formatCellValue(cellValue(application, column.key))}
+                                                </span>
+                                            {/if}
+                                        </td>
+                                    {/each}
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        {/if}
+    {:else}
+        <p>Кампаній ще немає.</p>
     {/if}
-{:else}
-    <p>Кампаній ще немає.</p>
-{/if}
+</div>
 
 {#if statusApplication}
     <div
