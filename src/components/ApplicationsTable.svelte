@@ -503,11 +503,11 @@
                     {/each}
                 </div>
             </details>
-            <div class="overflow-x-auto">
+            <div class="max-h-[calc(100svh-4rem)] overflow-auto">
                 <table class="table-fixed" style="width: {(columns.length + 1) * 12}rem; min-width: 100%">
                     <thead class="bg-diia-bright-grey">
                         <tr>
-                            <th class="px-4 py-5">
+                            <th class="sticky top-0 z-10 bg-diia-bright-grey px-4 py-5">
                                 <div class="flex min-h-24 items-center gap-2">
                                     {#if allowDelete || allowGroupRemove}
                                         <input
@@ -577,7 +577,7 @@
                             </th>
                             {#each columns as column (column.key)}
                                 <th
-                                    class="px-4 py-5"
+                                    class="sticky top-0 z-10 bg-diia-bright-grey px-4 py-5"
                                     aria-sort={sortKey === column.key
                                         ? sortDirection === "asc"
                                             ? "ascending"
