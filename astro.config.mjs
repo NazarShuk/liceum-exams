@@ -7,11 +7,14 @@ import cloudflare from "@astrojs/cloudflare";
 
 import svelte from "@astrojs/svelte";
 
+import sitemap from "@astrojs/sitemap";
+
 // https://astro.build/config
 export default defineConfig({
     vite: {
         plugins: [tailwindcss()],
     },
+    site: "https://liceum-exams.nshis.com",
 
     output: "server",
     adapter: cloudflare(),
@@ -52,5 +55,5 @@ export default defineConfig({
         },
     ],
 
-    integrations: [svelte({ extensions: [".svelte"] })],
+    integrations: [svelte({ extensions: [".svelte"] }), sitemap()],
 });
