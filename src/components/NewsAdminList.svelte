@@ -92,7 +92,7 @@
                             onclick={() => updateFlags(item, { hidden: !item.hidden })}
                         >
                             <span class="material-symbols-outlined text-[18px]">
-                                {item.hidden ? "visibility" : "visibility_off"}
+                                visibility
                             </span>
                             {item.hidden ? "Показати" : "Приховати"}
                         </button>
