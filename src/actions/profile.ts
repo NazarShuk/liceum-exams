@@ -11,7 +11,7 @@ export const submitProfileEdit = defineAction({
     input: z.object({
         profileId: z.number().int().positive().optional(),
         campaignId: z.number().int().positive().optional(),
-        title: z.string().trim().min(1, "Вкажіть назву профілю"),
+        title: z.string().trim().min(1, "errors.profileTitleRequired"),
         description: z.string(),
         formId: z.number().int().positive().nullable(),
     }),
@@ -43,19 +43,19 @@ export const submitProfileEdit = defineAction({
                     where: { id: profileId },
                 });
                 if (!existingProfile) {
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Профіль не знайдено" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.profileNotFound" });
                 }
                 previousFormId = existingProfile.formId;
                 await db.update(profiles).set(values).where(eq(profiles.id, profileId));
             } else {
                 if (!input.campaignId) {
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Спочатку збережіть кампанію" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.saveCampaignFirst" });
                 }
                 const campaign = await db.query.campaigns.findFirst({
                     where: { id: input.campaignId },
                 });
                 if (!campaign) {
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Кампанію не знайдено" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.campaignNotFound" });
                 }
 
                 const [createdProfile] = await db.insert(profiles).values(values).returning({ id: profiles.id });
@@ -109,7 +109,7 @@ export const deleteProfile = defineAction({
                 where: { id: input.profileId },
             });
             if (!existingProfile) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Профіль не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.profileNotFound" });
             }
 
             // applications.profile_id cascades, so a submitted application would be erased with it.
@@ -118,7 +118,7 @@ export const deleteProfile = defineAction({
                 and(eq(applications.profileId, input.profileId), eq(applications.state, "submitted")),
             );
             if (submittedCount > 0) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "За цим профілем уже є подані заяви" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.profileHasApplications" });
             }
 
             await db.delete(profiles).where(eq(profiles.id, input.profileId));

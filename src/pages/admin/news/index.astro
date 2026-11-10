@@ -2,8 +2,12 @@
 import Layout from "@layouts/Layout.astro";
 import NewsAdminList from "@components/NewsAdminList.svelte";
 import { getDrizzle } from "@db/drizzle";
+import { localizePath } from "@i18n/config";
+import { useTranslations } from "@i18n/index";
 
 const db = getDrizzle();
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 const news = await db.query.news.findMany({
     columns: {
         id: true,
@@ -20,10 +24,10 @@ const news = await db.query.news.findMany({
 });
 ---
 
-<Layout title="Новини">
-    <h1 class="mb-5">Новини</h1>
-    <a href="/admin/news/editor" class="btn-default">
-        + Створити новину
+<Layout title={t("admin.news.title")}>
+    <h1 class="mb-5">{t("admin.news.title")}</h1>
+    <a href={localizePath(locale, "/admin/news/editor")} class="btn-default">
+        {t("admin.news.create")}
     </a>
-    <NewsAdminList news={news} client:load />
+    <NewsAdminList news={news} {locale} client:load />
 </Layout>

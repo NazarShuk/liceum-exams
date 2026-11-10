@@ -11,13 +11,13 @@ const dateInput = z.string().refine((value) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
     const date = new Date(`${value}T00:00:00.000Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-}, "Некоректна дата");
+}, "errors.invalidDate");
 
 export const submitCampaignEdit = defineAction({
     accept: "json",
     input: z.object({
         campaignId: z.number().int().positive().optional(),
-        title: z.string().trim().min(1, "Вкажіть назву кампанії"),
+        title: z.string().trim().min(1, "errors.campaignTitleRequired"),
         beginsAt: dateInput,
         endsAt: dateInput,
         profileIds: z.array(z.number().int().positive()),
@@ -36,7 +36,7 @@ export const submitCampaignEdit = defineAction({
                 : [];
 
             if (existingProfiles.length !== profileIds.length) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Один або кілька профілів не знайдені" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.profilesNotFound" });
             }
 
             const values = {
@@ -64,7 +64,7 @@ export const submitCampaignEdit = defineAction({
                     where: { profileId: profileId },
                 });
                 if (existingAssignment) {
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Профіль уже належить до іншої кампанії" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.profileAlreadyInCampaign" });
                 }
             }
 
@@ -74,7 +74,7 @@ export const submitCampaignEdit = defineAction({
                     where: { id: campaignId },
                 });
                 if (!existingCampaign) {
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Кампанію не знайдено" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.campaignNotFound" });
                 }
                 await db.update(campaigns).set(values).where(eq(campaigns.id, campaignId));
             } else {
@@ -140,7 +140,7 @@ export const deleteCampaign = defineAction({
                 where: { id: input.campaignId },
             });
             if (!existingCampaign) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Кампанію не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.campaignNotFound" });
             }
 
             const campaignProfiles = await db

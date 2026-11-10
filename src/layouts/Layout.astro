@@ -4,6 +4,9 @@ import { Font } from "astro:assets";
 import "../styles/global.css";
 import Sidebar from "./Sidebar.astro";
 import ThemeToggle from "@components/ThemeToggle.astro";
+import LanguageSwitcher from "@components/LanguageSwitcher.astro";
+import { LOCALES, localizePath, localeTag, normalizePath, stripLocale } from "@i18n/config";
+import { useTranslations } from "@i18n/index";
 import LiceumLogoVstup from "../assets/LiceumLogoVstup.svg";
 
 interface Props {
@@ -13,7 +16,12 @@ interface Props {
 }
 
 const { className, title, noPadding } = Astro.props;
-const showChrome = Astro.url.pathname !== "/";
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
+const originPath = normalizePath(stripLocale(Astro.originPathname));
+const showChrome = originPath !== "/";
+const baseUrl = Astro.site ?? Astro.url;
+const canonicalUrl = new URL(localizePath(locale, originPath), baseUrl);
 const icons = [
     "more_vert",
     "draft",
@@ -50,7 +58,7 @@ const icons = [
 ---
 
 <!doctype html>
-<html lang="uk" transition:animate="none">
+<html lang={localeTag(locale)} transition:animate="none">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -61,9 +69,14 @@ const icons = [
         <meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-title" content="Вступ до ліцею" />
+        <meta name="apple-mobile-web-app-title" content={t("common.appName")} />
         <Font cssVariable="--font-e-ukraine" />
         <meta name="generator" content={Astro.generator} />
+        <link rel="canonical" href={canonicalUrl} />
+        {LOCALES.map((code) => (
+            <link rel="alternate" hreflang={localeTag(code)} href={new URL(localizePath(code, originPath), baseUrl)} />
+        ))}
+        <link rel="alternate" hreflang="x-default" href={new URL(localizePath("uk", originPath), baseUrl)} />
         <script is:inline>
             (() => {
                 try {
@@ -77,18 +90,23 @@ const icons = [
             href={`https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&icon_names=${icons.join(",")}&display=block`}
             rel="stylesheet"
         />
-        {Astro.url.pathname === "/" && (
+        {originPath === "/" && locale === "uk" && (
             <meta name="google-site-verification" content="opb_3F3I2jsNzVlDOvDSS-Wr998r8GadJUsvkKYCME8" />
         )}
         <ClientRouter />
-        <title>{title ? title + " - " : ""} Вступ до ліцею</title>
+        <title>{title ? title + " - " : ""}{t("common.appName")}</title>
     </head>
     <body class="flex min-h-screen flex-col">
-        {showChrome && <ThemeToggle class="fixed right-2 top-2 z-60" />}
+        {showChrome && (
+            <div class="fixed right-2 top-2 z-60 flex items-center gap-2">
+                <LanguageSwitcher />
+                <ThemeToggle />
+            </div>
+        )}
         {showChrome && (
             <header class="sticky top-0 z-40 w-full bg-white">
                 <nav class="flex h-16 w-full items-center gap-4 border-b border-diia-bright-grey px-4 py-1 max-lg:pl-16">
-                    <a class="h-full" href="/">
+                    <a class="h-full" href={localizePath(locale, "/")}>
                         <LiceumLogoVstup class={"brand-logo h-full w-full"} />
                     </a>
                 </nav>

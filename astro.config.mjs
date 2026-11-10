@@ -16,6 +16,14 @@ export default defineConfig({
     },
     site: "https://liceum-exams.nshis.com",
 
+    // Locale routing is handled in src/middleware.ts so the existing page files
+    // can serve both `/` and `/en/...` without duplication.
+    i18n: {
+        locales: ["uk", "en"],
+        defaultLocale: "uk",
+        routing: "manual",
+    },
+
     output: "server",
     adapter: cloudflare(),
 
@@ -55,5 +63,8 @@ export default defineConfig({
         },
     ],
 
-    integrations: [svelte({ extensions: [".svelte"] }), sitemap()],
+    integrations: [
+        svelte({ extensions: [".svelte"] }),
+        sitemap({ i18n: { defaultLocale: "uk", locales: { uk: "uk-UA", en: "en-GB" } } }),
+    ],
 });

@@ -3,11 +3,17 @@
     import { onMount } from "svelte";
     import type { news } from "@db/schema";
     import { MarkdownEditor } from "carta-md";
-    import { carta } from "@lib/markdown";
+    import { createCarta } from "@lib/markdown";
+    import { localizePath } from "@i18n/config";
+    import type { Locale } from "@i18n/config";
+    import { translate, translateMessage } from "@i18n/index";
+    import type { MessageKey } from "@i18n/index";
 
     type News = typeof news.$inferSelect;
 
-    const { loadedNews }: { loadedNews: News | undefined } = $props();
+    const { loadedNews, locale }: { loadedNews: News | undefined; locale: Locale } = $props();
+    const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
+    const carta = createCarta(locale);
 
     let item = $state({
         // svelte-ignore state_referenced_locally
@@ -68,7 +74,7 @@
             });
 
             if (result.error) {
-                errorMessage = result.error.message;
+                errorMessage = translateMessage(locale, result.error.message);
             } else {
                 item.id = result.data.newsId;
                 saved = true;
@@ -80,7 +86,7 @@
                 }
             }
         } catch (error) {
-            errorMessage = error instanceof Error ? error.message : "Не вдалося зберегти новину";
+            errorMessage = error instanceof Error ? error.message : t("news.saveFailed");
         } finally {
             loading = false;
         }
@@ -88,19 +94,19 @@
 
     async function deleteNews() {
         if (loading || item.id <= 0) return;
-        if (!window.confirm("Видалити новину?")) return;
+        if (!window.confirm(t("news.deleteConfirm"))) return;
 
         loading = true;
         errorMessage = "";
         try {
             const result = await actions.deleteNews({ newsId: item.id });
             if (result.error) {
-                errorMessage = result.error.message;
+                errorMessage = translateMessage(locale, result.error.message);
             } else {
-                window.location.assign("/admin/news");
+                window.location.assign(localizePath(locale, "/admin/news"));
             }
         } catch (error) {
-            errorMessage = error instanceof Error ? error.message : "Не вдалося видалити новину";
+            errorMessage = error instanceof Error ? error.message : t("news.deleteFailed");
         } finally {
             loading = false;
         }
@@ -108,23 +114,23 @@
 </script>
 
 <div class="flex flex-col gap-5">
-    <input class="w-full" placeholder="Заголовок новини" bind:value={item.title} />
-    <input class="w-full" placeholder="Тег" bind:value={item.tag} />
+    <input class="w-full" placeholder={t("news.titlePlaceholder")} bind:value={item.title} />
+    <input class="w-full" placeholder={t("news.tagPlaceholder")} bind:value={item.tag} />
 
     <div class="flex flex-wrap gap-x-6 gap-y-3">
         <label class="flex items-center gap-2">
             <input type="checkbox" bind:checked={item.pinned} />
-            Закріпити новину
+            {t("news.pin")}
         </label>
         <label class="flex items-center gap-2">
             <input type="checkbox" bind:checked={item.hidden} />
-            Приховати з сайту
+            {t("news.hide")}
         </label>
     </div>
 
     <MarkdownEditor {carta} bind:value={item.content} />
 
-    <p class="text-diia-green {saved && item.id !== -1 ? '' : 'invisible'}" role="status">Зміни збережено!</p>
+    <p class="text-diia-green {saved && item.id !== -1 ? '' : 'invisible'}" role="status">{t("common.saved")}</p>
 
     <div class="flex flex-row gap-5">
         <button
@@ -133,7 +139,7 @@
             disabled={loading || !item.title.trim() || !item.tag.trim() || !item.content.trim()}
             onclick={saveNews}
         >
-            {loading ? "Збереження..." : "Зберегти"}
+            {loading ? t("common.saving") : t("common.save")}
         </button>
         {#if item.id > 0}
             <button
@@ -142,13 +148,13 @@
                 disabled={loading}
                 onclick={deleteNews}
             >
-                Видалити новину
+                {t("news.delete")}
             </button>
         {/if}
     </div>
 
     {#if item.id > 0}
-        <a href={`/news/${item.id}`} target="_blank" rel="noopener">Переглянути на сайті</a>
+        <a href={localizePath(locale, `/news/${item.id}`)} target="_blank" rel="noopener">{t("news.viewOnSite")}</a>
     {/if}
 
     <p class="text-diia-red" role="alert">

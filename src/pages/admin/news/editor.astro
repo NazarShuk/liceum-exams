@@ -3,10 +3,13 @@ import Layout from "@layouts/Layout.astro";
 import { getDrizzle } from "@db/drizzle";
 import NewsEditor from "@components/NewsEditor.svelte";
 import type { news } from "@db/schema";
+import { useTranslations } from "@i18n/index";
 
 type News = typeof news.$inferSelect;
 
 const db = getDrizzle();
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 let loadedNews: News | undefined;
 
 if (Astro.url.searchParams.has("news")) {
@@ -20,7 +23,7 @@ if (Astro.url.searchParams.has("news")) {
 }
 ---
 
-<Layout title={loadedNews ? loadedNews.title : "Нова новина"}>
-    <h1 class="mb-5">Редактор новини</h1>
-    <NewsEditor loadedNews={loadedNews} client:load />
+<Layout title={loadedNews ? loadedNews.title : t("news.newTitle")}>
+    <h1 class="mb-5">{t("news.editorTitle")}</h1>
+    <NewsEditor loadedNews={loadedNews} {locale} client:load />
 </Layout>

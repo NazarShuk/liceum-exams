@@ -1,11 +1,16 @@
 ---
 import Layout from "@layouts/Layout.astro";
+import { localizePath } from "@i18n/config";
+import { useTranslations } from "@i18n/index";
+
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 ---
 
-<Layout className="flex h-screen justify-center items-center flex-col">
-    <h1>Сторінку не знайдено :(</h1>
+<Layout title={t("common.notFound")} className="flex h-screen justify-center items-center flex-col">
+    <h1>{t("common.notFound")}</h1>
 
-    <a class="btn-default" href="/">
-        Повернутися на головну
+    <a class="btn-default" href={localizePath(locale, "/")}>
+        {t("common.backHome")}
     </a>
 </Layout>

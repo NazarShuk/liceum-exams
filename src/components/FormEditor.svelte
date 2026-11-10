@@ -2,19 +2,25 @@
     import { forms } from "@db/schema";
     import { actions } from "astro:actions";
     import { onMount } from "svelte";
+    import type { Locale } from "@i18n/config";
+    import { translate, translateMessage } from "@i18n/index";
+    import type { MessageKey } from "@i18n/index";
     type Form = typeof forms.$inferSelect;
 
     const {
         loadedForm,
         profileId,
+        locale,
         onSaved,
         onDeleted,
     }: {
         loadedForm: Form | undefined;
         profileId?: number;
+        locale: Locale;
         onSaved?: (form: Form) => void;
         onDeleted?: (formId: number) => void;
     } = $props();
+    const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
     let form: Form = $state({
         id: 0,
         title: "",
@@ -97,7 +103,7 @@
 
         try {
             result = await actions.submitFormEdit({
-                title: form.title + (duplicate ? " (Копія)" : ""),
+                title: form.title + (duplicate ? t("formEditor.copySuffix") : ""),
                 description: form.description || "",
                 schema: form.schema,
                 formId: duplicate ? undefined : form.id > 0 ? form.id : undefined,
@@ -109,7 +115,7 @@
             const savedId = result.data.formId;
 
             if (duplicate) {
-                onSaved?.({ ...form, id: savedId, title: form.title + " (Копія)" });
+                onSaved?.({ ...form, id: savedId, title: form.title + t("formEditor.copySuffix") });
                 return savedId;
             }
 
@@ -118,7 +124,7 @@
             onSaved?.({ ...form });
             return savedId;
         } catch (error) {
-            result = { error: { message: error instanceof Error ? error.message : "Не вдалося зберегти форму" } };
+            result = { error: { message: error instanceof Error ? error.message : t("formEditor.saveFailed") } };
         } finally {
             loading = false;
         }
@@ -143,19 +149,19 @@
 
     async function deleteForm() {
         if (loading || form.id <= 0) return;
-        if (!window.confirm("Видалити форму? Це можливо лише якщо за нею немає поданих заяв.")) return;
+        if (!window.confirm(t("formEditor.deleteConfirm"))) return;
 
         loading = true;
         deleteError = "";
         try {
             const deletion = await actions.deleteForm({ formId: form.id });
             if (deletion.error) {
-                deleteError = deletion.error.message;
+                deleteError = translateMessage(locale, deletion.error.message);
             } else {
                 onDeleted?.(form.id);
             }
         } catch (error) {
-            deleteError = error instanceof Error ? error.message : "Не вдалося видалити форму";
+            deleteError = error instanceof Error ? error.message : t("formEditor.deleteFailed");
         } finally {
             loading = false;
         }
@@ -181,14 +187,13 @@
     }
 </script>
 
-<input class="w-full mb-2.5" placeholder="Назва форми" bind:value={form.title} />
-<textarea class="w-full" placeholder="Опис" bind:value={form.description}></textarea>
-<p
-    class="text-diia-green"
-    class:invisible={!loading && !(result && !result.error)}
->{#if loading}Збереження...{:else}Форму збережено!{/if}</p>
+<input class="w-full mb-2.5" placeholder={t("formEditor.titlePlaceholder")} bind:value={form.title} />
+<textarea class="w-full" placeholder={t("formEditor.descriptionPlaceholder")} bind:value={form.description}></textarea>
+<p class="text-diia-green" class:invisible={!loading && !(result && !result.error)}>
+    {#if loading}{t("common.saving")}{:else}{t("formEditor.saved")}{/if}
+</p>
 {#if result?.error}
-    <p class="text-diia-red" role="alert">{result.error.message}</p>
+    <p class="text-diia-red" role="alert">{translateMessage(locale, result.error.message)}</p>
 {/if}
 {#if deleteError}
     <p class="text-diia-red" role="alert">{deleteError}</p>
@@ -197,21 +202,21 @@
     {#each form.schema as field, i (i)}
         <li class="card mb-5 relative">
             <div class="w-full flex flex-row gap-5">
-                <input class="w-full" placeholder={"Назва поля"} bind:value={field.title} />
-                <select class="w-full" placeholder="Тип поля" bind:value={field.type}>
-                    <option value="text"> Текст </option>
-                    <option value="number"> Число </option>
-                    <option value="date"> Дата </option>
-                    <option value="file"> Файл </option>
-                    <option value="select"> Вибір </option>
-                    <option value="multiselect"> Множинний вибір </option>
+                <input class="w-full" placeholder={t("formEditor.fieldName")} bind:value={field.title} />
+                <select class="w-full" placeholder={t("formEditor.fieldType")} bind:value={field.type}>
+                    <option value="text"> {t("formEditor.typeText")} </option>
+                    <option value="number"> {t("formEditor.typeNumber")} </option>
+                    <option value="date"> {t("formEditor.typeDate")} </option>
+                    <option value="file"> {t("formEditor.typeFile")} </option>
+                    <option value="select"> {t("formEditor.typeSelect")} </option>
+                    <option value="multiselect"> {t("formEditor.typeMultiselect")} </option>
                 </select>
             </div>
 
             {#if field.type === "select" || field.type === "multiselect"}
                 <textarea
                     class="w-full mt-2.5"
-                    placeholder={"Варіанти (по одному в рядку)"}
+                    placeholder={t("formEditor.optionsPlaceholder")}
                     value={(field.options ?? []).join("\n")}
                     oninput={(e) => (field.options = (e.currentTarget as HTMLTextAreaElement).value.split("\n"))}
                 ></textarea>
@@ -220,12 +225,12 @@
             <div class="w-full flex flex-row gap-5 mt-10 items-end justify-between">
                 <label class="flex flex-col gap-1">
                     Regex
-                    <input class="w-full" placeholder="Регулярний вираз" bind:value={field.regex} />
+                    <input class="w-full" placeholder={t("formEditor.regexPlaceholder")} bind:value={field.regex} />
                 </label>
                 <div class="flex flex-row items-center gap-5">
                     <label class="flex flex-row items-center gap-2 pb-2">
                         <input type="checkbox" bind:checked={field.required} />
-                        Обов'язкове
+                        {t("formEditor.required")}
                     </label>
                     <label class="flex flex-col gap-1 w-12">
                         Min
@@ -247,12 +252,13 @@
     {/each}
 </ul>
 
-<button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={addNewField}>+ Додати поле</button
+<button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={addNewField}
+    >{t("formEditor.addField")}</button
 >
 {#if form.id > 0}
     {#if profileId}
         <button disabled={loading} class="btn-default {loading ? 'opacity-50' : ''}" onclick={duplicateForm}
-            >Зробити копію</button
+            >{t("formEditor.duplicate")}</button
         >
     {/if}
     <button
@@ -261,6 +267,6 @@
         class="btn-default bg-brand-red! {loading ? 'opacity-50' : ''}"
         onclick={deleteForm}
     >
-        Видалити форму
+        {t("formEditor.delete")}
     </button>
 {/if}

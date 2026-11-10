@@ -10,10 +10,12 @@ import { answerFileKeys, fileKeyFor, isFileKey, uploadError } from "../lib/uploa
 import { verifyTurnstile } from "../lib/turnstile";
 import { enforceRateLimit } from "../lib/rate-limit";
 import { APPLICATION_STATUSES } from "../lib/status";
+import { translate } from "@i18n/index";
+import type { Locale } from "@i18n/config";
 
 type Schema = NonNullable<(typeof forms.$inferSelect)["schema"]>;
 type Field = Schema[number];
-const birthDate = z.string().min(1, "Вкажіть дату народження").pipe(z.coerce.date());
+const birthDate = z.string().min(1, "validation.birthDateRequired").pipe(z.coerce.date());
 
 const optionalId = z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
@@ -22,45 +24,52 @@ const optionalId = z.preprocess(
 
 const dayOf = (value: Date | null | undefined) => (value ? new Date(value).toISOString().slice(0, 10) : "");
 
-function validateAnswer(field: Field, value: unknown): string | null {
+function validateAnswer(field: Field, value: unknown, locale: Locale): string | null {
     const required = field.required !== false;
     const label = field.title || field.slug;
     const options = field.options ?? [];
 
     if (field.type === "multiselect") {
         const values = (Array.isArray(value) ? value : value == null ? [] : [value]).map(String).filter(Boolean);
-        if (required && values.length === 0) return `"${label}": виберіть хоча б один варіант`;
-        if (!values.every((v) => options.includes(v))) return `"${label}": некоректне значення`;
-        if (field.min > 0 && values.length < field.min) return `"${label}": виберіть щонайменше ${field.min}`;
-        if (field.max > 0 && values.length > field.max) return `"${label}": виберіть не більше ${field.max}`;
+        if (required && values.length === 0) return translate(locale, "validation.multiselectRequired", { label });
+        if (!values.every((v) => options.includes(v))) return translate(locale, "validation.invalidValue", { label });
+        if (field.min > 0 && values.length < field.min)
+            return translate(locale, "validation.selectAtLeast", { label, count: field.min });
+        if (field.max > 0 && values.length > field.max)
+            return translate(locale, "validation.selectAtMost", { label, count: field.max });
         return null;
     }
 
     const str = value == null ? "" : String(value);
-    if (str.trim() === "") return required ? `"${label}": обов'язкове поле` : null;
+    if (str.trim() === "") return required ? translate(locale, "validation.requiredField", { label }) : null;
 
     if (field.type === "number") {
         const num = Number(str);
-        if (!Number.isFinite(num)) return `"${label}": введіть число`;
-        if (field.min > 0 && num < field.min) return `"${label}": мінімум ${field.min}`;
-        if (field.max > 0 && num > field.max) return `"${label}": максимум ${field.max}`;
+        if (!Number.isFinite(num)) return translate(locale, "validation.numberRequired", { label });
+        if (field.min > 0 && num < field.min) return translate(locale, "validation.min", { label, count: field.min });
+        if (field.max > 0 && num > field.max) return translate(locale, "validation.max", { label, count: field.max });
     }
 
-    if (field.type === "date" && Number.isNaN(Date.parse(str))) return `"${label}": некоректна дата`;
+    if (field.type === "date" && Number.isNaN(Date.parse(str)))
+        return translate(locale, "validation.invalidDate", { label });
 
-    if (field.type === "select" && !options.includes(str)) return `"${label}": некоректне значення`;
+    if (field.type === "select" && !options.includes(str))
+        return translate(locale, "validation.invalidValue", { label });
 
     if (field.regex) {
         try {
-            if (!new RegExp("^(?:" + field.regex + ")$").test(str)) return `"${label}": невірний формат`;
+            if (!new RegExp("^(?:" + field.regex + ")$").test(str))
+                return translate(locale, "validation.invalidFormat", { label });
         } catch {
             // malformed regex — skip validation
         }
     }
 
     if (field.type === "text") {
-        if (field.min > 0 && str.length < field.min) return `"${label}": мінімум ${field.min} символів`;
-        if (field.max > 0 && str.length > field.max) return `"${label}": максимум ${field.max} символів`;
+        if (field.min > 0 && str.length < field.min)
+            return translate(locale, "validation.minChars", { label, count: field.min });
+        if (field.max > 0 && str.length > field.max)
+            return translate(locale, "validation.maxChars", { label, count: field.max });
     }
 
     return null;
@@ -72,6 +81,7 @@ async function collectAnswers(
     input: Record<string, unknown>,
     userId: number,
     path: string,
+    locale: Locale,
     existingAnswers: Record<string, unknown> = {},
 ) {
     const formFields: Record<string, unknown> = {};
@@ -107,14 +117,14 @@ async function collectAnswers(
                 : undefined;
         const fileError = value instanceof File ? uploadError(value) : null;
         const error = fileError
-            ? `"${label}": ${fileError}`
+            ? translate(locale, fileError.key, "size" in fileError ? { size: fileError.size } : undefined)
             : value instanceof File
               ? null
               : field.type === "file" && value !== ""
                 ? isFileKey(value, userId, field.slug) || value === existingKey
                     ? null
-                    : `"${label}": некоректний файл`
-                : validateAnswer(field, value);
+                    : translate(locale, "validation.invalidFile", { label })
+                : validateAnswer(field, value, locale);
         if (error) {
             errors.push(error);
             fieldErrors[key] = error;
@@ -171,19 +181,19 @@ export const submitForm = defineAction({
         draftId: optionalId,
 
         studentId: optionalId,
-        studentfirstName: z.string().min(1, "Вкажіть ім'я учня"),
-        studentlastName: z.string().min(1, "Вкажіть прізвище учня"),
+        studentfirstName: z.string().min(1, "validation.studentFirstNameRequired"),
+        studentlastName: z.string().min(1, "validation.studentLastNameRequired"),
         studentmiddleName: z.string().optional(),
 
         studentBirthDate: birthDate,
-        studentTelephone: z.string().regex(/^380\d{9}$/, "Введіть номер у форматі 380XXXXXXXXX"),
+        studentTelephone: z.string().regex(/^380\d{9}$/, "validation.phoneFormat"),
 
-        parentfirstName: z.string().min(1, "Вкажіть ім'я"),
-        parentlastName: z.string().min(1, "Вкажіть прізвище"),
+        parentfirstName: z.string().min(1, "validation.firstNameRequired"),
+        parentlastName: z.string().min(1, "validation.lastNameRequired"),
         parentmiddleName: z.string().optional(),
 
         parentBirthDate: birthDate,
-        parentTelephone: z.string().regex(/^380\d{9}$/, "Введіть номер у форматі 380XXXXXXXXX"),
+        parentTelephone: z.string().regex(/^380\d{9}$/, "validation.phoneFormat"),
     }),
     handler: async (input, context) => {
         try {
@@ -199,7 +209,7 @@ export const submitForm = defineAction({
                     path: context.url?.pathname || "/",
                     userId: context.locals.user.id,
                 });
-                throw new ActionError({ code: "FORBIDDEN", message: "Абітурієнти не можуть створювати заяви" });
+                throw new ActionError({ code: "FORBIDDEN", message: "errors.applicantsCannotCreate" });
             }
             await enforceRateLimit("SUBMIT_LIMITER", `submit:${context.locals.user.id}`);
 
@@ -220,7 +230,7 @@ export const submitForm = defineAction({
                     path: context.url?.pathname || "/",
                     userId: context.locals.user.id,
                 });
-                throw new ActionError({ code: "FORBIDDEN", message: "Підтвердіть, що ви не робот" });
+                throw new ActionError({ code: "FORBIDDEN", message: "errors.turnstile" });
             }
 
             const form = await db.query.forms.findFirst({ where: { id: input.formId } });
@@ -252,6 +262,7 @@ export const submitForm = defineAction({
                 input as Record<string, unknown>,
                 context.locals.user.id,
                 context.url?.pathname || "/",
+                context.locals.locale,
             );
             if (errors.length > 0) return { success: false, message: errors.join("; "), fieldErrors };
 
@@ -281,7 +292,7 @@ export const submitForm = defineAction({
                         path: context.url?.pathname || "/",
                         userId: context.locals.user?.id,
                     });
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Заповніть інформацію про учня" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.studentInfoRequired" });
                 }
 
                 // Reuse an existing child with the same identity instead of creating a duplicate
@@ -321,7 +332,7 @@ export const submitForm = defineAction({
                         userId: context.locals.user?.id,
                         message: `studentId:${studentId}`,
                     });
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Учня не знайдено серед ваших дітей" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.studentNotAmongChildren" });
                 }
             }
 
@@ -336,7 +347,7 @@ export const submitForm = defineAction({
                     userId: context.locals.user?.id,
                     message: `profileId:${input.profileId}`,
                 });
-                throw new ActionError({ code: "BAD_REQUEST", message: "Профіль не належить жодній кампанії" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.profileNotInCampaign" });
             }
             const campaignId = campaignAssignment.campaignId;
             const campaign = await db.query.campaigns.findFirst({ where: { id: campaignId } });
@@ -348,7 +359,7 @@ export const submitForm = defineAction({
                     userId: context.locals.user?.id,
                     message: `campaignId:${campaignId}`,
                 });
-                throw new ActionError({ code: "BAD_REQUEST", message: "Кампанію не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.campaignNotFound" });
             }
             const now = new Date();
             if (campaign.beginsAt && new Date(campaign.beginsAt) > now) {
@@ -359,7 +370,7 @@ export const submitForm = defineAction({
                     userId: context.locals.user?.id,
                     message: `campaignId:${campaignId}`,
                 });
-                throw new ActionError({ code: "BAD_REQUEST", message: "Кампанія ще не розпочалася" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.campaignNotStarted" });
             }
             if (campaign.endsAt && new Date(campaign.endsAt) < now) {
                 logErrorEvent({
@@ -369,7 +380,7 @@ export const submitForm = defineAction({
                     userId: context.locals.user?.id,
                     message: `campaignId:${campaignId}`,
                 });
-                throw new ActionError({ code: "BAD_REQUEST", message: "Кампанія вже завершилася" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.campaignEnded" });
             }
 
             const existingApplication = await db.query.applications.findFirst({
@@ -392,7 +403,12 @@ export const submitForm = defineAction({
                 });
                 throw new ActionError({
                     code: "BAD_REQUEST",
-                    message: `Заява для цієї дитини${existingApplication.profileId === input.profileId ? " (на цей профіль)" : ""} в цій кампанії вже існує`,
+                    message: translate(
+                        context.locals.locale,
+                        existingApplication.profileId === input.profileId
+                            ? "errors.applicationExistsForProfile"
+                            : "errors.applicationExists",
+                    ),
                 });
             }
 
@@ -468,19 +484,19 @@ export const updateApplicationAnswers = defineAction({
     input: z.looseObject({
         applicationId: z.coerce.number().int().positive(),
 
-        studentfirstName: z.string().min(1, "Вкажіть ім'я учня"),
-        studentlastName: z.string().min(1, "Вкажіть прізвище учня"),
+        studentfirstName: z.string().min(1, "validation.studentFirstNameRequired"),
+        studentlastName: z.string().min(1, "validation.studentLastNameRequired"),
         studentmiddleName: z.string().optional(),
 
         studentBirthDate: birthDate,
-        studentTelephone: z.string().regex(/^380\d{9}$/, "Введіть номер у форматі 380XXXXXXXXX"),
+        studentTelephone: z.string().regex(/^380\d{9}$/, "validation.phoneFormat"),
 
-        parentfirstName: z.string().min(1, "Вкажіть ім'я"),
-        parentlastName: z.string().min(1, "Вкажіть прізвище"),
+        parentfirstName: z.string().min(1, "validation.firstNameRequired"),
+        parentlastName: z.string().min(1, "validation.lastNameRequired"),
         parentmiddleName: z.string().optional(),
 
         parentBirthDate: birthDate,
-        parentTelephone: z.string().regex(/^380\d{9}$/, "Введіть номер у форматі 380XXXXXXXXX"),
+        parentTelephone: z.string().regex(/^380\d{9}$/, "validation.phoneFormat"),
     }),
     handler: async (input, context) => {
         try {
@@ -495,12 +511,12 @@ export const updateApplicationAnswers = defineAction({
             });
             // Only the application's parent or student may see or edit it.
             if (!application || (application.userId !== user.id && application.studentId !== user.id)) {
-                throw new ActionError({ code: "NOT_FOUND", message: "Заяву не знайдено" });
+                throw new ActionError({ code: "NOT_FOUND", message: "errors.applicationNotFound" });
             }
             if (application.status !== "attention") {
                 throw new ActionError({
                     code: "FORBIDDEN",
-                    message: "Редагування доступне лише для заяв зі статусом «Зверніть увагу»",
+                    message: "errors.editOnlyAttention",
                 });
             }
             const form = application.form;
@@ -523,7 +539,7 @@ export const updateApplicationAnswers = defineAction({
                     path: context.url?.pathname || "/",
                     userId: user.id,
                 });
-                throw new ActionError({ code: "FORBIDDEN", message: "Підтвердіть, що ви не робот" });
+                throw new ActionError({ code: "FORBIDDEN", message: "errors.turnstile" });
             }
 
             const { formFields, errors, fieldErrors } = await collectAnswers(
@@ -532,6 +548,7 @@ export const updateApplicationAnswers = defineAction({
                 input as Record<string, unknown>,
                 user.id,
                 context.url?.pathname || "/",
+                context.locals.locale,
                 application.answers,
             );
             if (errors.length > 0) return { success: false, message: errors.join("; "), fieldErrors };
@@ -624,7 +641,7 @@ export const saveDraft = defineAction({
                     path: context.url?.pathname || "/",
                     userId: context.locals.user.id,
                 });
-                throw new ActionError({ code: "FORBIDDEN", message: "Абітурієнти не можуть створювати заяви" });
+                throw new ActionError({ code: "FORBIDDEN", message: "errors.applicantsCannotCreate" });
             }
             await enforceRateLimit("DRAFT_LIMITER", `draft:${context.locals.user.id}`);
 
@@ -694,7 +711,7 @@ export const saveDraft = defineAction({
                         userId: context.locals.user.id,
                         message: `studentId:${input.studentId}`,
                     });
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Учня не знайдено серед ваших дітей" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.studentNotAmongChildren" });
                 }
                 studentId = student.id;
             }
@@ -812,7 +829,7 @@ export const deleteDraft = defineAction({
                     userId: context.locals.user.id,
                     message: `applicationId:${input.applicationId}`,
                 });
-                throw new ActionError({ code: "NOT_FOUND", message: "Чернетку не знайдено" });
+                throw new ActionError({ code: "NOT_FOUND", message: "errors.draftNotFound" });
             }
 
             const fileKeys = answerFileKeys(draft.answers);
@@ -873,12 +890,12 @@ export const submitFormEdit = defineAction({
             for (const field of input.schema) {
                 const slug = field.slug.trim();
                 if (!slug || !field.title.trim()) {
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Усі поля форми повинні мати назву" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.fieldsNeedNames" });
                 }
                 if (slugs.has(slug)) {
                     throw new ActionError({
                         code: "BAD_REQUEST",
-                        message: `Поля з однаковою назвою: «${field.title}»`,
+                        message: translate(context.locals.locale, "errors.duplicateFieldNames", { title: field.title }),
                     });
                 }
                 slugs.add(slug);
@@ -888,9 +905,9 @@ export const submitFormEdit = defineAction({
                 ? await db.query.profiles.findFirst({ where: { id: input.profileId } })
                 : undefined;
             if (input.profileId && !profile)
-                throw new ActionError({ code: "BAD_REQUEST", message: "Профіль не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.profileNotFound" });
             if (!input.formId && !profile)
-                throw new ActionError({ code: "BAD_REQUEST", message: "Спочатку збережіть профіль" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.saveProfileFirst" });
 
             let formId: number;
             if (!input.formId) {
@@ -974,7 +991,7 @@ export const deleteForm = defineAction({
                 where: { id: input.formId },
             });
             if (!existingForm) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Форму не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.formNotFound" });
             }
 
             // applications.form_id cascades, so deleting the form would erase submitted applications.
@@ -983,7 +1000,7 @@ export const deleteForm = defineAction({
                 and(eq(applications.formId, input.formId), eq(applications.state, "submitted")),
             );
             if (submittedCount > 0) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "За цією формою вже є подані заяви" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.formHasApplications" });
             }
 
             await db.update(profiles).set({ formId: null }).where(eq(profiles.formId, input.formId));
@@ -1014,7 +1031,7 @@ export const updateApplication = defineAction({
     accept: "json",
     input: z.object({
         applicationId: z.number().int().positive(),
-        status: z.enum(APPLICATION_STATUSES, "Некоректний статус"),
+        status: z.enum(APPLICATION_STATUSES, "errors.invalidStatus"),
         notes: z.string().max(5000).default(""),
     }),
     handler: async (input, context) => {
@@ -1028,7 +1045,7 @@ export const updateApplication = defineAction({
                 where: { id: input.applicationId, state: "submitted" },
             });
             if (!application) {
-                throw new ActionError({ code: "NOT_FOUND", message: "Заяву не знайдено" });
+                throw new ActionError({ code: "NOT_FOUND", message: "errors.applicationNotFound" });
             }
 
             await db
@@ -1073,7 +1090,7 @@ export const deleteApplications = defineAction({
             const db = getDrizzle();
             const records = await db.select().from(applications).where(inArray(applications.id, input.applicationIds));
             if (records.length === 0) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Заяв не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.applicationsNotFound" });
             }
 
             const fileKeys = records.flatMap(({ answers }) => answerFileKeys(answers));
@@ -1125,10 +1142,10 @@ export const applicantLink = defineAction({
             }
             const student = await db.query.users.findFirst({ where: { id: application.studentId } });
             if (!student) {
-                throw new ActionError({ code: "NOT_FOUND", message: "Учня не знайдено" });
+                throw new ActionError({ code: "NOT_FOUND", message: "errors.studentNotFound" });
             }
             if (student.externalId) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Учень уже має акаунт, посилання не потрібне" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.studentHasAccount" });
             }
             const existingInvite = await db.query.applicantInvites.findFirst({
                 where: { applicationId: application.id },

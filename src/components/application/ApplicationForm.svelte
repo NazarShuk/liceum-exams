@@ -1,7 +1,11 @@
 <script lang="ts">
     import { actions, isInputError } from "astro:actions";
     import { onDestroy, onMount, tick } from "svelte";
-    import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, uploadError } from "@lib/uploads";
+    import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_MB, uploadError } from "@lib/uploads";
+    import { localizePath } from "@i18n/config";
+    import type { Locale } from "@i18n/config";
+    import { translate, translateMessage } from "@i18n/index";
+    import type { MessageKey } from "@i18n/index";
     import type { campaigns, forms, profiles, users } from "@db/schema";
 
     type Form = typeof forms.$inferSelect;
@@ -27,6 +31,7 @@
         actionUrl,
         draft,
         edit,
+        locale,
     }: {
         selectedForm: Form;
         selectedCampaign: CampaignWithProfiles | undefined;
@@ -48,7 +53,10 @@
             answers: Record<string, unknown>;
             notes: string;
         };
+        locale: Locale;
     } = $props();
+
+    const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
 
     const toDateInput = (value: unknown) =>
         value ? new Date(value as string | number | Date).toISOString().slice(0, 10) : "";
@@ -205,13 +213,13 @@
                         turnstileToken = null;
                     },
                     "error-callback": () => {
-                        turnstileError = "Не вдалося пройти перевірку. Оновіть сторінку.";
+                        turnstileError = t("application.turnstileFailed");
                         failTurnstileToken();
                     },
                 });
             })
             .catch(() => {
-                if (!cancelled) turnstileError = "Не вдалося завантажити перевірку. Оновіть сторінку.";
+                if (!cancelled) turnstileError = t("application.turnstileLoadFailed");
             });
 
         return () => {
@@ -295,7 +303,7 @@
             finishUpload({
                 key: previousKey,
                 progress: previousKey ? 100 : 0,
-                error: "Підтвердіть, що ви не робот, і повторіть завантаження",
+                error: t("application.confirmRobotUpload"),
                 uploading: false,
                 previewUrl: previousPreview,
                 previewIsImage: previousIsImage,
@@ -335,7 +343,7 @@
                     // fall through to the error below
                 }
             }
-            let error = "Не вдалося завантажити файл";
+            let error = t("application.uploadFailed");
             try {
                 error = (JSON.parse(xhr.responseText) as { error?: string }).error || error;
             } catch {
@@ -357,7 +365,7 @@
             finishUpload({
                 key: previousKey,
                 progress: previousKey ? 100 : 0,
-                error: "Не вдалося завантажити файл",
+                error: t("application.uploadFailed"),
                 uploading: false,
                 previewUrl: previousPreview,
                 previewIsImage: previousIsImage,
@@ -398,7 +406,7 @@
             uploads[slug] = {
                 key: previousKey,
                 progress: previousKey ? 100 : 0,
-                error,
+                error: translate(locale, error.key, error.size ? { size: error.size } : undefined),
                 uploading: false,
                 previewUrl: previousPreview,
                 previewIsImage: previousIsImage,
@@ -447,7 +455,7 @@
         event.preventDefault();
         if (sending || !formElement) return;
         if (uploading) {
-            message = "Зачекайте, файли ще завантажуються";
+            message = t("application.waitUploads");
             return;
         }
 
@@ -461,7 +469,7 @@
         try {
             const turnstile = await takeTurnstileToken();
             if (!turnstile) {
-                message = "Підтвердіть, що ви не робот, і надішліть ще раз";
+                message = t("application.confirmRobotSubmit");
                 return;
             }
             usedTurnstile = true;
@@ -471,12 +479,12 @@
             const result = edit ? await actions.updateApplicationAnswers(formData) : await actions.submitForm(formData);
 
             if (result.error) {
-                message = result.error.message;
+                message = translateMessage(locale, result.error.message);
                 if (isInputError(result.error)) {
                     fieldErrors = Object.fromEntries(
                         Object.entries(result.error.fields ?? {}).map(([key, errors]) => [
                             key,
-                            (errors || []).join(", "),
+                            (errors || []).map((error) => translateMessage(locale, error)).join(", "),
                         ]),
                     );
                 }
@@ -485,9 +493,12 @@
                 fieldErrors = result.data.fieldErrors || {};
             } else {
                 window.location.assign(
-                    edit
-                        ? `/cabinet/application?preview=${result.data.id}`
-                        : `/cabinet/application?success=true&preview=${result.data.id}`,
+                    localizePath(
+                        locale,
+                        edit
+                            ? `/cabinet/application?preview=${result.data.id}`
+                            : `/cabinet/application?success=true&preview=${result.data.id}`,
+                    ),
                 );
                 return;
             }
@@ -495,7 +506,7 @@
             await tick();
             formElement.querySelector<HTMLElement>('[aria-invalid="true"]:is(input, select, textarea)')?.focus();
         } catch (error) {
-            message = error instanceof Error ? error.message : "Не вдалося надіслати заяву";
+            message = error instanceof Error ? error.message : t("application.sendFailed");
         } finally {
             sending = false;
             if (usedTurnstile) resetTurnstile();
@@ -505,13 +516,16 @@
 
 <section class="flex flex-col gap-5">
     <a
-        href={edit
-            ? `/cabinet/application?preview=${edit.id}`
-            : `/cabinet/application?campaignId=${selectedCampaign?.id}`}
+        href={localizePath(
+            locale,
+            edit
+                ? `/cabinet/application?preview=${edit.id}`
+                : `/cabinet/application?campaignId=${selectedCampaign?.id}`,
+        )}
         class="self-start"
     >
         {"<-"}
-        {edit ? "Назад до заяви" : "Назад до профілів"}
+        {edit ? t("application.backToApplication") : t("application.backToProfiles")}
     </a>
 
     <div>
@@ -523,7 +537,7 @@
 
     {#if edit?.notes}
         <div class="card flex flex-col gap-2 border-liceum-grey!">
-            <h3>Нотатки</h3>
+            <h3>{t("application.notes")}</h3>
             <p class="whitespace-pre-wrap">{edit.notes}</p>
         </div>
     {/if}
@@ -543,12 +557,12 @@
             <input type="hidden" name="draftId" value={draftId || ""} />
         {/if}
         <div class="card flex flex-col gap-5 mb-5">
-            <h3>Інформація учня</h3>
+            <h3>{t("application.studentInfo")}</h3>
             {#if !edit && userChildren.length > 0}
                 <label class="flex flex-col gap-1">
-                    Оберіть учня
+                    {t("application.chooseStudent")}
                     <select onchange={selectChild}>
-                        <option value="">Новий учень</option>
+                        <option value="">{t("application.newStudent")}</option>
                         {#each userChildren as child (child.id)}
                             {@const childName = `${child.firstName} ${child.lastName} ${child.middleName ?? ""}`.trim()}
                             <option value={String(child.id)}>{childName}</option>
@@ -559,7 +573,7 @@
             <input type="hidden" name="studentId" value={studentId} />
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <label class="flex flex-col gap-1">
-                    Прізвище
+                    {t("common.lastName")}
                     <input
                         name="studentlastName"
                         required
@@ -573,7 +587,7 @@
                     {/if}
                 </label>
                 <label class="flex flex-col gap-1">
-                    Ім'я
+                    {t("common.firstName")}
                     <input
                         name="studentfirstName"
                         required
@@ -587,7 +601,7 @@
                     {/if}
                 </label>
                 <label class="flex flex-col gap-1">
-                    По батькові
+                    {t("common.middleName")}
                     <input
                         name="studentmiddleName"
                         placeholder="..."
@@ -601,7 +615,7 @@
                 </label>
             </div>
             <label class="flex flex-col gap-1">
-                Дата народження
+                {t("common.birthDate")}
                 <input
                     name="studentBirthDate"
                     type="date"
@@ -615,7 +629,7 @@
                 {/if}
             </label>
             <label class="flex flex-col gap-1">
-                Телефон
+                {t("common.phone")}
                 <input
                     name="studentTelephone"
                     type="tel"
@@ -633,10 +647,10 @@
         </div>
 
         <div class="card flex flex-col gap-5 mb-5">
-            <h3>Інформація батьків</h3>
+            <h3>{t("application.parentInfo")}</h3>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <label class="flex flex-col gap-1">
-                    Прізвище
+                    {t("common.lastName")}
                     <input
                         name="parentlastName"
                         required
@@ -649,7 +663,7 @@
                     {/if}
                 </label>
                 <label class="flex flex-col gap-1">
-                    Ім'я
+                    {t("common.firstName")}
                     <input
                         name="parentfirstName"
                         required
@@ -662,7 +676,7 @@
                     {/if}
                 </label>
                 <label class="flex flex-col gap-1">
-                    По батькові
+                    {t("common.middleName")}
                     <input
                         name="parentmiddleName"
                         bind:value={parent.middleName}
@@ -675,7 +689,7 @@
                 </label>
             </div>
             <label class="flex flex-col gap-1">
-                Дата народження
+                {t("common.birthDate")}
                 <input
                     name="parentBirthDate"
                     type="date"
@@ -688,7 +702,7 @@
                 {/if}
             </label>
             <label class="flex flex-col gap-1">
-                Телефон
+                {t("common.phone")}
                 <input
                     name="parentTelephone"
                     type="tel"
@@ -750,7 +764,7 @@
                                     <div
                                         class="h-2 w-full overflow-hidden rounded bg-black/10"
                                         role="progressbar"
-                                        aria-label="Завантаження файлу"
+                                        aria-label={t("application.uploadAria")}
                                         aria-valuemin={0}
                                         aria-valuemax={100}
                                         aria-valuenow={upload.progress}
@@ -760,7 +774,9 @@
                                             style={`width: ${upload.progress}%`}
                                         ></div>
                                     </div>
-                                    <span class="opacity-75">Завантаження... {upload.progress}%</span>
+                                    <span class="opacity-75"
+                                        >{t("application.uploading", { progress: upload.progress })}</span
+                                    >
                                 </div>
                             {/if}
                             {#if upload?.error}
@@ -768,18 +784,18 @@
                             {/if}
                             {#if upload?.key && !upload.uploading}
                                 <div class="flex items-center gap-3">
-                                    <p class="text-diia-green">Файл завантажено</p>
+                                    <p class="text-diia-green">{t("application.uploaded")}</p>
                                     <button
                                         type="button"
                                         class="cursor-pointer text-diia-red underline"
                                         onclick={() => removeFile(field.slug)}
                                     >
-                                        Видалити файл
+                                        {t("application.removeFile")}
                                     </button>
                                 </div>
                             {/if}
                             <p class="opacity-75">
-                                PDF, JPG, PNG або WEBP, до {MAX_UPLOAD_BYTES / 1024 / 1024} МБ
+                                {t("application.fileHint", { size: MAX_UPLOAD_MB })}
                             </p>
                         </div>
                         {#if upload?.previewUrl}
@@ -803,7 +819,7 @@
                     <input
                         class="lg:w-3/4 w-full"
                         {name}
-                        placeholder="Ваша відповідь..."
+                        placeholder={t("application.answerPlaceholder")}
                         type={field.type}
                         value={(answerOf(field.slug) as string | undefined) ?? ""}
                         required={field.required !== false}
@@ -819,7 +835,7 @@
                     <p class="text-diia-red mt-2" role="alert">{error}</p>
                 {/if}
                 {#if field.required === false}
-                    <p class="opacity-75 mt-5">*Не обов'язкове</p>
+                    <p class="opacity-75 mt-5">{t("application.optionalMark")}</p>
                 {/if}
             </div>
         {/each}
@@ -832,28 +848,27 @@
         <input type="hidden" name="formId" value={selectedForm.id} />
         <input type="hidden" name="profileId" value={selectedProfile.id} />
         {#if Object.keys(fieldErrors).length > 0}
-            <p class="text-diia-red" role="alert">Перевірте виділені поля</p>
+            <p class="text-diia-red" role="alert">{t("application.checkFields")}</p>
         {:else if message}
             <p class="text-diia-red" role="alert">{message}</p>
         {/if}
         <p class="opacity-75 mb-2 {saveStatus === 'idle' ? 'invisible' : ''}" role="status">
-            {saveStatus === "saving" ? "Збереження чернетки..." : "Чернетку збережено"}
+            {saveStatus === "saving" ? t("application.savingDraft") : t("application.draftSaved")}
         </p>
         <button class="btn-default" disabled={sending || uploading}>
             {sending
                 ? edit
-                    ? "Збереження..."
-                    : "Надсилання..."
+                    ? t("application.saving")
+                    : t("application.sending")
                 : uploading
-                  ? "Завантаження файлів..."
+                  ? t("application.uploadingFiles")
                   : edit
-                    ? "Зберегти зміни"
-                    : "Надіслати"}
+                    ? t("application.saveChanges")
+                    : t("application.submit")}
         </button>
         {#if !edit}
             <p class="opacity-75">
-                Натискаючи кнопку "Надіслати", ви надаєте згоду на обробку ваших персональних даних відповідно до Закону
-                України "Про захист персональних даних"
+                {t("application.consent")}
             </p>
         {/if}
     </form>

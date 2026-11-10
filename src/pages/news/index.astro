@@ -1,12 +1,16 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import { getDrizzle } from "@db/drizzle";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
 import { markdownExcerpt } from "../../lib/markdown";
 import { dbTimestamp, parseDbDate } from "@lib/dates";
 import { users } from "@db/schema";
 import { eq } from "drizzle-orm";
+import { compareText, formatDate } from "@i18n/dates";
+import { localizePath } from "@i18n/config";
+import { useTranslations } from "@i18n/index";
+
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 
 const db = getDrizzle();
 const news = await db.query.news.findMany({
@@ -27,7 +31,7 @@ if (Astro.locals.user) {
 
 const query = (Astro.url.searchParams.get("q") ?? "").trim();
 const activeTag = (Astro.url.searchParams.get("tag") ?? "").trim();
-const tags = [...new Set(news.map((item) => item.tag))].sort((a, b) => a.localeCompare(b, "uk"));
+const tags = [...new Set(news.map((item) => item.tag))].sort((a, b) => compareText(a, b, locale));
 
 // shortcut: filters the whole news table in memory; move to SQL if the table grows.
 const filteredNews = news.filter((item) => {
@@ -36,20 +40,21 @@ const filteredNews = news.filter((item) => {
     const needle = query.toLowerCase();
     return [item.title, item.tag, item.content].some((value) => value.toLowerCase().includes(needle));
 });
+const newsPath = localizePath(locale, "/news");
 ---
 
-<Layout title="Новини">
+<Layout title={t("news.title")}>
     <section>
-        <h1>Новини</h1>
+        <h1>{t("news.title")}</h1>
         <form method="get" class="mt-5 grid gap-3 sm:flex sm:flex-wrap sm:items-end" role="search">
             <label class="min-w-0 sm:flex-1">
-                <span class="sr-only">Пошук новин</span>
-                <input type="search" name="q" value={query} placeholder="Пошук новин" class="w-full" />
+                <span class="sr-only">{t("news.searchLabel")}</span>
+                <input type="search" name="q" value={query} placeholder={t("news.searchPlaceholder")} class="w-full" />
             </label>
             <label class="min-w-0 sm:flex-1">
-                <span class="sr-only">Категорія</span>
+                <span class="sr-only">{t("news.categoryLabel")}</span>
                 <select name="tag" class="w-full" onchange="this.form.requestSubmit()">
-                    <option value="">Усі Категорії</option>
+                    <option value="">{t("news.allCategories")}</option>
                     {tags.map((tag) => (
                         <option value={tag} selected={tag === activeTag}>
                             {tag}
@@ -59,16 +64,14 @@ const filteredNews = news.filter((item) => {
             </label>
             <div class="flex flex-wrap items-center gap-3">
                 <button type="submit" class="btn-default">
-                    Знайти
+                    {t("news.find")}
                 </button>
-                <a href="/news" class={query || activeTag ? "" : "invisible"} aria-hidden={!query && !activeTag}>
-                    Скинути
+                <a href={newsPath} class={query || activeTag ? "" : "invisible"} aria-hidden={!query && !activeTag}>
+                    {t("news.reset")}
                 </a>
             </div>
         </form>
-        {filteredNews.length === 0 && (
-            <p class="mt-5">{news.length === 0 ? "Новин поки що немає." : "За цим запитом новин не знайдено."}</p>
-        )}
+        {filteredNews.length === 0 && <p class="mt-5">{news.length === 0 ? t("news.empty") : t("news.noResults")}</p>}
         <ul class="mt-5 list-colors">
             {filteredNews.map((item) => (
                 <li>
@@ -78,25 +81,25 @@ const filteredNews = news.filter((item) => {
                                 {item.pinned && (
                                     <span
                                         class="material-symbols-outlined text-[20px] text-diia-grey"
-                                        title="Закріплена новина"
-                                        aria-label="Закріплена новина"
+                                        title={t("news.pinned")}
+                                        aria-label={t("news.pinned")}
                                         role="img"
                                     >
                                         push_pin
                                     </span>
                                 )}
                                 <a
-                                    href={`/news?tag=${encodeURIComponent(item.tag)}`}
+                                    href={`${newsPath}?tag=${encodeURIComponent(item.tag)}`}
                                     class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-liceum-blue transition-colors hover:brightness-95"
                                 >
                                     {item.tag}
                                 </a>
                             </div>
                             <time datetime={parseDbDate(item.createdAt).toISOString()} class="text-sm text-black/60">
-                                {format(parseDbDate(item.createdAt), "d MMMM yyyy", { locale: uk })}
+                                {formatDate(parseDbDate(item.createdAt), locale)}
                             </time>
                         </div>
-                        <a href={`/news/${item.id}`} class="mt-2 block">
+                        <a href={localizePath(locale, `/news/${item.id}`)} class="mt-2 block">
                             <h4>{item.title}</h4>
                             <p class="text-black/65">{markdownExcerpt(item.content, 160)}</p>
                         </a>

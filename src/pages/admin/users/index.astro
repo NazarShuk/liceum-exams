@@ -2,15 +2,18 @@
 import { getDrizzle } from "@db/drizzle";
 import Layout from "@layouts/Layout.astro";
 import UsersTable from "@components/UsersTable.svelte";
+import { useTranslations } from "@i18n/index";
 
 const db = getDrizzle();
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 const users = await db.query.users.findMany({
     with: { parent: true },
     orderBy: { lastName: "asc" },
 });
 ---
 
-<Layout title="Користувачі">
-    <h1>Користувачі</h1>
-    <UsersTable users={users} currentUserId={Astro.locals.user.id} client:load />
+<Layout title={t("admin.users.title")}>
+    <h1>{t("admin.users.title")}</h1>
+    <UsersTable users={users} currentUserId={Astro.locals.user.id} {locale} client:load />
 </Layout>

@@ -12,15 +12,15 @@ async function validateTeacherIds(db: ReturnType<typeof getDrizzle>, teacherIds:
         .from(users)
         .where(and(inArray(users.id, teacherIds), eq(users.role, "teacher")));
     if (existingTeachers.length !== teacherIds.length) {
-        throw new ActionError({ code: "BAD_REQUEST", message: "Одного або кількох викладачів не знайдено" });
+        throw new ActionError({ code: "BAD_REQUEST", message: "errors.teachersNotFound" });
     }
 }
 
 export const createGroup = defineAction({
     accept: "json",
     input: z.object({
-        title: z.string().trim().min(1, "Вкажіть назву групи"),
-        applicationIds: z.array(z.number().int().positive()).min(1, "Виберіть хоча б одну заяву"),
+        title: z.string().trim().min(1, "errors.groupTitleRequired"),
+        applicationIds: z.array(z.number().int().positive()).min(1, "errors.selectOneApplication"),
         teacherIds: z.array(z.number().int().positive()).default([]),
     }),
     handler: async (input, context) => {
@@ -38,7 +38,7 @@ export const createGroup = defineAction({
                 .from(applications)
                 .where(inArray(applications.id, applicationIds));
             if (existingApplications.length !== applicationIds.length) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Одну або кілька заяв не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.someApplicationsNotFound" });
             }
             await validateTeacherIds(db, teacherIds);
 
@@ -74,9 +74,9 @@ export const submitGroupEdit = defineAction({
     accept: "json",
     input: z.object({
         groupId: z.number().int().positive(),
-        title: z.string().trim().min(1, "Вкажіть назву групи"),
+        title: z.string().trim().min(1, "errors.groupTitleRequired"),
         teacherIds: z.array(z.number().int().positive()).default([]),
-        applicationIds: z.array(z.number().int().positive()).min(1, "Виберіть хоча б одну заяву"),
+        applicationIds: z.array(z.number().int().positive()).min(1, "errors.selectOneApplication"),
     }),
     handler: async (input, context) => {
         try {
@@ -87,7 +87,7 @@ export const submitGroupEdit = defineAction({
             const db = getDrizzle();
             const existingGroup = await db.query.groups.findFirst({ where: { id: input.groupId } });
             if (!existingGroup) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Групу не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.groupNotFound" });
             }
 
             const teacherIds = [...new Set(input.teacherIds)];
@@ -99,7 +99,7 @@ export const submitGroupEdit = defineAction({
                 .from(applications)
                 .where(inArray(applications.id, applicationIds));
             if (existingApplications.length !== applicationIds.length) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Одну або кілька заяв не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.someApplicationsNotFound" });
             }
 
             await db.update(groups).set({ title: input.title }).where(eq(groups.id, input.groupId));
@@ -145,7 +145,7 @@ export const deleteGroup = defineAction({
             const db = getDrizzle();
             const existingGroup = await db.query.groups.findFirst({ where: { id: input.groupId } });
             if (!existingGroup) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Групу не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.groupNotFound" });
             }
 
             await db.delete(groups).where(eq(groups.id, input.groupId));
@@ -180,7 +180,7 @@ export const addApplicationsToGroup = defineAction({
             const db = getDrizzle();
             const existingGroup = await db.query.groups.findFirst({ where: { id: input.groupId } });
             if (!existingGroup) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Групу не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.groupNotFound" });
             }
 
             const applicationIds = [...new Set(input.applicationIds)];
@@ -189,7 +189,7 @@ export const addApplicationsToGroup = defineAction({
                 .from(applications)
                 .where(inArray(applications.id, applicationIds));
             if (existingApplications.length !== applicationIds.length) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Одну або кілька заяв не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.someApplicationsNotFound" });
             }
 
             await db
@@ -229,7 +229,7 @@ export const removeApplicationsFromGroup = defineAction({
             const db = getDrizzle();
             const existingGroup = await db.query.groups.findFirst({ where: { id: input.groupId } });
             if (!existingGroup) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Групу не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.groupNotFound" });
             }
 
             const applicationIds = [...new Set(input.applicationIds)];

@@ -1,14 +1,18 @@
 <script lang="ts">
     import { actions } from "astro:actions";
-    import { format } from "date-fns";
-    import { uk } from "date-fns/locale";
     import type { news } from "@db/schema";
     import { parseDbDate } from "@lib/dates";
+    import { formatDate } from "@i18n/dates";
+    import { localizePath } from "@i18n/config";
+    import type { Locale } from "@i18n/config";
+    import { translate, translateMessage } from "@i18n/index";
+    import type { MessageKey } from "@i18n/index";
 
     type News = typeof news.$inferSelect;
     type NewsListItem = Pick<News, "id" | "title" | "tag" | "pinned" | "hidden" | "createdAt">;
 
-    const { news: initialNews }: { news: NewsListItem[] } = $props();
+    const { news: initialNews, locale }: { news: NewsListItem[]; locale: Locale } = $props();
+    const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
 
     let items = $state<NewsListItem[]>([...initialNews]);
     let savingIds = $state<number[]>([]);
@@ -29,12 +33,12 @@
         try {
             const result = await actions.updateNewsFlags({ newsId: item.id, ...flags });
             if (result.error) {
-                error = result.error.message;
+                error = translateMessage(locale, result.error.message);
                 return;
             }
             items = sortItems(items.map((record) => (record.id === item.id ? { ...record, ...flags } : record)));
         } catch (e) {
-            error = e instanceof Error ? e.message : "Не вдалося оновити новину";
+            error = e instanceof Error ? e.message : t("news.flagsFailed");
         } finally {
             savingIds = savingIds.filter((id) => id !== item.id);
         }
@@ -46,7 +50,7 @@
 {/if}
 
 {#if items.length === 0}
-    <p class="mt-5">Новин поки що немає.</p>
+    <p class="mt-5">{t("news.empty")}</p>
 {:else}
     <ul class="mt-5 list-colors">
         {#each items as item (item.id)}
@@ -59,20 +63,20 @@
                             </span>
                             {#if item.pinned}
                                 <span class="rounded-full bg-diia-gorse px-3 py-1 text-sm text-liceum-orange">
-                                    Закріплена
+                                    {t("news.pinnedBadge")}
                                 </span>
                             {/if}
                             {#if item.hidden}
                                 <span class="rounded-full bg-diia-bright-grey px-3 py-1 text-sm text-black/60">
-                                    Прихована
+                                    {t("news.hiddenBadge")}
                                 </span>
                             {/if}
                         </div>
                         <time datetime={parseDbDate(item.createdAt).toISOString()} class="text-sm text-black/60">
-                            {format(parseDbDate(item.createdAt), "d MMMM yyyy", { locale: uk })}
+                            {formatDate(parseDbDate(item.createdAt), locale)}
                         </time>
                     </div>
-                    <a href={`/admin/news/editor?news=${item.id}`} class="mt-2 block">
+                    <a href={localizePath(locale, `/admin/news/editor?news=${item.id}`)} class="mt-2 block">
                         <h4>{item.title}</h4>
                     </a>
                     <div class="mt-4 flex flex-wrap gap-2">
@@ -83,7 +87,7 @@
                             onclick={() => updateFlags(item, { pinned: !item.pinned })}
                         >
                             <span class="material-symbols-outlined text-[18px]">push_pin</span>
-                            {item.pinned ? "Відкріпити" : "Закріпити"}
+                            {item.pinned ? t("news.unpin") : t("news.pinAction")}
                         </button>
                         <button
                             type="button"
@@ -91,10 +95,8 @@
                             disabled={savingIds.includes(item.id)}
                             onclick={() => updateFlags(item, { hidden: !item.hidden })}
                         >
-                            <span class="material-symbols-outlined text-[18px]">
-                                visibility
-                            </span>
-                            {item.hidden ? "Показати" : "Приховати"}
+                            <span class="material-symbols-outlined text-[18px]"> visibility </span>
+                            {item.hidden ? t("news.show") : t("news.hideAction")}
                         </button>
                     </div>
                 </div>

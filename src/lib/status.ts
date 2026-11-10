@@ -1,10 +1,15 @@
+import type { Locale } from "@i18n/config";
+import { translate } from "@i18n/index";
+import type { MessageKey } from "@i18n/index";
+
 export const APPLICATION_STATUSES = ["pending", "accepted", "rejected", "attention"] as const;
 
-const LABELS: Record<string, string> = {
-    pending: "На розгляді",
-    accepted: "Прийнято",
-    rejected: "Відхилено",
-    attention: "Зверніть увагу",
+const LABEL_KEYS: Record<string, MessageKey> = {
+    pending: "status.pending",
+    accepted: "status.accepted",
+    rejected: "status.rejected",
+    attention: "status.attention",
+    draft: "status.draft",
 };
 
 const CLASSES: Record<string, string> = {
@@ -14,8 +19,9 @@ const CLASSES: Record<string, string> = {
     attention: "bg-diia-grey/15 text-black/55",
 };
 
-export function statusLabel(status: string, hasNotes = false) {
-    return `${LABELS[status] ?? status}${hasNotes ? " *" : ""}`;
+export function statusLabel(status: string, locale: Locale, hasNotes = false) {
+    const label = LABEL_KEYS[status] ? translate(locale, LABEL_KEYS[status]) : status;
+    return `${label}${hasNotes ? " *" : ""}`;
 }
 
 export function statusClass(status: string) {

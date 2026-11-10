@@ -19,13 +19,13 @@ export const updateUserRole = defineAction({
                 throw new ActionError({ code: "UNAUTHORIZED" });
             }
             if (input.userId === context.locals.user.id) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Не можна змінити власну роль" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.cannotChangeOwnRole" });
             }
 
             const db = getDrizzle();
             const existingUser = await db.query.users.findFirst({ where: { id: input.userId } });
             if (!existingUser) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Користувача не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.userNotFound" });
             }
             if (existingUser.role === input.role) {
                 return { success: true };

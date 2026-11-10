@@ -2,32 +2,37 @@
 import Layout from "@layouts/Layout.astro";
 import { actions } from "astro:actions";
 import { parseDbDate } from "@lib/dates";
+import { localizePath } from "@i18n/config";
+import { useTranslations } from "@i18n/index";
+
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 
 const result = Astro.getActionResult(actions.logout);
 if (result && !result.error) {
-    return Astro.redirect("/");
+    return Astro.redirect(localizePath(locale, "/"));
 }
 ---
 
-<Layout title="Аккаунт">
-    <h1>Аккаунт</h1>
+<Layout title={t("account.title")}>
+    <h1>{t("account.title")}</h1>
     <div class="card flex flex-col gap-5 my-5">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <label class="flex flex-col gap-1">
-                Ім'я
+                {t("common.firstName")}
                 <input readonly value={Astro.locals.user?.firstName ?? ""} />
             </label>
             <label class="flex flex-col gap-1">
-                Прізвище
+                {t("common.lastName")}
                 <input readonly value={Astro.locals.user?.lastName ?? ""} />
             </label>
             <label class="flex flex-col gap-1">
-                По батькові
+                {t("common.middleName")}
                 <input readonly value={Astro.locals.user?.middleName ?? ""} />
             </label>
         </div>
         <label class="flex flex-col gap-1">
-            Дата народження
+            {t("common.birthDate")}
             <input
                 readonly
                 type="date"
@@ -39,12 +44,12 @@ if (result && !result.error) {
             />
         </label>
         <label class="flex flex-col gap-1">
-            Телефон
+            {t("common.phone")}
             <input readonly type="tel" value={Astro.locals.user?.phone ?? ""} />
         </label>
     </div>
 
     <form action={actions.logout} method="POST">
-        <button class="btn-default bg-brand-red!">Вийти</button>
+        <button class="btn-default bg-brand-red!">{t("account.logout")}</button>
     </form>
 </Layout>

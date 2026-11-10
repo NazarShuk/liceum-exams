@@ -3,6 +3,9 @@
     import { onMount } from "svelte";
     import type { forms as formsType, profiles } from "@db/schema";
     import FormEditor from "./FormEditor.svelte";
+    import type { Locale } from "@i18n/config";
+    import { translate, translateMessage } from "@i18n/index";
+    import type { MessageKey } from "@i18n/index";
 
     type Profile = typeof profiles.$inferSelect;
     type Form = typeof formsType.$inferSelect;
@@ -11,6 +14,7 @@
         loadedProfile,
         availableForms,
         campaignId,
+        locale,
         onSaved,
         onDeleted,
         onFormSaved,
@@ -19,11 +23,13 @@
         loadedProfile: Profile | undefined;
         availableForms: Form[];
         campaignId?: number;
+        locale: Locale;
         onSaved?: (profile: Profile) => void;
         onDeleted?: (profileId: number) => void;
         onFormSaved?: (form: Form) => void;
         onFormDeleted?: (formId: number) => void;
     } = $props();
+    const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
 
     // svelte-ignore state_referenced_locally
     let forms = $state<Form[]>([...availableForms]);
@@ -133,7 +139,7 @@
             });
 
             if (result.error) {
-                errorMessage = result.error.message;
+                errorMessage = translateMessage(locale, result.error.message);
                 return false;
             }
 
@@ -150,7 +156,7 @@
             }
             return true;
         } catch (error) {
-            errorMessage = error instanceof Error ? error.message : "Не вдалося зберегти профіль";
+            errorMessage = error instanceof Error ? error.message : t("profileEditor.saveFailed");
             return false;
         }
     }
@@ -187,19 +193,19 @@
 
     async function deleteProfile() {
         if (loading || profile.id <= 0) return;
-        if (!window.confirm("Видалити профіль? Це можливо лише якщо за ним немає поданих заяв.")) return;
+        if (!window.confirm(t("profileEditor.deleteConfirm"))) return;
 
         loading = true;
         errorMessage = "";
         try {
             const result = await actions.deleteProfile({ profileId: profile.id });
             if (result.error) {
-                errorMessage = result.error.message;
+                errorMessage = translateMessage(locale, result.error.message);
             } else {
                 onDeleted?.(profile.id);
             }
         } catch (error) {
-            errorMessage = error instanceof Error ? error.message : "Не вдалося видалити профіль";
+            errorMessage = error instanceof Error ? error.message : t("profileEditor.deleteFailed");
         } finally {
             loading = false;
         }
@@ -208,26 +214,29 @@
 
 <div class="grid gap-6 lg:grid-cols-5 lg:items-start">
     <div class="flex flex-col gap-5 lg:col-span-2">
-        <input class="w-full" placeholder="Назва профілю" bind:value={profile.title} />
-        <textarea class="w-full" placeholder="Опис" bind:value={profile.description}></textarea>
+        <input class="w-full" placeholder={t("profileEditor.namePlaceholder")} bind:value={profile.title} />
+        <textarea
+            class="w-full"
+            placeholder={t("profileEditor.descriptionPlaceholder")}
+            bind:value={profile.description}></textarea>
 
         <label class="flex flex-col gap-2">
-            Форма для профілю
+            {t("profileEditor.form")}
             <select class="w-full" bind:this={formSelect} onchange={handleFormSelect}>
-                <option value="">Без форми</option>
+                <option value="">{t("profileEditor.noForm")}</option>
                 {#each forms as form (form.id)}
                     <option value={form.id}>
                         {form.title}
                     </option>
                 {/each}
-                <option value={-1}>+ Створити нову форму</option>
+                <option value={-1}>{t("profileEditor.createForm")}</option>
             </select>
         </label>
 
         {#if errorMessage}
             <p class="text-diia-red" role="alert">{errorMessage}</p>
         {/if}
-        <p class="text-diia-green {!saved ? 'invisible' : ''}" role="status">Зміни збережено!</p>
+        <p class="text-diia-green {!saved ? 'invisible' : ''}" role="status">{t("common.saved")}</p>
 
         <div class="flex flex-row gap-5">
             <button
@@ -236,7 +245,7 @@
                 disabled={loading || !profile.title.trim()}
                 onclick={saveAll}
             >
-                {loading ? "Збереження..." : "Зберегти"}
+                {loading ? t("common.saving") : t("common.save")}
             </button>
             {#if profile.id > 0}
                 <button
@@ -245,7 +254,7 @@
                     disabled={loading}
                     onclick={deleteProfile}
                 >
-                    Видалити профіль
+                    {t("profileEditor.deleteProfile")}
                 </button>
             {/if}
         </div>
@@ -253,12 +262,13 @@
 
     {#if editingFormId !== null}
         <section class="card flex flex-col gap-5 bg-white lg:col-span-3">
-            <h3>{editingForm ? "Форма профілю" : "Нова форма"}</h3>
+            <h3>{editingForm ? t("profileEditor.profileForm") : t("profileEditor.newForm")}</h3>
             {#key editingFormId}
                 <FormEditor
                     bind:this={formEditor}
                     loadedForm={editingForm}
                     profileId={profile.id > 0 ? profile.id : undefined}
+                    {locale}
                     onSaved={handleFormSaved}
                     onDeleted={handleFormDeleted}
                 />
@@ -266,9 +276,11 @@
         </section>
     {:else}
         <section class="card flex flex-col items-start gap-5 bg-white lg:col-span-3">
-            <h3>Форма профілю</h3>
-            <p class="opacity-75">Для цього профілю ще не обрано форму.</p>
-            <button type="button" class="btn-default" onclick={() => (editingFormId = "new")}> Створити форму </button>
+            <h3>{t("profileEditor.profileForm")}</h3>
+            <p class="opacity-75">{t("profileEditor.noFormSelected")}</p>
+            <button type="button" class="btn-default" onclick={() => (editingFormId = "new")}>
+                {t("profileEditor.createFormButton")}
+            </button>
         </section>
     {/if}
 </div>

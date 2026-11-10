@@ -9,9 +9,9 @@ export const submitNewsEdit = defineAction({
     accept: "json",
     input: z.object({
         newsId: z.number().int().positive().optional(),
-        title: z.string().trim().min(1, "Вкажіть заголовок новини"),
-        tag: z.string().trim().min(1, "Вкажіть тег"),
-        content: z.string().trim().min(1, "Вкажіть текст новини"),
+        title: z.string().trim().min(1, "errors.newsTitleRequired"),
+        tag: z.string().trim().min(1, "errors.tagRequired"),
+        content: z.string().trim().min(1, "errors.contentRequired"),
         pinned: z.boolean().optional(),
         hidden: z.boolean().optional(),
     }),
@@ -36,7 +36,7 @@ export const submitNewsEdit = defineAction({
                     where: { id: newsId },
                 });
                 if (!existingNews) {
-                    throw new ActionError({ code: "BAD_REQUEST", message: "Новину не знайдено" });
+                    throw new ActionError({ code: "BAD_REQUEST", message: "errors.newsNotFound" });
                 }
                 await db.update(news).set(values).where(eq(news.id, newsId));
             } else {
@@ -73,7 +73,7 @@ export const updateNewsFlags = defineAction({
                 throw new ActionError({ code: "UNAUTHORIZED" });
             }
             if (input.pinned === undefined && input.hidden === undefined) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Немає змін" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.noChanges" });
             }
 
             const db = getDrizzle();
@@ -81,7 +81,7 @@ export const updateNewsFlags = defineAction({
                 where: { id: input.newsId },
             });
             if (!existingNews) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Новину не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.newsNotFound" });
             }
 
             const changes = {
@@ -125,7 +125,7 @@ export const deleteNews = defineAction({
                 where: { id: input.newsId },
             });
             if (!existingNews) {
-                throw new ActionError({ code: "BAD_REQUEST", message: "Новину не знайдено" });
+                throw new ActionError({ code: "BAD_REQUEST", message: "errors.newsNotFound" });
             }
 
             await db.delete(news).where(eq(news.id, input.newsId));

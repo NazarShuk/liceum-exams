@@ -4,6 +4,10 @@
     import type { campaigns, forms as formsType, profiles } from "@db/schema";
     import ProfileDisplay from "./ProfileDisplay.svelte";
     import ProfileEditor from "./ProfileEditor.svelte";
+    import { localizePath } from "@i18n/config";
+    import type { Locale } from "@i18n/config";
+    import { translate, translateMessage } from "@i18n/index";
+    import type { MessageKey } from "@i18n/index";
 
     type Profile = typeof profiles.$inferSelect;
     type Form = typeof formsType.$inferSelect;
@@ -13,11 +17,14 @@
         loadedCampaign,
         availableForms,
         initialProfileId,
+        locale,
     }: {
         loadedCampaign: Campaign | undefined;
         availableForms: Form[];
         initialProfileId?: number;
+        locale: Locale;
     } = $props();
+    const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
 
     function dateInputValue(date: Date | null): string {
         return date ? new Date(date).toISOString().slice(0, 10) : "";
@@ -76,7 +83,7 @@
     async function openNewProfile() {
         if (campaign.id <= 0) {
             if (!campaign.title.trim()) {
-                errorMessage = "Спочатку введіть назву кампанії";
+                errorMessage = t("campaignEditor.titleRequired");
                 return;
             }
             if (!(await saveCampaign())) return;
@@ -95,8 +102,7 @@
     }
 
     function closeProfileEditor() {
-        if (profileEditor?.hasUnsavedChanges() && !window.confirm("Є незбережені зміни. Закрити без збереження?"))
-            return;
+        if (profileEditor?.hasUnsavedChanges() && !window.confirm(t("campaignEditor.unsavedConfirm"))) return;
         editingProfileId = null;
     }
 
@@ -148,7 +154,7 @@
             });
 
             if (result.error) {
-                errorMessage = result.error.message;
+                errorMessage = translateMessage(locale, result.error.message);
                 return false;
             }
 
@@ -162,7 +168,7 @@
             }
             return true;
         } catch (error) {
-            errorMessage = error instanceof Error ? error.message : "Не вдалося зберегти кампанію";
+            errorMessage = error instanceof Error ? error.message : t("campaignEditor.saveFailed");
             return false;
         } finally {
             loading = false;
@@ -171,19 +177,19 @@
 
     async function deleteCampaign() {
         if (loading || campaign.id <= 0) return;
-        if (!window.confirm("Видалити кампанію?")) return;
+        if (!window.confirm(t("campaignEditor.deleteConfirm"))) return;
 
         loading = true;
         errorMessage = "";
         try {
             const result = await actions.deleteCampaign({ campaignId: campaign.id });
             if (result.error) {
-                errorMessage = result.error.message;
+                errorMessage = translateMessage(locale, result.error.message);
             } else {
-                window.location.assign("/admin/campaigns");
+                window.location.assign(localizePath(locale, "/admin/campaigns"));
             }
         } catch (error) {
-            errorMessage = error instanceof Error ? error.message : "Не вдалося видалити кампанію";
+            errorMessage = error instanceof Error ? error.message : t("campaignEditor.deleteFailed");
         } finally {
             loading = false;
         }
@@ -191,25 +197,26 @@
 </script>
 
 <div class="flex flex-col gap-5">
-    <input placeholder="Назва кампанії" bind:value={campaign.title} />
+    <input placeholder={t("campaignEditor.namePlaceholder")} bind:value={campaign.title} />
     <div class="flex flex-row w-full gap-5">
         <label class="w-full">
-            Починається
+            {t("campaignEditor.begins")}
             <input class="w-full" type="date" bind:value={campaign.beginsAt} />
         </label>
         <label class="w-full">
-            Закінчується
+            {t("campaignEditor.ends")}
             <input class="w-full" type="date" bind:value={campaign.endsAt} />
         </label>
     </div>
 
-    <h3>Профілі</h3>
+    <h3>{t("campaignEditor.profiles")}</h3>
     <ul class="flex flex-col gap-3">
         {#each campaign.profiles as profile, idx (profile.id)}
             <li>
                 <ProfileDisplay
                     onRemove={() => removeProfile(idx)}
                     onClick={() => openProfileEditor(profile.id)}
+                    {locale}
                     {profile}
                 />
             </li>
@@ -221,16 +228,16 @@
         onclick={openNewProfile}
     >
         <span class="material-symbols-outlined"> add_circle </span>
-        <h4>Створити новий профіль</h4>
+        <h4>{t("campaignEditor.createProfile")}</h4>
     </button>
 
     <label class="flex flex-row items-center gap-1">
         <input type="checkbox" bind:checked={campaign.allowMultipleProfiles} />
-        Дозволити подачу заяв на декілька профілів
+        {t("campaignEditor.allowMultiple")}
     </label>
 
     <p class="text-diia-red {errorMessage ? '' : 'invisible'}" role="alert">{errorMessage}</p>
-    <p class="text-diia-green {saved ? '' : 'invisible'}" role="status">Зміни збережено!</p>
+    <p class="text-diia-green {saved ? '' : 'invisible'}" role="status">{t("common.saved")}</p>
 
     <div class="flex flex-row gap-5">
         <button
@@ -239,7 +246,7 @@
             disabled={loading || !campaign.title.trim()}
             onclick={saveCampaign}
         >
-            {loading ? "Збереження..." : "Зберегти"}
+            {loading ? t("common.saving") : t("common.save")}
         </button>
         {#if campaign.id > 0}
             <button
@@ -248,7 +255,7 @@
                 disabled={loading}
                 onclick={deleteCampaign}
             >
-                Видалити кампанію
+                {t("campaignEditor.delete")}
             </button>
         {/if}
     </div>
@@ -272,10 +279,13 @@
                     class="flex shrink-0 flex-row items-center justify-between gap-5 border-b border-diia-bright-grey px-4 py-3 sm:px-6"
                 >
                     <h3 id="profile-editor-title">
-                        {editingProfile ? "Редагувати профіль" : "Новий профіль"}
+                        {editingProfile ? t("campaignEditor.editProfile") : t("campaignEditor.newProfile")}
                     </h3>
-                    <button type="button" class="cursor-pointer" aria-label="Закрити" onclick={closeProfileEditor}
-                        >X</button
+                    <button
+                        type="button"
+                        class="cursor-pointer"
+                        aria-label={t("common.close")}
+                        onclick={closeProfileEditor}>X</button
                     >
                 </header>
                 <div class="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
@@ -285,6 +295,7 @@
                             loadedProfile={editingProfile}
                             availableForms={forms}
                             campaignId={campaign.id > 0 ? campaign.id : undefined}
+                            {locale}
                             onSaved={handleProfileSaved}
                             onDeleted={handleProfileDeleted}
                             onFormSaved={handleFormSaved}

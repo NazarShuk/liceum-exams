@@ -3,9 +3,13 @@ import { getDrizzle } from "@db/drizzle";
 import Layout from "@layouts/Layout.astro";
 import ApplicationsTable from "@components/ApplicationsTable.svelte";
 import GroupEditor from "@components/GroupEditor.svelte";
+import { localizePath } from "@i18n/config";
+import { useTranslations } from "@i18n/index";
 
 const db = getDrizzle();
 const user = Astro.locals.user;
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 const groupId = Number(Astro.params.id);
 const group = Number.isInteger(groupId)
     ? await db.query.groups.findFirst({
@@ -18,7 +22,7 @@ const group = Number.isInteger(groupId)
     : undefined;
 
 if (!group || (user.role !== "admin" && !group.teachers.some((teacher) => teacher.id === user.id))) {
-    return Astro.redirect("/admin/groups");
+    return Astro.redirect(localizePath(locale, "/admin/groups"));
 }
 
 const campaigns = await db.query.campaigns.findMany({
@@ -38,9 +42,11 @@ const teachers =
 ---
 
 <Layout title={group.title}>
-    <a href="/admin/groups">{"<-"} Усі групи</a>
+    <a href={localizePath(locale, "/admin/groups")}>
+        {"<-"} {t("admin.groups.all")}
+    </a>
     <h1>{group.title}</h1>
-    {user.role === "admin" && <GroupEditor group={group} teachers={teachers} client:load />}
+    {user.role === "admin" && <GroupEditor group={group} teachers={teachers} {locale} client:load />}
     {campaigns.length > 0 ? (
         <ApplicationsTable
             applications={group.applications}
@@ -50,9 +56,10 @@ const teachers =
             allowStatusEdit={user.role === "admin"}
             allProfiles
             groupId={group.id}
+            {locale}
             client:load
         />
     ) : (
-        <p>Кампаній ще немає.</p>
+        <p>{t("admin.noCampaigns")}</p>
     )}
 </Layout>

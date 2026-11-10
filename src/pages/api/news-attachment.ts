@@ -2,24 +2,28 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { uploadError } from "@lib/uploads";
 import { rateLimit } from "@lib/rate-limit";
+import { translate } from "@i18n/index";
 
 const fail = (error: string, status: number) => Response.json({ error }, { status });
 const keyPattern = /^news\/\d+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export const POST = (async ({ request, locals }) => {
     const user = locals.user;
-    if (!user) return fail("Потрібно увійти в акаунт", 401);
-    if (user.role !== "admin") return fail("Лише адміністратори можуть додавати файли", 403);
+    const t = (key: Parameters<typeof translate>[1], params?: Record<string, string | number>) =>
+        translate(locals.locale, key, params);
+
+    if (!user) return fail(t("errors.notAuthorized"), 401);
+    if (user.role !== "admin") return fail(t("errors.adminsOnly"), 403);
     if (!(await rateLimit("UPLOAD_LIMITER", `news-upload:${user.id}`))) {
-        return fail("Забагато завантажень. Спробуйте пізніше.", 429);
+        return fail(t("errors.tooManyUploads"), 429);
     }
 
     const formData = await request.formData();
     const file = formData.get("file");
-    if (!(file instanceof File)) return fail("Файл не вибрано", 400);
+    if (!(file instanceof File)) return fail(t("errors.fileNotSelected"), 400);
 
     const error = uploadError(file);
-    if (error) return fail(error, 400);
+    if (error) return fail(t(error.key, "size" in error ? { size: error.size } : undefined), 400);
 
     const key = `news/${user.id}/${crypto.randomUUID()}`;
     await env.FILE_BUCKET.put(key, await file.arrayBuffer(), {

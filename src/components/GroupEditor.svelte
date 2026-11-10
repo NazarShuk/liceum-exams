@@ -1,6 +1,10 @@
 <script lang="ts">
     import { actions } from "astro:actions";
     import type { groups, users } from "@db/schema";
+    import { localizePath } from "@i18n/config";
+    import type { Locale } from "@i18n/config";
+    import { translate, translateMessage } from "@i18n/index";
+    import type { MessageKey } from "@i18n/index";
 
     type User = typeof users.$inferSelect;
     type Group = typeof groups.$inferSelect;
@@ -8,10 +12,13 @@
     const {
         group,
         teachers,
+        locale,
     }: {
         group: Group & { teachers: User[]; applications: { id: number }[] };
         teachers: User[];
+        locale: Locale;
     } = $props();
+    const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
 
     let title = $state(group.title);
     let selectedTeacherIds = $state<number[]>(group.teachers.map((teacher) => teacher.id));
@@ -29,7 +36,8 @@
         user: User | null;
         profile: { title: string } | null;
     }) {
-        const name = fullName(application.student) || fullName(application.user) || "Заява";
+        const name =
+            fullName(application.student) || fullName(application.user) || t("admin.groupEditor.groupFallback");
         return application.profile ? `${name} — ${application.profile.title}` : name;
     }
 
@@ -52,31 +60,31 @@
                 applicationIds: group.applications.map((application) => application.id),
             });
             if (result.error) {
-                error = result.error.message;
+                error = translateMessage(locale, result.error.message);
                 return;
             }
             window.location.reload();
         } catch (e) {
-            error = e instanceof Error ? e.message : "Не вдалося зберегти групу";
+            error = e instanceof Error ? e.message : t("admin.groupEditor.saveFailed");
         } finally {
             saving = false;
         }
     }
 
     async function remove() {
-        if (deleting || !window.confirm("Видалити цю групу?")) return;
+        if (deleting || !window.confirm(t("admin.groupEditor.deleteConfirm"))) return;
 
         deleting = true;
         error = "";
         try {
             const result = await actions.deleteGroup({ groupId: group.id });
             if (result.error) {
-                error = result.error.message;
+                error = translateMessage(locale, result.error.message);
                 return;
             }
-            window.location.assign("/admin/groups");
+            window.location.assign(localizePath(locale, "/admin/groups"));
         } catch (e) {
-            error = e instanceof Error ? e.message : "Не вдалося видалити групу";
+            error = e instanceof Error ? e.message : t("admin.groupEditor.deleteFailed");
         } finally {
             deleting = false;
         }
@@ -84,13 +92,13 @@
 </script>
 
 <div class="card mb-5 flex flex-col gap-3">
-    <h4>Редагувати групу</h4>
+    <h4>{t("admin.groupEditor.title")}</h4>
     <label class="flex flex-col gap-1">
-        Назва групи
+        {t("admin.groupEditor.name")}
         <input bind:value={title} placeholder="10-А" />
     </label>
     <fieldset class="flex flex-col gap-1">
-        <legend>Викладачі</legend>
+        <legend>{t("admin.groupEditor.teachers")}</legend>
         {#each teachers as teacher (teacher.id)}
             <label class="flex min-h-10 cursor-pointer items-center gap-2 py-1">
                 <input
@@ -101,7 +109,7 @@
                 <span>{fullName(teacher)}</span>
             </label>
         {:else}
-            <p class="text-sm opacity-75">Немає викладачів.</p>
+            <p class="text-sm opacity-75">{t("admin.groupEditor.noTeachers")}</p>
         {/each}
     </fieldset>
     {#if error}
@@ -114,7 +122,7 @@
             disabled={saving || !title.trim() || group.applications.length === 0}
             onclick={save}
         >
-            {saving ? "Збереження..." : "Зберегти"}
+            {saving ? t("common.saving") : t("common.save")}
         </button>
         <button
             type="button"
@@ -122,7 +130,7 @@
             disabled={deleting}
             onclick={remove}
         >
-            {deleting ? "Видалення..." : "Видалити групу"}
+            {deleting ? t("common.deleting") : t("admin.groupEditor.deleteGroup")}
         </button>
     </div>
 </div>

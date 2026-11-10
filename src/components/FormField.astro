@@ -1,5 +1,6 @@
 ---
 import { forms } from "@db/schema";
+import { useTranslations } from "@i18n/index";
 type Schema = (typeof forms.$inferSelect)["schema"][0];
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 
 const { field, previewValue } = Astro.props;
+const t = useTranslations(Astro.locals.locale);
 
 const name = "form-" + field.slug;
 const options = field.options ?? [];
@@ -30,7 +32,7 @@ const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null;
     <h4 class="mb-5">{field.title}</h4>
     {field.type === "file" && fileHref ? (
         <a class="btn-default" target="_blank" href={fileHref}>
-            Завантажити файл
+            {t("common.downloadFile")}
         </a>
     ) : field.type === "select" || field.type === "multiselect" ? (
         <fieldset class="flex flex-col gap-2 lg:w-3/4 w-full" disabled>
@@ -53,7 +55,7 @@ const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null;
             value={textValue}
             class="lg:w-3/4 w-full"
             name={name}
-            placeholder={"Ваша відповідь..."}
+            placeholder={t("application.answerPlaceholder")}
             type={field.type}
             minlength={field.type === "text" && field.min > 0 ? field.min : undefined}
             maxlength={field.type === "text" && field.max > 0 ? field.max : undefined}
@@ -63,5 +65,5 @@ const fileHref = fileKey ? `/file?key=${encodeURIComponent(fileKey)}` : null;
         />
     )}
 
-    {!field.required && <p class="opacity-75 mt-5">*Не обов'язкове</p>}
+    {!field.required && <p class="opacity-75 mt-5">{t("application.optionalMark")}</p>}
 </div>

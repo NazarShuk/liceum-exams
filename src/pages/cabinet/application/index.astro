@@ -9,6 +9,11 @@ import ApplicationForm from "@components/application/ApplicationForm.svelte";
 import CampaignSelector from "@components/application/CampaignSelector.astro";
 import { applications } from "@db/schema";
 import type { campaigns, profiles, forms, users } from "@db/schema";
+import { localizePath } from "@i18n/config";
+import { translateMessage, useTranslations } from "@i18n/index";
+
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 
 type Campaign = typeof campaigns.$inferSelect;
 type Profile = typeof profiles.$inferSelect;
@@ -173,7 +178,7 @@ if (Number.isInteger(editId) && editId > 0) {
 
 // Applicants may only view their applications, never create new ones
 if (Astro.locals.user.role === "applicant" && !previewApplication && !editApplication) {
-    return Astro.redirect("/cabinet");
+    return Astro.redirect(localizePath(locale, "/cabinet"));
 }
 
 const applicationAnswers = (previewApplication?.answers ?? {}) as Record<string, unknown>;
@@ -181,7 +186,7 @@ const applicationAnswers = (previewApplication?.answers ?? {}) as Record<string,
 const result = Astro.getActionResult(actions.submitForm);
 const submitError = result
     ? result.error
-        ? result.error.message
+        ? translateMessage(locale, result.error.message)
         : result.data.success
           ? undefined
           : result.data.message
@@ -190,7 +195,7 @@ const submitError = result
 const editResult = Astro.getActionResult(actions.updateApplicationAnswers);
 const editError = editResult
     ? editResult.error
-        ? editResult.error.message
+        ? translateMessage(locale, editResult.error.message)
         : editResult.data.success
           ? undefined
           : editResult.data.message
@@ -204,17 +209,17 @@ const submitAction = (() => {
 })();
 
 if (result && !result.error && result.data.success) {
-    return Astro.redirect("/cabinet/application?success=true&preview=" + Number(result.data.id));
+    return Astro.redirect(localizePath(locale, "/cabinet/application?success=true&preview=" + Number(result.data.id)));
 }
 
 if (editResult && !editResult.error && editResult.data.success) {
-    return Astro.redirect("/cabinet/application?preview=" + Number(editResult.data.id));
+    return Astro.redirect(localizePath(locale, "/cabinet/application?preview=" + Number(editResult.data.id)));
 }
 
 const justSubmitted = !submitError && Astro.url.searchParams.has("success") ? previewApplication : undefined;
 ---
 
-<Layout title="Заява">
+<Layout title={t("application.title")}>
     {(submitError || editError) && (
         <p class="text-diia-red" role="alert">
             {submitError || editError}
@@ -226,17 +231,17 @@ const justSubmitted = !submitError && Astro.url.searchParams.has("success") ? pr
             <span class="material-symbols-outlined text-6xl! text-diia-green" aria-hidden="true">
                 check_circle
             </span>
-            <h2>Заяву відправлено!</h2>
-            <p>Вашу заяву прийнято. Ви можете переглянути дані, які ввели.</p>
+            <h2>{t("application.submittedTitle")}</h2>
+            <p>{t("application.submittedText")}</p>
             <div class="flex flex-wrap items-center justify-center gap-3">
-                <a class="btn-default" href={`/cabinet/application?preview=${justSubmitted.id}`}>
-                    Переглянути заяву
+                <a class="btn-default" href={localizePath(locale, `/cabinet/application?preview=${justSubmitted.id}`)}>
+                    {t("application.preview")}
                 </a>
                 <a
                     class="rounded-[40px] border-2 border-liceum-blue px-6 py-3 text-liceum-blue transition-colors hover:bg-liceum-blue/5"
-                    href="/cabinet"
+                    href={localizePath(locale, "/cabinet")}
                 >
-                    До моїх заяв
+                    {t("application.toMyApplications")}
                 </a>
             </div>
         </section>
@@ -251,6 +256,7 @@ const justSubmitted = !submitError && Astro.url.searchParams.has("success") ? pr
             user={Astro.locals.user}
             userChildren={userChildren}
             actionUrl={submitAction}
+            locale={locale}
             edit={{
                 id: editApplication.id,
                 studentId: editApplication.studentId,
@@ -269,6 +275,7 @@ const justSubmitted = !submitError && Astro.url.searchParams.has("success") ? pr
             user={Astro.locals.user}
             userChildren={userChildren}
             actionUrl={submitAction}
+            locale={locale}
             draft={draft}
         />
     ) : (

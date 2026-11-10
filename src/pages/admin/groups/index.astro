@@ -1,9 +1,13 @@
 ---
 import { getDrizzle } from "@db/drizzle";
 import Layout from "@layouts/Layout.astro";
+import { localizePath } from "@i18n/config";
+import { translatePlural, useTranslations } from "@i18n/index";
 
 const db = getDrizzle();
 const user = Astro.locals.user;
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 const allGroups = await db.query.groups.findMany({
     with: {
         teachers: { columns: { id: true, firstName: true, lastName: true } },
@@ -17,16 +21,16 @@ const groups =
         : allGroups.filter((group) => group.teachers.some((teacher) => teacher.id === user.id));
 ---
 
-<Layout title="Групи">
-    <h1>Групи</h1>
-    {groups.length === 0 && <p class="mt-5">Груп поки що немає.</p>}
+<Layout title={t("admin.groups.title")}>
+    <h1>{t("admin.groups.title")}</h1>
+    {groups.length === 0 && <p class="mt-5">{t("admin.groups.empty")}</p>}
     <ul class="mt-5 list-colors">
         {groups.map((group) => (
             <li>
-                <a href={`/admin/groups/${group.id}`}>
+                <a href={localizePath(locale, `/admin/groups/${group.id}`)}>
                     <div class="card mb-5">
                         <h4>{group.title}</h4>
-                        <p>{group.applications.length} заяв</p>
+                        <p>{translatePlural(locale, group.applications.length, "admin.groups.applicationCount")}</p>
                         <p class="text-sm text-black/60">
                             {group.teachers.map((teacher) => `${teacher.firstName} ${teacher.lastName}`).join(", ")}
                         </p>
