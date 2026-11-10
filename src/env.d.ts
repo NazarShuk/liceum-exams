@@ -1,10 +1,12 @@
 /// <reference path="../.astro/types.d.ts" />
 import type { users } from "./db/schema";
+import type { Locale } from "./i18n/config";
 
 declare global {
     namespace App {
         interface Locals {
             user: typeof users.$inferSelect;
+            locale: Locale;
         }
     }
 

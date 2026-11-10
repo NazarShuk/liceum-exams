@@ -2,6 +2,8 @@ import { attachment } from "@cartamd/plugin-attachment";
 import { Carta, type Plugin } from "carta-md";
 import type { Element, Root } from "hast";
 import { ALLOWED_UPLOAD_TYPES } from "@lib/uploads";
+import { translate } from "@i18n/index";
+import type { Locale } from "@i18n/config";
 import HrIcon from "@components/icons/HrIcon.svelte";
 
 // Raw HTML is dropped by Carta's remark-rehype pipeline; block unsafe URLs like the old marked setup did.
@@ -34,11 +36,11 @@ const safeLinks: Plugin = {
     ],
 };
 
-const horizontalRule: Plugin = {
+const horizontalRule = (locale: Locale): Plugin => ({
     icons: [
         {
             id: "horizontalRule",
-            label: "Горизонтальна лінія",
+            label: translate(locale, "editor.horizontalRule"),
             component: HrIcon,
             action: (input) => {
                 const line = input.getLine();
@@ -49,7 +51,7 @@ const horizontalRule: Plugin = {
             },
         },
     ],
-};
+});
 
 const newsAttachment = attachment({
     supportedMimeTypes: ALLOWED_UPLOAD_TYPES,
@@ -65,10 +67,15 @@ const newsAttachment = attachment({
     },
 });
 
-export const carta = new Carta({
-    extensions: [safeLinks, horizontalRule, newsAttachment],
-    sanitizer: false,
-});
+export function createCarta(locale: Locale) {
+    return new Carta({
+        extensions: [safeLinks, horizontalRule(locale), newsAttachment],
+        sanitizer: false,
+    });
+}
+
+/** Ukrainian instance used for server-side rendering of stored news. */
+export const carta = createCarta("uk");
 
 export function markdownExcerpt(content: string, maxLength = 160): string {
     return content

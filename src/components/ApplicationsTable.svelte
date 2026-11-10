@@ -10,6 +10,10 @@
     import { onMount } from "svelte";
     import { APPLICATION_STATUSES, statusClass, statusLabel } from "@lib/status";
     import { compareCellValues, formatCellValue } from "@lib/table";
+    import { localizePath } from "@i18n/config";
+    import type { Locale } from "@i18n/config";
+    import { translate, translateMessage } from "@i18n/index";
+    import type { MessageKey } from "@i18n/index";
 
     type User = typeof users.$inferSelect;
     type Form = typeof forms.$inferSelect;
@@ -35,6 +39,7 @@
         allProfiles = false,
         groupId = null,
         fillHeight = false,
+        locale,
     }: {
         applications: Application[];
         campaigns: CampaignWithProfiles[];
@@ -47,7 +52,9 @@
         allProfiles?: boolean;
         groupId?: number | null;
         fillHeight?: boolean;
+        locale: Locale;
     } = $props();
+    const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
 
     // svelte-ignore state_referenced_locally
     let applicationRecords = $state<Application[]>([...allApplications]);
@@ -106,14 +113,14 @@
               })) ?? []),
     );
     const keyedColumns = $derived([
-        { key: "status", title: "Статус", type: "status" },
-        { key: "notes", title: "Нотатки", type: "text" },
-        { key: "student.name", title: "Учень", type: "text" },
-        { key: "student.birthDate", title: "Дата народження учня", type: "date" },
-        { key: "student.phone", title: "Телефон учня", type: "text" },
-        { key: "user.name", title: "Опікун", type: "text" },
-        { key: "user.birthDate", title: "Дата народження опікуна", type: "date" },
-        { key: "user.phone", title: "Телефон опікуна", type: "text" },
+        { key: "status", title: t("common.status"), type: "status" },
+        { key: "notes", title: t("common.notes"), type: "text" },
+        { key: "student.name", title: t("table.student"), type: "text" },
+        { key: "student.birthDate", title: t("table.studentBirthDate"), type: "date" },
+        { key: "student.phone", title: t("table.studentPhone"), type: "text" },
+        { key: "user.name", title: t("table.guardian"), type: "text" },
+        { key: "user.birthDate", title: t("table.guardianBirthDate"), type: "date" },
+        { key: "user.phone", title: t("table.guardianPhone"), type: "text" },
         ...answerColumns,
     ]);
     const columns = $derived(keyedColumns.filter((column) => !hiddenColumns.includes(column.key)));
@@ -126,7 +133,7 @@
     function cellValue(application: Application, key: string): unknown {
         switch (key) {
             case "status":
-                return statusLabel(application.status, !!application.notes);
+                return statusLabel(application.status, locale, !!application.notes);
             case "notes":
                 return application.notes;
             case "student.name":
@@ -147,7 +154,7 @@
     }
 
     function csvCell(value: unknown): string {
-        let text = formatCellValue(value);
+        let text = formatCellValue(value, locale);
         if (/^[\t\r\n ]*[=+\-@]/.test(text)) text = `'${text}`;
         return `"${text.replaceAll('"', '""')}"`;
     }
@@ -210,7 +217,7 @@
                 const filterValue = filters[column.key];
                 if (!filterValue) continue;
 
-                const value = formatCellValue(cellValue(application, column.key));
+                const value = formatCellValue(cellValue(application, column.key), locale);
                 if (!value.toLowerCase().includes(filterValue.toLowerCase())) {
                     return false;
                 }
@@ -228,10 +235,10 @@
         return [...filteredApplications].sort((a, b) => {
             const aValue = cellValue(a, key);
             const bValue = cellValue(b, key);
-            const aEmpty = formatCellValue(aValue) === "";
-            const bEmpty = formatCellValue(bValue) === "";
+            const aEmpty = formatCellValue(aValue, locale) === "";
+            const bEmpty = formatCellValue(bValue, locale) === "";
             if (aEmpty || bEmpty) return aEmpty === bEmpty ? 0 : aEmpty ? 1 : -1;
-            return direction * compareCellValues(aValue, bValue);
+            return direction * compareCellValues(aValue, bValue, locale);
         });
     });
 
@@ -289,7 +296,7 @@
                 notes: notesValue,
             });
             if (result.error || !result.data) {
-                statusError = result.error?.message ?? "Не вдалося зберегти статус";
+                statusError = translateMessage(locale, result.error?.message) || t("table.saveStatusFailed");
                 return;
             }
             const updated = result.data;
@@ -301,7 +308,7 @@
             );
             statusApplication = null;
         } catch (error) {
-            statusError = error instanceof Error ? error.message : "Не вдалося зберегти статус";
+            statusError = error instanceof Error ? error.message : t("table.saveStatusFailed");
         } finally {
             savingStatus = false;
         }
@@ -310,7 +317,9 @@
     async function deleteApplications(applicationIds: number[]) {
         if (deleting || applicationIds.length === 0) return;
         const message =
-            applicationIds.length === 1 ? "Видалити цю заяву?" : `Видалити вибрані заяви (${applicationIds.length})?`;
+            applicationIds.length === 1
+                ? t("table.deleteConfirmOne")
+                : t("table.deleteConfirmMany", { count: applicationIds.length });
         if (!window.confirm(message)) return;
 
         deleting = true;
@@ -318,7 +327,7 @@
         try {
             const result = await actions.deleteApplications({ applicationIds });
             if (result.error) {
-                deleteError = result.error.message;
+                deleteError = translateMessage(locale, result.error.message);
                 return;
             }
 
@@ -326,7 +335,7 @@
             applicationRecords = applicationRecords.filter((application) => !deletedIds.has(application.id));
             selectedApplicationIds = selectedApplicationIds.filter((id) => !deletedIds.has(id));
         } catch (error) {
-            deleteError = error instanceof Error ? error.message : "Не вдалося видалити заяви";
+            deleteError = error instanceof Error ? error.message : t("table.deleteFailed");
         } finally {
             deleting = false;
         }
@@ -366,7 +375,7 @@
                     teacherIds: selectedTeacherIds,
                 });
                 if (result.error) {
-                    groupError = result.error.message;
+                    groupError = translateMessage(locale, result.error.message);
                     return;
                 }
 
@@ -376,27 +385,27 @@
                     preferredGroupId = createdGroupId;
                     targetGroupId = createdGroupId;
                 }
-                groupMessage = "Групу створено.";
-                window.location.pathname = "/admin/groups/" + createdGroupId;
+                groupMessage = t("table.groupCreated");
+                window.location.pathname = localizePath(locale, "/admin/groups/" + createdGroupId);
             } else {
                 const result = await actions.addApplicationsToGroup({
                     groupId: targetGroupId,
                     applicationIds: groupApplicationIds,
                 });
                 if (result.error) {
-                    groupError = result.error.message;
+                    groupError = translateMessage(locale, result.error.message);
                     return;
                 }
 
                 preferredGroupId = targetGroupId;
-                groupMessage = "Заяви додано до групи.";
+                groupMessage = t("table.applicationsAdded");
             }
 
             groupTitle = "";
             selectedTeacherIds = [];
             groupApplicationIds = [];
         } catch (error) {
-            groupError = error instanceof Error ? error.message : "Не вдалося зберегти групу";
+            groupError = error instanceof Error ? error.message : t("table.groupSaveFailed");
         } finally {
             creatingGroup = false;
         }
@@ -406,8 +415,8 @@
         if (!groupId || applicationIds.length === 0 || removingGroupApplications) return;
         const message =
             applicationIds.length === 1
-                ? "Прибрати цю заяву з групи?"
-                : `Прибрати вибрані заяви з групи (${applicationIds.length})?`;
+                ? t("table.removeConfirmOne")
+                : t("table.removeConfirmMany", { count: applicationIds.length });
         if (!window.confirm(message)) return;
 
         removingGroupApplications = true;
@@ -418,13 +427,13 @@
                 applicationIds,
             });
             if (result.error) {
-                deleteError = result.error.message;
+                deleteError = translateMessage(locale, result.error.message);
                 return;
             }
 
             window.location.reload();
         } catch (error) {
-            deleteError = error instanceof Error ? error.message : "Не вдалося прибрати заяви з групи";
+            deleteError = error instanceof Error ? error.message : t("table.removeFailed");
         } finally {
             removingGroupApplications = false;
         }
@@ -450,7 +459,7 @@
     {#if !allProfiles}
         <div class="flex shrink-0 flex-row gap-5">
             <label>
-                Кампанія
+                {t("table.campaign")}
                 <select onchange={handleCampaignChange} bind:value={selectedCampaignId} class="mb-5">
                     {#each campaigns as campaign (campaign.id)}
                         <option value={campaign.id}>
@@ -462,7 +471,7 @@
 
             {#if selectedCampaign && selectedCampaign.profiles.length > 0}
                 <label>
-                    Профіль
+                    {t("table.profile")}
                     <select onchange={handleProfileChange} bind:value={selectedProfileId} class="mb-5">
                         {#each selectedCampaign.profiles as profile (profile.id)}
                             <option value={profile.id}>
@@ -477,16 +486,16 @@
 
     {#if allProfiles || selectedCampaign}
         {#if !allProfiles && selectedCampaign!.profiles.length === 0}
-            <p>До кампанії ще не додано профілів.</p>
+            <p>{t("table.noProfiles")}</p>
         {:else if !allProfiles && !form}
-            <p>Для цього профілю не призначено форму.</p>
+            <p>{t("table.noForm")}</p>
         {:else if allProfiles && applications.length === 0}
-            <p>У групі ще немає заяв.</p>
+            <p>{t("table.groupEmpty")}</p>
         {:else}
             <div class={`relative ${fillHeight ? "flex min-h-0 flex-1 flex-col" : ""}`}>
                 <details class="absolute right-2 top-2 z-20">
                     <summary
-                        aria-label="Налаштувати видимість колонок"
+                        aria-label={t("table.columns")}
                         class="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full text-diia-grey hover:bg-diia-bright-grey hover:text-black"
                     >
                         <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
@@ -515,12 +524,12 @@
                                         {#if allowDelete || allowGroupRemove}
                                             <input
                                                 type="checkbox"
-                                                aria-label="Вибрати всі видимі заяви"
+                                                aria-label={t("table.selectAll")}
                                                 checked={allVisibleSelected}
                                                 onchange={toggleVisibleApplications}
                                             />
                                         {/if}
-                                        <span>Дії</span>
+                                        <span>{t("table.actions")}</span>
                                     </div>
 
                                     <div class="flex flex-row w-full justify-between">
@@ -530,8 +539,8 @@
                                                 disabled={deleting || selectedApplicationIds.length === 0}
                                                 onclick={deleteSelectedApplications}
                                                 class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                                aria-label="Видалити"
-                                                title="Видалити"
+                                                aria-label={t("table.delete")}
+                                                title={t("table.delete")}
                                             >
                                                 <span class="material-symbols-outlined"> delete </span>
                                             </button>
@@ -544,8 +553,8 @@
                                                     selectedApplicationIds.length === 0}
                                                 onclick={() => removeApplicationsFromGroup(selectedApplicationIds)}
                                                 class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                                aria-label="Прибрати з групи"
-                                                title="Прибрати з групи"
+                                                aria-label={t("table.removeFromGroup")}
+                                                title={t("table.removeFromGroup")}
                                             >
                                                 <span class="material-symbols-outlined"> group_remove </span>
                                             </button>
@@ -557,8 +566,8 @@
                                                 disabled={selectedApplicationIds.length === 0}
                                                 onclick={() => openGroupPanel(selectedApplicationIds, "new")}
                                                 class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                                aria-label="Створити групу"
-                                                title="Створити групу"
+                                                aria-label={t("table.createGroup")}
+                                                title={t("table.createGroup")}
                                             >
                                                 <span class="material-symbols-outlined"> group_add </span>
                                             </button>
@@ -567,8 +576,8 @@
                                         <button
                                             type="button"
                                             class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                            aria-label="Експортувати CSV"
-                                            title="Експортувати CSV"
+                                            aria-label={t("table.exportCsv")}
+                                            title={t("table.exportCsv")}
                                             disabled={filteredApplications.length === 0 || columns.length === 0}
                                             onclick={exportApplicationsToCsv}
                                         >
@@ -607,7 +616,7 @@
                                             <input
                                                 class="mt-auto w-full"
                                                 bind:value={filters[column.key]}
-                                                placeholder="Фільтр..."
+                                                placeholder={t("common.filterPlaceholder")}
                                             />
                                         </div>
                                     </th>
@@ -622,7 +631,7 @@
                                             {#if allowDelete || allowGroupRemove}
                                                 <input
                                                     type="checkbox"
-                                                    aria-label={`Вибрати заяву ${application.id}`}
+                                                    aria-label={t("table.selectApplication", { id: application.id })}
                                                     checked={selectedApplicationIds.includes(application.id)}
                                                     onchange={() => toggleApplication(application.id)}
                                                 />
@@ -633,8 +642,8 @@
                                                     disabled={deleting}
                                                     onclick={() => deleteApplications([application.id])}
                                                     class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                                    aria-label="Видалити заяву"
-                                                    title="Видалити"
+                                                    aria-label={t("table.deleteApplication")}
+                                                    title={t("table.delete")}
                                                 >
                                                     <span class="material-symbols-outlined"> delete </span>
                                                 </button>
@@ -644,8 +653,8 @@
                                                     type="button"
                                                     onclick={() => openStatusPanel(application)}
                                                     class="cursor-pointer"
-                                                    aria-label="Змінити статус і нотатки"
-                                                    title="Статус і нотатки"
+                                                    aria-label={t("table.editStatus")}
+                                                    title={t("table.statusNotes")}
                                                 >
                                                     <span class="material-symbols-outlined"> edit_note </span>
                                                 </button>
@@ -655,8 +664,8 @@
                                                     type="button"
                                                     onclick={() => openGroupPanel([application.id])}
                                                     class="cursor-pointer"
-                                                    aria-label="Додати до групи"
-                                                    title="Додати до групи"
+                                                    aria-label={t("table.addToGroup")}
+                                                    title={t("table.addToGroup")}
                                                 >
                                                     <span class="material-symbols-outlined"> group_add </span>
                                                 </button>
@@ -667,8 +676,8 @@
                                                     disabled={removingGroupApplications}
                                                     onclick={() => removeApplicationsFromGroup([application.id])}
                                                     class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                                    aria-label="Прибрати з групи"
-                                                    title="Прибрати з групи"
+                                                    aria-label={t("table.removeFromGroup")}
+                                                    title={t("table.removeFromGroup")}
                                                 >
                                                     <span class="material-symbols-outlined"> group_remove </span>
                                                 </button>
@@ -681,20 +690,20 @@
                                                 <span
                                                     class={`inline-block rounded-full px-3 py-0.5 text-sm ${statusClass(application.status)}`}
                                                 >
-                                                    {statusLabel(application.status, !!application.notes)}
+                                                    {statusLabel(application.status, locale, !!application.notes)}
                                                 </span>
                                             {:else if column.type === "file"}
                                                 {@const key = getFileKey(cellValue(application, column.key))}
                                                 {#if key}
                                                     <a target="_blank" href="/file?key={encodeURIComponent(key)}"
-                                                        >Переглянути файл</a
+                                                        >{t("common.viewFile")}</a
                                                     >
                                                 {/if}
                                             {:else if cellValue(application, column.key)}
                                                 <span
                                                     class={column.key === "notes" ? "whitespace-pre-wrap" : undefined}
                                                 >
-                                                    {formatCellValue(cellValue(application, column.key))}
+                                                    {formatCellValue(cellValue(application, column.key), locale)}
                                                 </span>
                                             {/if}
                                         </td>
@@ -707,7 +716,7 @@
             </div>
         {/if}
     {:else}
-        <p>Кампаній ще немає.</p>
+        <p>{t("table.noCampaigns")}</p>
     {/if}
 </div>
 
@@ -723,38 +732,37 @@
             class="card flex w-full max-w-lg flex-col gap-3 bg-white"
             role="dialog"
             aria-modal="true"
-            aria-label="Статус і нотатки"
+            aria-label={t("table.statusNotes")}
         >
-            <h4>Статус і нотатки</h4>
-            <p class="text-sm opacity-75">{fullName(statusApplication.student) || "Заява"}</p>
+            <h4>{t("table.statusNotes")}</h4>
+            <p class="text-sm opacity-75">{fullName(statusApplication.student) || t("common.application")}</p>
             <label class="flex flex-col gap-1">
-                Статус
+                {t("common.status")}
                 <select bind:value={statusValue}>
                     {#each APPLICATION_STATUSES as option (option)}
-                        <option value={option}>{statusLabel(option)}</option>
+                        <option value={option}>{statusLabel(option, locale)}</option>
                     {/each}
                 </select>
             </label>
             <label class="flex flex-col gap-1">
-                Нотатки
-                <textarea
-                    bind:value={notesValue}
-                    rows="5"
-                    maxlength="5000"
-                    placeholder="Нотатки бачать заявник та адміністратори"></textarea>
+                {t("common.notes")}
+                <textarea bind:value={notesValue} rows="5" maxlength="5000" placeholder={t("table.notesPlaceholder")}
+                ></textarea>
             </label>
             {#if statusError}
                 <p class="text-diia-red" role="alert">{statusError}</p>
             {/if}
             <div class="flex flex-row justify-end gap-3">
-                <button type="button" class="cursor-pointer" onclick={() => (statusApplication = null)}>Закрити</button>
+                <button type="button" class="cursor-pointer" onclick={() => (statusApplication = null)}
+                    >{t("common.close")}</button
+                >>
                 <button
                     type="button"
                     class="btn-default"
                     disabled={savingStatus || !statusValue.trim()}
                     onclick={saveStatus}
                 >
-                    {savingStatus ? "Збереження..." : "Зберегти"}
+                    {savingStatus ? t("common.saving") : t("common.save")}
                 </button>
             </div>
         </div>
@@ -773,15 +781,15 @@
             class="card flex w-full max-w-md flex-col gap-3 bg-white"
             role="dialog"
             aria-modal="true"
-            aria-label="Додати до групи"
+            aria-label={t("table.addToGroup")}
         >
-            <h4>Додати до групи</h4>
-            <p class="text-sm opacity-75">Вибрано заяв: {groupApplicationIds.length}</p>
+            <h4>{t("table.addToGroup")}</h4>
+            <p class="text-sm opacity-75">{t("table.selectedCount", { count: groupApplicationIds.length })}</p>
             {#if groupOptions.length > 0}
                 <label class="flex flex-col gap-1">
-                    Група
+                    {t("table.group")}
                     <select bind:value={targetGroupId}>
-                        <option value="new">Нова група</option>
+                        <option value="new">{t("table.newGroup")}</option>
                         {#each groupOptions as group (group.id)}
                             <option value={group.id}>{group.title}</option>
                         {/each}
@@ -790,11 +798,11 @@
             {/if}
             {#if targetGroupId === "new"}
                 <label class="flex flex-col gap-1">
-                    Назва групи
+                    {t("table.groupName")}
                     <input bind:value={groupTitle} placeholder="10-А" />
                 </label>
                 <fieldset class="flex flex-col gap-1">
-                    <legend>Викладачі</legend>
+                    <legend>{t("table.teachers")}</legend>
                     {#each teachers as teacher (teacher.id)}
                         <label class="flex min-h-10 cursor-pointer items-center gap-2 py-1">
                             <input
@@ -805,7 +813,7 @@
                             <span>{fullName(teacher)}</span>
                         </label>
                     {:else}
-                        <p class="text-sm opacity-75">Немає викладачів.</p>
+                        <p class="text-sm opacity-75">{t("table.noTeachers")}</p>
                     {/each}
                 </fieldset>
             {/if}
@@ -814,11 +822,16 @@
             {/if}
             {#if groupMessage}
                 <p class="text-liceum-green" role="status">
-                    {groupMessage} <a href="/admin/groups" class="text-liceum-blue! cursor-pointer">До груп</a>
+                    {groupMessage}
+                    <a href={localizePath(locale, "/admin/groups")} class="text-liceum-blue! cursor-pointer"
+                        >{t("table.toGroups")}</a
+                    >
                 </p>
             {/if}
             <div class="flex flex-row justify-end gap-3">
-                <button type="button" class="cursor-pointer" onclick={() => (groupPanelOpen = false)}>Закрити</button>
+                <button type="button" class="cursor-pointer" onclick={() => (groupPanelOpen = false)}
+                    >{t("common.close")}</button
+                >>
                 <button
                     type="button"
                     class="btn-default"
@@ -827,7 +840,11 @@
                         (targetGroupId === "new" && !groupTitle.trim())}
                     onclick={submitGroupPanel}
                 >
-                    {creatingGroup ? "Збереження..." : targetGroupId === "new" ? "Створити" : "Додати"}
+                    {creatingGroup
+                        ? t("common.saving")
+                        : targetGroupId === "new"
+                          ? t("common.create")
+                          : t("common.add")}
                 </button>
             </div>
         </div>

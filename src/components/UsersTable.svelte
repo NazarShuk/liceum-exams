@@ -2,6 +2,10 @@
     import { actions } from "astro:actions";
     import type { users } from "@db/schema";
     import { parseDbDate } from "@lib/dates";
+    import { formatNumericDate } from "@i18n/dates";
+    import type { Locale } from "@i18n/config";
+    import { translate, translateMessage } from "@i18n/index";
+    import type { MessageKey } from "@i18n/index";
 
     type User = typeof users.$inferSelect;
     type UserWithParent = User & { parent: User | null };
@@ -9,28 +13,32 @@
     const {
         users: allUsers,
         currentUserId,
+        locale,
     }: {
         users: UserWithParent[];
         currentUserId: number;
+        locale: Locale;
     } = $props();
+    const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
 
     const roles = [
-        { value: "applicant", label: "Абітурієнт" },
-        { value: "parent", label: "Опікун" },
-        { value: "teacher", label: "Викладач" },
-        { value: "admin", label: "Адміністратор" },
+        { value: "applicant", labelKey: "roles.applicant" },
+        { value: "parent", labelKey: "roles.parent" },
+        { value: "teacher", labelKey: "roles.teacher" },
+        { value: "admin", labelKey: "roles.admin" },
     ] as const;
 
-    const columns = [
-        { key: "id", title: "ID" },
-        { key: "name", title: "Користувач" },
-        { key: "parent", title: "Опікун" },
-        { key: "role", title: "Роль" },
-        { key: "phone", title: "Телефон" },
-        { key: "birthDate", title: "Дата народження" },
-        { key: "createdAt", title: "Створено" },
-        { key: "externalId", title: "Google підключено"}
+    const columnKeys = [
+        { key: "id", titleKey: "usersTable.id" },
+        { key: "name", titleKey: "usersTable.user" },
+        { key: "parent", titleKey: "table.guardian" },
+        { key: "role", titleKey: "usersTable.role" },
+        { key: "phone", titleKey: "common.phone" },
+        { key: "birthDate", titleKey: "common.birthDate" },
+        { key: "createdAt", titleKey: "usersTable.createdAt" },
+        { key: "externalId", titleKey: "usersTable.googleConnected" },
     ] as const;
+    const columns = $derived(columnKeys.map((column) => ({ ...column, title: t(column.titleKey) })));
 
     let userRecords = $state<UserWithParent[]>([...allUsers]);
     let filters = $state<Record<string, string>>({});
@@ -42,10 +50,11 @@
     }
 
     function roleLabel(role: User["role"]): string {
-        return roles.find((item) => item.value === role)?.label ?? role;
+        const item = roles.find((entry) => entry.value === role);
+        return item ? t(item.labelKey) : role;
     }
 
-    function cellValue(user: UserWithParent, key: (typeof columns)[number]["key"]): unknown {
+    function cellValue(user: UserWithParent, key: (typeof columnKeys)[number]["key"]): unknown {
         switch (key) {
             case "id":
                 return user.id;
@@ -62,15 +71,15 @@
             case "createdAt":
                 return user.createdAt;
             case "externalId":
-                return user.externalId ? "Так" : "Ні";
+                return user.externalId ? t("common.yes") : t("common.no");
         }
     }
 
     function formatCellValue(value: unknown): string {
         if (value == null) return "";
-        if (value instanceof Date) return value.toLocaleDateString("uk-UA");
+        if (value instanceof Date) return formatNumericDate(value, locale);
         if (typeof value === "string" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)) {
-            return parseDbDate(value).toLocaleDateString("uk-UA");
+            return formatNumericDate(parseDbDate(value), locale);
         }
         return String(value);
     }
@@ -103,13 +112,13 @@
         try {
             const result = await actions.updateUserRole({ userId: user.id, role });
             if (result.error) {
-                error = result.error.message;
+                error = translateMessage(locale, result.error.message);
                 select.value = user.role;
                 return;
             }
             userRecords = userRecords.map((record) => (record.id === user.id ? { ...record, role } : record));
         } catch (e) {
-            error = e instanceof Error ? e.message : "Не вдалося змінити роль";
+            error = e instanceof Error ? e.message : t("usersTable.changeRoleFailed");
             select.value = user.role;
         } finally {
             savingUserId = null;
@@ -131,16 +140,16 @@
                             <p>{column.title}</p>
                             {#if column.key === "role"}
                                 <select bind:value={filters[column.key]}>
-                                    <option value="">Усі</option>
+                                    <option value="">{t("common.all")}</option>
                                     {#each roles as role (role.value)}
-                                        <option value={role.value}>{role.label}</option>
+                                        <option value={role.value}>{t(role.labelKey)}</option>
                                     {/each}
                                 </select>
                             {:else}
                                 <input
                                     class="mt-auto w-full"
                                     bind:value={filters[column.key]}
-                                    placeholder="Фільтр..."
+                                    placeholder={t("common.filterPlaceholder")}
                                 />
                             {/if}
                         </div>
@@ -157,11 +166,13 @@
                                 <select
                                     disabled={user.id === currentUserId || savingUserId === user.id}
                                     onchange={(event) => changeRole(user, event)}
-                                    title={user.id === currentUserId ? "Не можна змінити власну роль" : "Змінити роль"}
+                                    title={user.id === currentUserId
+                                        ? t("usersTable.cannotChangeOwnRole")
+                                        : t("usersTable.changeRole")}
                                 >
                                     {#each roles as role (role.value)}
                                         <option value={role.value} selected={user.role === role.value}>
-                                            {role.label}
+                                            {t(role.labelKey)}
                                         </option>
                                     {/each}
                                 </select>
@@ -177,5 +188,5 @@
 </div>
 
 {#if filteredUsers.length === 0}
-    <p class="mt-5">Користувачів не знайдено.</p>
+    <p class="mt-5">{t("usersTable.notFound")}</p>
 {/if}

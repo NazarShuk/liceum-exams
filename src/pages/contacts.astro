@@ -1,14 +1,17 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import { contacts } from "@lib/contacts";
+import { getContacts } from "@lib/contacts";
+import { useTranslations } from "@i18n/index";
+
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
+const contacts = getContacts(locale);
 ---
 
-<Layout title="Контакти">
+<Layout title={t("contacts.title")}>
     <section>
-        <h1>Контакти</h1>
-        <p class="mt-4 max-w-2xl text-black/65">
-            Зв’яжіться з нами, якщо маєте питання щодо вступу або роботи порталу.
-        </p>
+        <h1>{t("contacts.title")}</h1>
+        <p class="mt-4 max-w-2xl text-black/65">{t("contacts.intro")}</p>
 
         <ul class="mt-10 grid gap-5 sm:grid-cols-2">
             {contacts.map((contact) => (

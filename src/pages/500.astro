@@ -1,6 +1,8 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import { logErrorEvent } from "@lib/analytics";
+import { localizePath } from "@i18n/config";
+import { useTranslations } from "@i18n/index";
 
 logErrorEvent({
     source: "server",
@@ -8,12 +10,15 @@ logErrorEvent({
     path: Astro.url.pathname,
     userId: Astro.locals.user?.id,
 });
+
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 ---
 
-<Layout className="flex h-screen justify-center items-center flex-col">
-    <h1>Помилка сервера D:</h1>
+<Layout title={t("common.serverError")} className="flex h-screen justify-center items-center flex-col">
+    <h1>{t("common.serverError")}</h1>
 
-    <a class="btn-default" href="/">
-        Повернутися на головну
+    <a class="btn-default" href={localizePath(locale, "/")}>
+        {t("common.backHome")}
     </a>
 </Layout>

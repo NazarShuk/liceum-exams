@@ -1,12 +1,16 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import { getDrizzle } from "@db/drizzle";
-import { formatRelative, isBefore } from "date-fns";
-import { uk } from "date-fns/locale";
+import { isBefore } from "date-fns";
 import { applications } from "@db/schema";
 import { eq } from "drizzle-orm";
+import { formatRelativeDate } from "@i18n/dates";
+import { localizePath } from "@i18n/config";
+import { translatePlural, useTranslations } from "@i18n/index";
 
 const db = getDrizzle();
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 const campaigns = await db.query.campaigns.findMany({
     with: {
         profiles: {
@@ -19,10 +23,10 @@ const campaigns = await db.query.campaigns.findMany({
 });
 ---
 
-<Layout title="Кампанії">
-    <h1 class="mb-5">Кампанії</h1>
-    <a href="campaigns/editor" class="btn-default">
-        + Створити кампанію
+<Layout title={t("admin.campaigns.title")}>
+    <h1 class="mb-5">{t("admin.campaigns.title")}</h1>
+    <a href={localizePath(locale, "/admin/campaigns/editor")} class="btn-default">
+        {t("admin.campaigns.create")}
     </a>
     <ul class="list-colors mt-5">
         {campaigns.map(async (campaign) => (
@@ -30,32 +34,55 @@ const campaigns = await db.query.campaigns.findMany({
                 class={`card mb-5 ${campaign.endsAt && !isBefore(new Date(), campaign.beginsAt || new Date(0)) && !isBefore(new Date(), campaign.endsAt || new Date(0)) ? "opacity-75" : ""}`}
             >
                 <a
-                    href={`/admin/campaigns/editor?campaign=${campaign.id}`}
+                    href={localizePath(locale, `/admin/campaigns/editor?campaign=${campaign.id}`)}
                     class="w-full flex flex-row justify-between items-center gap-3"
                 >
                     <h4>{campaign.title}</h4>
                     {campaign.beginsAt && isBefore(new Date(), campaign.beginsAt) && (
-                        <p>Почнеться {formatRelative(new Date(campaign.beginsAt), new Date(), { locale: uk })}</p>
+                        <p>
+                            {t("admin.campaigns.starts", {
+                                relative: formatRelativeDate(new Date(campaign.beginsAt), locale),
+                            })}
+                        </p>
                     )}
                     {campaign.endsAt &&
                         !isBefore(new Date(), campaign.beginsAt || new Date(0)) &&
                         isBefore(new Date(), campaign.endsAt || new Date(0)) && (
-                            <p>Закінчиться {formatRelative(new Date(campaign.endsAt), new Date(), { locale: uk })}</p>
+                            <p>
+                                {t("admin.campaigns.ends", {
+                                    relative: formatRelativeDate(new Date(campaign.endsAt), locale),
+                                })}
+                            </p>
                         )}
                     {campaign.endsAt &&
                         !isBefore(new Date(), campaign.beginsAt || new Date(0)) &&
                         !isBefore(new Date(), campaign.endsAt || new Date(0)) && (
-                            <p>Закінчилась {formatRelative(new Date(campaign.endsAt), new Date(), { locale: uk })}</p>
+                            <p>
+                                {t("admin.campaigns.finished", {
+                                    relative: formatRelativeDate(new Date(campaign.endsAt), locale),
+                                })}
+                            </p>
                         )}
                 </a>
-                <a href={`/admin/applications?campaign=${campaign.id}`}>
-                    <p>{await db.$count(applications, eq(applications.campaignId, campaign.id))} Заяв</p>
+                <a href={localizePath(locale, `/admin/applications?campaign=${campaign.id}`)}>
+                    <p>
+                        {translatePlural(
+                            locale,
+                            await db.$count(applications, eq(applications.campaignId, campaign.id)),
+                            "admin.campaigns.applicationCount",
+                        )}
+                    </p>
                 </a>
 
                 <ul>
                     {campaign.profiles.map((profile) => (
                         <li>
-                            <a href={`/admin/campaigns/editor?campaign=${campaign.id}&profile=${profile.id}`}>
+                            <a
+                                href={localizePath(
+                                    locale,
+                                    `/admin/campaigns/editor?campaign=${campaign.id}&profile=${profile.id}`,
+                                )}
+                            >
                                 {profile.title}
                             </a>
                         </li>

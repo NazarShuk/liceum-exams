@@ -10,5 +10,5 @@ export async function rateLimit(name: LimiterName, key: string) {
 
 export async function enforceRateLimit(name: LimiterName, key: string) {
     if (await rateLimit(name, key)) return;
-    throw new ActionError({ code: "TOO_MANY_REQUESTS", message: "Забагато запитів. Спробуйте пізніше." });
+    throw new ActionError({ code: "TOO_MANY_REQUESTS", message: "errors.tooManyRequests" });
 }

@@ -1,0 +1,32 @@
+---
+import { LOCALES, normalizePath, stripLocale } from "@i18n/config";
+import { useTranslations } from "@i18n/index";
+
+interface Props {
+    class?: string;
+}
+
+const { class: className } = Astro.props;
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
+const next = normalizePath(stripLocale(Astro.originPathname)) + Astro.url.search;
+const labels: Record<string, string> = { uk: "УК", en: "EN" };
+---
+
+<nav
+    aria-label={t("common.language")}
+    class={`flex h-12 items-center gap-0.5 rounded-full bg-white p-1 text-sm font-medium text-black ${className ?? ""}`}
+>
+    {LOCALES.map((code) => (
+        <a
+            href={`/api/locale?lang=${code}&next=${encodeURIComponent(next)}`}
+            aria-current={code === locale ? "true" : undefined}
+            lang={code}
+            class={`flex h-9 min-w-9 items-center justify-center rounded-full px-2 transition-colors hover:bg-diia-bright-grey focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
+                code === locale ? "bg-diia-bright-grey" : ""
+            }`}
+        >
+            {labels[code]}
+        </a>
+    ))}
+</nav>

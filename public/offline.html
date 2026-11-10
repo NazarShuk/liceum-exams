@@ -3,7 +3,9 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Немає з'єднання - Вступ до ліцею</title>
+        <title data-uk="Немає з'єднання - Вступ до ліцею" data-en="No connection - Lyceum Admissions">
+            Немає з'єднання - Вступ до ліцею
+        </title>
         <style>
             :root {
                 color-scheme: light;
@@ -61,9 +63,30 @@
     <body>
         <main>
             <img src="/favicon.svg" alt="" width="72" height="76" />
-            <h1>Немає з'єднання</h1>
-            <p>Перевірте підключення до інтернету та спробуйте ще раз.</p>
-            <button type="button" onclick="location.reload()">Спробувати ще раз</button>
+            <h1 data-uk="Немає з'єднання" data-en="No connection">Немає з'єднання</h1>
+            <p
+                data-uk="Перевірте підключення до інтернету та спробуйте ще раз."
+                data-en="Check your internet connection and try again."
+            >
+                Перевірте підключення до інтернету та спробуйте ще раз.
+            </p>
+            <button type="button" onclick="location.reload()" data-uk="Спробувати ще раз" data-en="Try again">
+                Спробувати ще раз
+            </button>
         </main>
+        <script>
+            // The offline fallback is static; prefer an explicit locale cookie, then the browser language.
+            const saved = document.cookie.match(/(?:^|;\s*)locale=(uk|en)\b/)?.[1];
+            const browser = (navigator.language || "").toLowerCase().startsWith("en") ? "en" : "uk";
+            if ((saved || browser) === "en") {
+                document.documentElement.lang = "en";
+                for (const element of document.querySelectorAll("[data-en]")) {
+                    const text = element.getAttribute("data-en");
+                    if (!text) continue;
+                    if (element.tagName === "TITLE") document.title = text;
+                    else element.textContent = text;
+                }
+            }
+        </script>
     </body>
 </html>

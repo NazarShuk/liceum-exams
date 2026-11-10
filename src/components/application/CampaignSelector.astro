@@ -1,5 +1,7 @@
 ---
 import ProfileDisplay from "@components/ProfileDisplay.svelte";
+import { localizePath } from "@i18n/config";
+import { translatePlural, useTranslations } from "@i18n/index";
 import type { campaigns, profiles, forms } from "@db/schema";
 
 type Campaign = typeof campaigns.$inferSelect;
@@ -21,17 +23,23 @@ interface Props {
 }
 
 const { availableCampaigns, selectedCampaign, applicationCounts = {} } = Astro.props;
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 ---
 
 <section class="flex flex-col gap-5">
     {selectedCampaign ? (
         <>
-            <h1>Оберіть профіль</h1>
+            <h1>{t("application.chooseProfile")}</h1>
             <div class="flex flex-col gap-3 list-colors">
                 {selectedCampaign.profiles.map((profile: ProfileWithForm) => (
                     <ProfileDisplay
                         profile={profile}
-                        href={`/cabinet/application?campaignId=${selectedCampaign.id}&profileId=${profile.id}`}
+                        locale={locale}
+                        href={localizePath(
+                            locale,
+                            `/cabinet/application?campaignId=${selectedCampaign.id}&profileId=${profile.id}`,
+                        )}
                         count={applicationCounts[profile.id] ?? 0}
                         client:load
                     />
@@ -40,20 +48,22 @@ const { availableCampaigns, selectedCampaign, applicationCounts = {} } = Astro.p
         </>
     ) : availableCampaigns.length === 0 ? (
         <>
-            <h1>Немає доступних кампаній</h1>
-            <p class="opacity-75">Наразі немає вступних кампаній, за якими можна подати заяву.</p>
+            <h1>{t("application.noCampaignsTitle")}</h1>
+            <p class="opacity-75">{t("application.noCampaignsText")}</p>
         </>
     ) : (
         <>
-            <h1>Оберіть вступну кампанію</h1>
+            <h1>{t("application.chooseCampaign")}</h1>
             <ul class="flex flex-col gap-3 list-colors">
                 {availableCampaigns.map((campaign: CampaignWithProfiles) => (
                     <li>
-                        <a href={`/cabinet/application?campaignId=${campaign.id}`}>
+                        <a href={localizePath(locale, `/cabinet/application?campaignId=${campaign.id}`)}>
                             <div class="card">
                                 <div class="w-full flex flex-row justify-between items-center">
                                     <h4>{campaign.title}</h4>
-                                    <p>{campaign.profiles.length} профілів</p>
+                                    <p>
+                                        {translatePlural(locale, campaign.profiles.length, "application.profileCount")}
+                                    </p>
                                 </div>
                             </div>
                         </a>

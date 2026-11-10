@@ -2,6 +2,8 @@
     import { onMount } from "svelte";
     import { Tween } from "svelte/motion";
     import type { profiles } from "@db/schema";
+    import type { Locale } from "@i18n/config";
+    import { translate } from "@i18n/index";
     type Profile = typeof profiles.$inferSelect;
 
     const {
@@ -10,12 +12,14 @@
         onClick,
         href,
         count,
+        locale,
     }: {
         profile: Profile;
         onRemove?: () => void;
         onClick?: () => void;
         href?: string;
         count?: number;
+        locale: Locale;
     } = $props();
 
     const displayCount = new Tween(count ?? 0, { duration: 700 });
@@ -52,7 +56,7 @@
                     onRemove();
                 }}
                 class="absolute top-2 right-2 cursor-pointer"
-                aria-label={`Видалити профіль ${profile.title}`}>X</button
+                aria-label={`${translate(locale, "profileEditor.deleteProfile")} ${profile.title}`}>X</button
             >
         {/if}
         <div class="flex min-w-0 flex-1 flex-col">

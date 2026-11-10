@@ -6,6 +6,7 @@ import { applicantInvites, users } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { logErrorEvent } from "@lib/analytics";
 import { rateLimit } from "@lib/rate-limit";
+import { localizePath } from "@i18n/config";
 
 const sessionCookie = {
     httpOnly: true,
@@ -54,7 +55,7 @@ export const GET = (async (context) => {
     if (!nonce || nonce !== context.url.searchParams.get("state")) {
         logErrorEvent({ source: "server", type: "auth_google_bad_state", path: context.url.pathname });
         // A stale sign-in tab should land back on a page with a fresh button, not on a blank 400.
-        return context.redirect("/");
+        return context.redirect(localizePath(context.locals.locale, "/"));
     }
 
     try {
@@ -178,5 +179,5 @@ export const GET = (async (context) => {
         return new Response(null, { status: 500 });
     }
 
-    return context.redirect("/cabinet", 307);
+    return context.redirect(localizePath(context.locals.locale, "/cabinet"), 307);
 }) satisfies APIRoute;

@@ -8,7 +8,8 @@
             "@layouts/*": ["./src/layouts/*"],
             "@db/*": ["./src/db/*"],
             "@actions/*": ["./src/actions/*"],
-            "@lib/*": ["./src/lib/*"]
+            "@lib/*": ["./src/lib/*"],
+            "@i18n/*": ["./src/i18n/*"]
         }
     }
 }

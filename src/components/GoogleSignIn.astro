@@ -1,4 +1,6 @@
 ---
+import { useTranslations } from "@i18n/index";
+
 interface Props {
     inviteId?: string;
 }
@@ -6,6 +8,7 @@ interface Props {
 const href = Astro.props.inviteId
     ? `/api/google?start=1&invite=${encodeURIComponent(Astro.props.inviteId)}`
     : "/api/google?start=1";
+const t = useTranslations(Astro.locals.locale);
 ---
 
 <a
@@ -15,5 +18,7 @@ const href = Astro.props.inviteId
     data-astro-prefetch="false"
     onclick="if (this.dataset.busy) return false; this.dataset.busy = '1'; setTimeout(() => { delete this.dataset.busy; }, 5000);"
 >
-    <span>Увійти з Google {"->"}</span>
+    <span>
+        {t("auth.signInWithGoogle")} {"->"}
+    </span>
 </a>

@@ -2,6 +2,9 @@
 import FormField from "@components/FormField.astro";
 import { parseDbDate } from "@lib/dates";
 import { statusClass, statusLabel } from "@lib/status";
+import { formatNumericDate } from "@i18n/dates";
+import { localizePath } from "@i18n/config";
+import { useTranslations } from "@i18n/index";
 import type { forms, applications, users } from "@db/schema";
 
 type FormFieldSchema = (typeof forms.$inferSelect)["schema"][number];
@@ -20,6 +23,8 @@ interface Props {
 }
 
 const { previewApplication, applicationAnswers } = Astro.props;
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 
 if (!previewApplication.form) {
     return;
@@ -28,55 +33,61 @@ if (!previewApplication.form) {
 
 <section class="flex flex-col gap-5">
     <div>
-        <h2>{previewApplication.form?.title ?? "Заява"}</h2>
+        <h2>{previewApplication.form?.title ?? t("common.application")}</h2>
         {previewApplication.form?.description && <p class="pt-2">{previewApplication.form?.description}</p>}
     </div>
 
     <div class="flex flex-wrap items-center gap-3">
         <p class="text-sm opacity-70">
-            Заява від{" "}
-            {previewApplication.createdAt ? parseDbDate(previewApplication.createdAt).toLocaleDateString("uk-UA") : ""}
+            {t("application.applicationFrom", {
+                date: previewApplication.createdAt
+                    ? formatNumericDate(parseDbDate(previewApplication.createdAt), locale)
+                    : "",
+            })}
         </p>
         <span
             class={`rounded-full px-3 py-0.5 text-sm ${previewApplication.state === "draft" ? "bg-diia-grey/15 text-black/55" : statusClass(previewApplication.status)}`}
         >
             {previewApplication.state === "draft"
-                ? "Чернетка"
-                : statusLabel(previewApplication.status, !!previewApplication.notes)}
+                ? t("status.draft")
+                : statusLabel(previewApplication.status, locale, !!previewApplication.notes)}
         </span>
     </div>
 
     {previewApplication.status === "attention" && (
-        <a class="btn-default self-start" href={`/cabinet/application?edit=${previewApplication.id}`}>
-            Редагувати заяву
+        <a
+            class="btn-default self-start"
+            href={localizePath(locale, `/cabinet/application?edit=${previewApplication.id}`)}
+        >
+            {t("application.editApplication")}
         </a>
     )}
 
     {previewApplication.notes && (
         <div class="card flex flex-col gap-2 border-liceum-grey!">
-            <h3>Нотатки</h3>
+            <h3>{t("application.notes")}</h3>
             <p class="whitespace-pre-wrap">{previewApplication.notes}</p>
         </div>
     )}
 
     <div class="card flex flex-col gap-5">
-        <h3>Інформація учня</h3>
+        <h3>{t("application.studentInfo")}</h3>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <label class="flex flex-col gap-1">
-                Ім'я
+                {t("common.firstName")}
                 <input readonly value={previewApplication.student?.firstName ?? ""} />
             </label>
             <label class="flex flex-col gap-1">
-                Прізвище
+                {t("common.lastName")}
                 <input readonly value={previewApplication.student?.lastName ?? ""} />
             </label>
             <label class="flex flex-col gap-1">
-                По батькові
+                {t("common.middleName")}
                 <input readonly value={previewApplication.student?.middleName ?? ""} />
             </label>
         </div>
         <label class="flex flex-col gap-1">
-            Дата народження
+            {t("common.birthDate")}
             <input
                 readonly
                 type="date"
@@ -88,29 +99,29 @@ if (!previewApplication.form) {
             />
         </label>
         <label class="flex flex-col gap-1">
-            Телефон
+            {t("common.phone")}
             <input readonly type="tel" value={previewApplication.student?.phone ?? ""} />
         </label>
     </div>
 
     <div class="card flex flex-col gap-5">
-        <h3>Інформація батьків</h3>
+        <h3>{t("application.parentInfo")}</h3>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <label class="flex flex-col gap-1">
-                Ім'я
+                {t("common.firstName")}
                 <input readonly value={previewApplication.user?.firstName ?? ""} />
             </label>
             <label class="flex flex-col gap-1">
-                Прізвище
+                {t("common.lastName")}
                 <input readonly value={previewApplication.user?.lastName ?? ""} />
             </label>
             <label class="flex flex-col gap-1">
-                По батькові
+                {t("common.middleName")}
                 <input readonly value={previewApplication.user?.middleName ?? ""} />
             </label>
         </div>
         <label class="flex flex-col gap-1">
-            Дата народження
+            {t("common.birthDate")}
             <input
                 readonly
                 type="date"
@@ -122,7 +133,7 @@ if (!previewApplication.form) {
             />
         </label>
         <label class="flex flex-col gap-1">
-            Телефон
+            {t("common.phone")}
             <input readonly type="tel" value={previewApplication.user?.phone ?? ""} />
         </label>
     </div>

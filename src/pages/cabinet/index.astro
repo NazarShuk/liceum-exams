@@ -1,11 +1,15 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import { getDrizzle } from "@db/drizzle";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
 import { parseDbDate } from "@lib/dates";
 import { statusClass, statusLabel } from "@lib/status";
 import { actions } from "astro:actions";
+import { formatDateLong } from "@i18n/dates";
+import { localizePath } from "@i18n/config";
+import { translateMessage, useTranslations } from "@i18n/index";
+
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 
 const db = getDrizzle();
 const now = new Date();
@@ -35,36 +39,39 @@ const results = await db.query.applications.findMany({
 });
 
 const linkResult = Astro.getActionResult(actions.applicantLink);
+const applicantUrl = linkResult?.data?.id
+    ? new URL(localizePath(locale, `/applicant/${linkResult.data.id}`), Astro.url.origin).toString()
+    : "";
 ---
 
-<Layout title="Мої заяви">
-    <h1 class="mb-5">Мої заяви</h1>
+<Layout title={t("cabinet.title")}>
+    <h1 class="mb-5">{t("cabinet.title")}</h1>
 
     {linkResult?.error && (
         <p class="mt-2 text-diia-red" role="alert">
-            {linkResult.error.message}
+            {translateMessage(locale, linkResult.error.message)}
         </p>
     )}
 
     <ul class="mt-5 list-colors">
         {Astro.locals.user.role !== "applicant" && hasAvailableCampaigns && (
-            <a href="/cabinet/application">
+            <a href={localizePath(locale, "/cabinet/application")}>
                 <li class="mb-5 border-dashed border-2 border-diia-grey py-7 px-6 flex flex-row justify-center items-center gap-1 rounded">
                     <span class="material-symbols-outlined">add_circle</span>
-                    <h4>Створити заяву</h4>
+                    <h4>{t("cabinet.create")}</h4>
                 </li>
             </a>
         )}
         {Astro.locals.user.role !== "applicant" && !hasAvailableCampaigns && (
-            <p class="mb-5 text-center opacity-75">Наразі немає доступних вступних кампаній.</p>
+            <p class="mb-5 text-center opacity-75">{t("cabinet.noCampaigns")}</p>
         )}
         {results.length === 0 && (
             <p class="text-center opacity-75">
                 {Astro.locals.user.role === "applicant"
-                    ? "У Вас поки що немає заяв."
+                    ? t("cabinet.emptyApplicant")
                     : hasAvailableCampaigns
-                      ? "У Вас поки що немає заяв! Натисніть на кнопку вище, щоб створити Вашу першу заяву."
-                      : "У Вас поки що немає заяв."}
+                      ? t("cabinet.emptyParent")
+                      : t("cabinet.emptyApplicant")}
             </p>
         )}
         {results.map((result) => {
@@ -73,19 +80,20 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
             const studentName = result.student
                 ? `${result.student.firstName} ${result.student.lastName}`
                 : [draftStudent.firstName, draftStudent.lastName].filter(Boolean).join(" ");
-            const statusText = isDraft ? "Чернетка" : statusLabel(result.status, !!result.notes);
+            const statusText = isDraft ? t("cabinet.draft") : statusLabel(result.status, locale, !!result.notes);
             return (
                 <li class={`card mb-5 ${isDraft ? "opacity-75 border-dotted" : ""} flex flex-col gap-4`}>
                     <a
                         class="flex-1"
-                        href={
+                        href={localizePath(
+                            locale,
                             isDraft
                                 ? `/cabinet/application?draft=${result.id}`
-                                : `/cabinet/application?preview=${result.id}`
-                        }
+                                : `/cabinet/application?preview=${result.id}`,
+                        )}
                     >
                         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                            <h4>{studentName || "Заява"}</h4>
+                            <h4>{studentName || t("cabinet.applicationFallback")}</h4>
                             <span
                                 class={`rounded-full px-3 py-0.5 text-sm ${isDraft ? "bg-diia-grey/15 text-black/55" : statusClass(result.status)} ${!isDraft && result.status === "attention" ? "status-attention" : ""}`}
                             >
@@ -96,7 +104,7 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
                             {result.campaign?.title} - {result.profile?.title}
                         </p>
                         <p class="mt-1 text-sm text-black/55">
-                            {result.createdAt ? format(parseDbDate(result.createdAt), "PPP", { locale: uk }) : ""}
+                            {result.createdAt ? formatDateLong(parseDbDate(result.createdAt), locale) : ""}
                         </p>
                     </a>
 
@@ -107,10 +115,10 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
                                     <input hidden name="applicationId" value={result.id} />
                                     <button
                                         class="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-liceum-blue px-3.5 text-sm text-liceum-blue transition-colors hover:bg-liceum-blue/5"
-                                        title="Посилання для абітурієнта"
+                                        title={t("cabinet.shareTooltip")}
                                     >
                                         <span class="material-symbols-outlined text-[18px]">share</span>
-                                        Посилання
+                                        {t("cabinet.share")}
                                     </button>
                                 </form>
                             )}
@@ -119,15 +127,15 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
                                 <form
                                     method="POST"
                                     action={actions.deleteDraft}
-                                    onsubmit="return confirm('Видалити чернетку?')"
+                                    onsubmit={`return confirm(${JSON.stringify(t("cabinet.deleteDraftConfirm"))})`}
                                 >
                                     <input hidden name="applicationId" value={result.id} />
                                     <button
                                         class="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-liceum-red px-3.5 text-sm text-liceum-red transition-colors hover:bg-liceum-red/10"
-                                        title="Видалити чернетку"
+                                        title={t("cabinet.deleteDraftTooltip")}
                                     >
                                         <span class="material-symbols-outlined text-[18px]">delete</span>
-                                        Видалити
+                                        {t("cabinet.deleteDraft")}
                                     </button>
                                 </form>
                             )}
@@ -145,30 +153,27 @@ const linkResult = Astro.getActionResult(actions.applicantLink);
                 role="dialog"
                 aria-modal="true"
             >
-                <h4>Посилання для абітурієнта</h4>
-                <p class="text-center text-diia-blue wrap-break-word">{`${Astro.url.origin}/applicant/${linkResult.data.id}`}</p>
+                <h4>{t("cabinet.shareTitle")}</h4>
+                <p class="text-center text-diia-blue wrap-break-word">{applicantUrl}</p>
                 <div class="flex flex-row gap-5 items-center justify-center flex-wrap">
                     <button
                         class="btn-default flex flex-row items-center gap-1"
-                        onclick={`navigator.clipboard.writeText("${`${Astro.url.origin}/applicant/${linkResult.data.id}`}")`}
+                        onclick={`navigator.clipboard.writeText(${JSON.stringify(applicantUrl)})`}
                     >
                         <span class="material-symbols-outlined">content_copy</span>
-                        Копіювати
+                        {t("cabinet.copy")}
                     </button>
                     <button
                         class="btn-default flex flex-row items-center gap-1"
-                        onclick={`navigator.share({text:"${`${Astro.url.origin}/applicant/${linkResult.data.id}`}"})`}
+                        onclick={`navigator.share({text:${JSON.stringify(applicantUrl)}})`}
                     >
                         <span class="material-symbols-outlined">share</span>
-                        Поділитися
+                        {t("cabinet.shareAction")}
                     </button>
                 </div>
-                <p>
-                    Надішліть це посилання абітурієнту. Абітурієнт зможе зареєструватися та слідкувати за заявою
-                    самостійно.
-                </p>
+                <p>{t("cabinet.linkExplanation")}</p>
                 <button class="btn-default bg-brand-red! mx-auto" onclick="window.location.reload()">
-                    Закрити
+                    {t("common.close")}
                 </button>
             </div>
         </div>

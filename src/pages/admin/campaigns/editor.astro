@@ -3,10 +3,13 @@ import Layout from "@layouts/Layout.astro";
 import { getDrizzle } from "@db/drizzle";
 import CampaignEditor from "@components/CampaignEditor.svelte";
 import type { campaigns, forms, profiles } from "@db/schema";
+import { useTranslations } from "@i18n/index";
 type Campaign = typeof campaigns.$inferSelect & { profiles: (typeof profiles.$inferSelect)[] };
 type Form = typeof forms.$inferSelect;
 
 const db = getDrizzle();
+const locale = Astro.locals.locale;
+const t = useTranslations(locale);
 let loadedCampaign: Campaign | undefined;
 
 if (Astro.url.searchParams.has("campaign")) {
@@ -26,7 +29,13 @@ const initialProfileId = loadedCampaign?.profiles.some(({ id }) => id === reques
     : undefined;
 ---
 
-<Layout title={loadedCampaign ? loadedCampaign.title : "Нова кампанія"}>
-    <h1 class="mb-5">Редактор кампанії</h1>
-    <CampaignEditor loadedCampaign={loadedCampaign} availableForms={availableForms} {initialProfileId} client:load />
+<Layout title={loadedCampaign ? loadedCampaign.title : t("admin.campaigns.new")}>
+    <h1 class="mb-5">{t("admin.campaigns.editor")}</h1>
+    <CampaignEditor
+        loadedCampaign={loadedCampaign}
+        availableForms={availableForms}
+        {initialProfileId}
+        {locale}
+        client:load
+    />
 </Layout>
