@@ -10,11 +10,6 @@ const body = t("about.body").replaceAll('href="/contacts"', `href="${localizePat
 
 <Layout title={t("nav.about")}>
     <section>
-        {locale === "en" && (
-            <p class="mb-6 rounded bg-diia-bright-grey px-4 py-2 text-sm text-black/70">
-                {t("legal.translationNotice")}
-            </p>
-        )}
         <div set:html={body} />
     </section>
 </Layout>

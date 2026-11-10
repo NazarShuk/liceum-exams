@@ -8,11 +8,6 @@ const t = useTranslations(locale);
 
 <Layout title={t("home.footerPrivacy")}>
     <section>
-        {locale === "en" && (
-            <p class="mb-6 rounded bg-diia-bright-grey px-4 py-2 text-sm text-black/70">
-                {t("legal.translationNotice")}
-            </p>
-        )}
         <div set:html={t("privacy.body")} />
     </section>
 </Layout>

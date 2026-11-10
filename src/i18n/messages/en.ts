@@ -65,12 +65,12 @@ export const en: Record<keyof typeof uk, string> = {
     "auth.signInWithGoogle": "Sign in with Google",
     "auth.confirmNotRobot": "Confirm that you are not a robot",
 
-    "home.heroTitle": "One portal for lyceum admissions",
+    "home.heroTitle": "The lyceum enrollment portal",
     "home.heroSubtitle":
-        "Submit an application, track its status, and receive entrance exam results in a single account.",
+        "Submit an application, track its status, and receive entrance exam results all in one place.",
     "home.news": "News",
     "home.contacts": "Contacts",
-    "home.allNews": "All news",
+    "home.allNews": "View all",
     "home.footerAria": "Site information",
     "home.footerAbout": "About",
     "home.footerContacts": "Contacts",
@@ -115,7 +115,7 @@ export const en: Record<keyof typeof uk, string> = {
     "applicant.greeting": "Hello, {name}!",
     "applicant.welcome": "Welcome!",
     "applicant.access":
-        "You have been given access to the application “{profile}”. Create an account to track its status and see exam results.",
+        "You have been given access to the following application \"{profile}\". Create an account to track its status and see exam results.",
     "applicant.notes": "Notes:",
 
     "cabinet.title": "My applications",
@@ -147,9 +147,9 @@ export const en: Record<keyof typeof uk, string> = {
     "application.toMyApplications": "To my applications",
     "application.backToApplication": "Back to application",
     "application.backToProfiles": "Back to profiles",
-    "application.studentInfo": "Student information",
-    "application.chooseStudent": "Choose a student",
-    "application.newStudent": "New student",
+    "application.studentInfo": "Applicant information",
+    "application.chooseStudent": "Choose an applicant",
+    "application.newStudent": "New applicant",
     "application.parentInfo": "Parent information",
     "application.notes": "Notes",
     "application.uploadAria": "File upload",
@@ -239,11 +239,11 @@ export const en: Record<keyof typeof uk, string> = {
     "admin.groupEditor.groupFallback": "Application",
 
     "campaignEditor.namePlaceholder": "Campaign name",
-    "campaignEditor.begins": "Starts",
-    "campaignEditor.ends": "Ends",
+    "campaignEditor.begins": "Begins at",
+    "campaignEditor.ends": "Ends at",
     "campaignEditor.profiles": "Profiles",
     "campaignEditor.createProfile": "Create a new profile",
-    "campaignEditor.allowMultiple": "Allow applications to multiple profiles",
+    "campaignEditor.allowMultiple": "Allow submission of applications to multiple profiles",
     "campaignEditor.delete": "Delete campaign",
     "campaignEditor.deleteConfirm": "Delete this campaign?",
     "campaignEditor.titleRequired": "Enter the campaign name first",
@@ -430,7 +430,6 @@ export const en: Record<keyof typeof uk, string> = {
     "errors.cannotChangeOwnRole": "You cannot change your own role",
     "errors.userNotFound": "User not found",
 
-    // TODO(i18n-review): English About copy is a translation of the Ukrainian page and needs a human review.
     "about.body": `
         <h1>About the site</h1>
         <p class="mt-4 text-black/70">
@@ -502,7 +501,6 @@ export const en: Record<keyof typeof uk, string> = {
         </p>
     `,
 
-    // TODO(i18n-review): English Privacy Policy is a translation of the Ukrainian document and needs legal review.
     "privacy.body": `
         <h1>Privacy policy</h1>
         <p class="mt-2 text-sm text-black/60">Updated 30 October 2026</p>
