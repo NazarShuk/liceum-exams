@@ -4,8 +4,7 @@ import Layout from "@layouts/Layout.astro";
 import HeroBackground from "@components/HeroBackground.astro";
 import ThemeToggle from "@components/ThemeToggle.astro";
 import LanguageSwitcher from "@components/LanguageSwitcher.astro";
-import LiceumLogo from "../assets/LiceumLogo.svg";
-import LiceumLogoVstup from "../assets/LiceumLogoVstup.svg";
+import { liceumLogo, liceumLogoVstup } from "@i18n/logos";
 import { getDrizzle } from "@db/drizzle";
 import { markdownExcerpt } from "../lib/markdown";
 import { getContacts } from "@lib/contacts";
@@ -16,6 +15,8 @@ import { useTranslations } from "@i18n/index";
 
 const locale = Astro.locals.locale;
 const t = useTranslations(locale);
+const LiceumLogo = liceumLogo[locale];
+const LiceumLogoVstup = liceumLogoVstup[locale];
 
 if (Astro.locals.user) {
     return Astro.redirect(localizePath(locale, "/cabinet"));
