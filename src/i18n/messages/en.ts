@@ -1,7 +1,7 @@
 import type { uk } from "./uk";
 
 export const en: Record<keyof typeof uk, string> = {
-    "common.appName": "Lyceum Admissions",
+    "common.appName": "Lyceum Enrollment",
     "common.language": "Language",
     "common.themeToggle": "Toggle light or dark theme",
     "common.back": "Back",
@@ -120,7 +120,7 @@ export const en: Record<keyof typeof uk, string> = {
 
     "cabinet.title": "My applications",
     "cabinet.create": "New application",
-    "cabinet.noCampaigns": "There are no admission campaigns available right now.",
+    "cabinet.noCampaigns": "There are no enrollment campaigns available right now.",
     "cabinet.emptyApplicant": "You do not have any applications yet.",
     "cabinet.emptyParent":
         "You do not have any applications yet! Use the button above to create your first application.",
@@ -171,8 +171,8 @@ export const en: Record<keyof typeof uk, string> = {
         'By clicking "Submit", you consent to the processing of your personal data in accordance with the Law of Ukraine "On Personal Data Protection"',
     "application.chooseProfile": "Choose a profile",
     "application.noCampaignsTitle": "No campaigns available",
-    "application.noCampaignsText": "There are no admission campaigns you can apply to right now.",
-    "application.chooseCampaign": "Choose an admission campaign",
+    "application.noCampaignsText": "There are no enrollment campaigns you can apply to right now.",
+    "application.chooseCampaign": "Choose an enrollment campaign",
     "application.profileCount.one": "{count} profile",
     "application.profileCount.few": "{count} profiles",
     "application.profileCount.many": "{count} profiles",
@@ -346,7 +346,7 @@ export const en: Record<keyof typeof uk, string> = {
     "usersTable.notFound": "No users found.",
 
     "contacts.title": "Contacts",
-    "contacts.intro": "Contact us if you have questions about admissions or how the portal works.",
+    "contacts.intro": "Contact us if you have questions about enrollment or how the portal works.",
     "contacts.address": "Address",
     "contacts.addressValue": "103 Chudnivska St, Zhytomyr 10005",
     "contacts.email": "Email",
@@ -433,8 +433,8 @@ export const en: Record<keyof typeof uk, string> = {
     "about.body": `
         <h1>About the site</h1>
         <p class="mt-4 text-black/70">
-            This is the single admissions portal of the Scientific Lyceum of Zhytomyr Polytechnic. It was created to make
-            admissions simple and transparent: you can submit an application, track its status, and receive exam results
+            This is the enrollment portal of the Scientific Lyceum of Zhytomyr Polytechnic. It was created to make
+            enrollment simple and transparent: you can submit an application, track its status, and receive exam results
             online.
         </p>
 
@@ -515,7 +515,7 @@ export const en: Record<keyof typeof uk, string> = {
 
         <h2 class="mt-10">Why we use the data</h2>
         <p class="mt-3 text-black/70">
-            We process data to receive and review your application, contact you about admissions, and ensure the
+            We process data to receive and review your application, contact you about enrollment, and ensure the
             operation and security of the Portal.
         </p>
 
@@ -527,7 +527,7 @@ export const en: Record<keyof typeof uk, string> = {
 
         <h2 class="mt-10">Storage</h2>
         <p class="mt-3 text-black/70">
-            Data is stored on Cloudflare infrastructure for the period required for the admission campaign and compliance
+            Data is stored on Cloudflare infrastructure for the period required for the enrollment campaign and compliance
             with legal requirements. After that, it is deleted or anonymised.
         </p>
 
@@ -561,7 +561,7 @@ export const en: Record<keyof typeof uk, string> = {
 
         <h2 class="mt-10">General provisions</h2>
         <p class="mt-3 text-black/70">
-            By using the lyceum admissions portal, you agree to these terms. If you do not agree with them, please do not
+            By using the lyceum enrollment portal, you agree to these terms. If you do not agree with them, please do not
             use the Portal.
         </p>
 
@@ -574,8 +574,8 @@ export const en: Record<keyof typeof uk, string> = {
         <h2 class="mt-10">Submitting applications</h2>
         <p class="mt-3 text-black/70">
             An application submitted through the Portal is an official request to the institution. Submitting an
-            application does not guarantee admission: the admissions committee makes the decision in accordance with the
-            admission rules.
+            application does not guarantee enrollment: the enrollment committee makes the decision in accordance with the
+            enrollment rules.
         </p>
 
         <h2 class="mt-10">Rules of use</h2>
