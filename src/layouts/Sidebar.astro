@@ -197,6 +197,9 @@ if (user && !currentPath.startsWith("/news")) {
         backdrop.classList.toggle("hidden", !open);
         document.body.classList.toggle("overflow-hidden", open);
 
+        // On mobile, the theme/language controls only show while the drawer is open.
+        document.getElementById("layout-controls")?.classList.toggle("max-lg:hidden", !open);
+
         const hidden = isMobile() && !open;
         sidebar.inert = hidden;
         sidebar.setAttribute("aria-hidden", String(hidden));

@@ -98,7 +98,10 @@ const icons = [
     </head>
     <body class="flex min-h-screen flex-col">
         {showChrome && (
-            <div class="fixed right-2 top-2 z-60 flex items-center gap-2">
+            <div
+                id="layout-controls"
+                class="fixed right-2 top-2 z-60 flex items-center gap-2 max-lg:left-16 max-lg:right-auto max-lg:hidden"
+            >
                 <LanguageSwitcher />
                 <ThemeToggle />
             </div>

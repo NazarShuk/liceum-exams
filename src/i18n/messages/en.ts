@@ -49,7 +49,7 @@ export const en: Record<keyof typeof uk, string> = {
     "common.noResults": "Nothing found.",
 
     "nav.myApplications": "My applications",
-    "nav.createApplication": "Create application",
+    "nav.createApplication": "New application",
     "nav.about": "About",
     "nav.contacts": "Contacts",
     "nav.administration": "Administration",
@@ -119,7 +119,7 @@ export const en: Record<keyof typeof uk, string> = {
     "applicant.notes": "Notes:",
 
     "cabinet.title": "My applications",
-    "cabinet.create": "Create application",
+    "cabinet.create": "New application",
     "cabinet.noCampaigns": "There are no admission campaigns available right now.",
     "cabinet.emptyApplicant": "You do not have any applications yet.",
     "cabinet.emptyParent":
